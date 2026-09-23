@@ -1,0 +1,18 @@
+{
+  "id": "daisomall-order",
+  "name": "다이소몰 주문서",
+  "match": ["daisomall.co.kr/or/ora"],
+  "rowSelector": "div.goods-unit.order",
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": "div.tit" },
+    "qty": { "sel": "div.goods-num", "regex": "(\\d+)개" },
+    "price": { "sel": "div.goods-price span.value", "regex": "([\\d,]+)" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "div.total-pay li:contains('총 배송비') > div.val",
+    "regex": "([\\d,]+)"
+  },
+  "notes": "주문서(/or/ora/SCR_ORA_0001) 화면 — 장바구니(daisomall 규칙)와 달리 주문서엔 체크박스가 없어 분리. div.tit=상품명(빈 이미지 링크 a가 먼저 있어 텍스트로 추출), div.goods-price=상품합계금액(lineTotal→단가=합계÷수량), div.goods-num 'N개'=수량. 배송비는 결제창 '총 배송비' div.val 표시값(중첩된 '기본 배송비'는 직계 자손 아니므로 제외)."
+}

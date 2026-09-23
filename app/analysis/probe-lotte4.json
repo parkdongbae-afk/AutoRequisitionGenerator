@@ -1,0 +1,38 @@
+{
+  "inboxCaptures": [
+    {
+      "fileName": "바구니ㅣ롯데마트 제타 온라인 신선 장보기 몰.mhtml",
+      "cssLinks": [
+        "app-mhtml://DOCID/1",
+        "app-mhtml://DOCID/2"
+      ],
+      "unresolvedCss": 0,
+      "partsWithoutLocWithCid": 0,
+      "unresolvedCidInHtml": 0
+    },
+    {
+      "fileName": "바구니ㅣ롯데마트 제타 온라인 신선 장보기 몰.mhtml",
+      "cssLinks": [
+        "app-mhtml://DOCID/1",
+        "app-mhtml://DOCID/2"
+      ],
+      "unresolvedCss": 0,
+      "partsWithoutLocWithCid": 0,
+      "unresolvedCidInHtml": 0
+    },
+    {
+      "fileName": "바구니ㅣ롯데마트 제타 온라인 신선 장보기 몰.mhtml",
+      "cssLinks": [
+        "app-mhtml://DOCID/1",
+        "app-mhtml://DOCID/2"
+      ],
+      "unresolvedCss": 0,
+      "partsWithoutLocWithCid": 0,
+      "unresolvedCidInHtml": 0
+    }
+  ],
+  "cardHtmlHead": "<div class=\"header-container\"><div class=\"position-relative\"><div class=\"top-icons-container\"><div class=\"_checkbox-background_v80qj_2\"></div><label class=\"_checkbox_7w2m6_1 checkbox--checked\"><input type=\"checkbox\" aria-checked=\"true\" aria-invalid=\"false\" name=\"basket-fop-checkbox-71732c7c-e6c2-49a2-865f-e8cfb7255104\" aria-label=\"롯데 쉐푸드 꽈사삭 크리스피 치킨 (330G) 클릭하여 선택 취소\" data-test=\"basket-fop-checkbox-71732c7c-e6c2-49a2-865f-e8cfb7255104\" class=\"salt-vc\" value=\"basket-fop-checkbox\" checked=\"\">[SVG]<span class=\"_checkbox__content-wrapper_7w2m6_33\"><span class=\"_text_cn5lb_1 _text--m_cn5lb_23 _checkbox__label_7w2m6_40\" id=\":r8:\"></span></span></label></div></div><div class=\"image-container\"><a tabindex=\"-1\" class=\"_text_cn5lb_1 _text--m_cn5lb_23 _link-standalone_v2p9r_8 image-link-concealed image-link-concealed\" data-synthetics=\"bop-link\" data-test=\"fop-product-link\" aria-hidden=\"true\" href=\"https://lottemartzetta.com/products/OS8801118032288/details\" data-discover=\"true\"><span class=\"salt-vc\">롯데 쉐푸드 꽈사삭 크리스피 치킨 (330G)</span></a><img data-test=\"lazy-load-image\" alt=\"롯데 쉐푸드 꽈사삭 크리스피 치킨 (330G)\" src=\"https://lottemartzetta.com/images-v3/932dcbc7-fca8-4d43-bcde-f73d1ce3cc7d/605b07ec-4f02-4f89-b782-6954eded0f1b/300x300.jpg\" class=\"sc-wislgi-0 eoWEFa\" width=\"175\" height=\"175\"></div><div class=\"attributes-container\"><div class=\"sc-1bc1qbm-1 bERbma\"><div class=\"sc-mmemlz-0 sc-1bc1qbm-0 iulPoj jBsWRZ\">[SVG]<span class=\"salt-vc\">냉동</span></div><div class=\"sc-mmemlz-0 sc-1bc1qbm-0 iulPoj jBsWRZ\"><div data-test=\"rating-badge\" aria-hidden=\"true\" class=\"sc-1gu85j8-0 ceIEAU\"><div data-test=\"di",
+  "summaryDlFull": [
+    "<div data-test=\"summary-items\" class=\"sc-1sylob6-0 kbKGZt\"><dt data-test=\"summary-items-title\" class=\"sc-eu3tjp-1 doezWF\"><span>품목 4개</span></dt><dd data-test=\"summary-items-description\" class=\"sc-eu3tjp-2 kiBtZk\">28,940원</dd></div><div data-test=\"summary-savings\" class=\"sc-1sylob6-0 kbKGZt\"><dt class=\"sc-eu3tjp-1 doezWF\"><span>상품 할인</span></dt><dd class=\"sc-eu3tjp-2 kiBtZk\"><span class=\"_text_cn5lb_1 _text--bold_cn5lb_7 _text--m_cn5lb_23 _text--promotion_cn5lb_31\" data-test=\"summary-savings-amount\">-2,000원</span></dd></div><div data-test=\"summary-order-level-promotion-item\" class=\"sc-1sylob6-0 kbKGZt\"><dt data-test=\"summary-order-level-promo-title\" class=\"sc-eu3tjp-1 doezWF\">[첫구매] 2만↑ 20% 할인 (최대 5천원)</dt><dd class=\"sc-eu3tjp-2 kiBtZk\"><span class=\"_text_cn5lb_1 _text--bold_cn5lb_7 _text--m_cn5lb_23 _text--promotion_cn5lb_31\" data-test=\"summary-order-level-promo-amount\">-5,000원</span></dd></div><div data-test=\"summary-delivery\" class=\"sc-1sylob6-0 kbKGZt\"><dt data-test=\"summary-delivery-title\" class=\"sc-eu3tjp-1 doezWF\"><span>배송비</span></dt><dd data-test=\"summary-cost-delivery-charge\" class=\"sc-eu3tjp-2 kiBtZk\">3,000원</dd></div>"
+  ]
+}

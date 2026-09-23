@@ -1,0 +1,46 @@
+{
+  "location": "https://lottemartzetta.com/basket",
+  "items": [
+    {
+      "name": "롯데 쉐푸드 꽈사삭 크리스피 치킨 (330G)",
+      "qty": 3,
+      "unit": 8313,
+      "rounded": 8320,
+      "spec": "330g"
+    },
+    {
+      "name": "오늘좋은 미네랄워터 (2L*6입)",
+      "qty": 1,
+      "unit": 2000,
+      "rounded": 2000,
+      "spec": "2L"
+    }
+  ],
+  "shippingFee": 3000,
+  "answer": [
+    [
+      "롯데 쉐푸드 콰사삭 크리스피 치킨",
+      "330g",
+      3,
+      8320
+    ],
+    [
+      "오늘좋은 미네랄워터",
+      "2L, 6개입",
+      1,
+      2000
+    ],
+    [
+      "배송비",
+      null,
+      1,
+      3000
+    ]
+  ],
+  "check": {
+    "itemCount": true,
+    "chicken": true,
+    "water": true,
+    "shipping": true
+  }
+}

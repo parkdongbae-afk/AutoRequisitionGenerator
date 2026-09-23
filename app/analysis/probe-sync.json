@@ -1,0 +1,126 @@
+[
+  {
+    "browser": "chrome",
+    "topEntries": []
+  },
+  {
+    "browser": "chrome",
+    "profile": "Default",
+    "syncKeepEveryting": false,
+    "syncTypes": null,
+    "bookmarksSynced": null,
+    "signedIn": true,
+    "account": null,
+    "syncDataDir": true,
+    "bakExists": true,
+    "bakCaptureCount": 1
+  },
+  {
+    "browser": "chrome",
+    "profile": "Guest Profile",
+    "syncKeepEveryting": false,
+    "syncTypes": null,
+    "bookmarksSynced": null,
+    "signedIn": true,
+    "account": null,
+    "syncDataDir": true,
+    "bakExists": false
+  },
+  {
+    "browser": "chrome",
+    "profile": "Profile 1",
+    "syncKeepEveryting": false,
+    "syncTypes": null,
+    "bookmarksSynced": null,
+    "signedIn": true,
+    "account": null,
+    "syncDataDir": true,
+    "bakExists": true,
+    "bakCaptureCount": 1
+  },
+  {
+    "browser": "chrome",
+    "profile": "Profile 2",
+    "syncKeepEveryting": false,
+    "syncTypes": [
+      "md3/DXvk1r+rgtx/DapjXKlfrvgh4f02+OKzS3hoF3Q="
+    ],
+    "bookmarksSynced": null,
+    "signedIn": true,
+    "account": null,
+    "syncDataDir": true,
+    "bakExists": true,
+    "bakCaptureCount": 0
+  },
+  {
+    "browser": "chrome",
+    "profile": "Profile 3",
+    "syncKeepEveryting": false,
+    "syncTypes": [
+      "C42dY9DJ2fSmq3q+erq5XnXhI+hCtSEjm2NbEKQLCVs="
+    ],
+    "bookmarksSynced": null,
+    "signedIn": true,
+    "account": null,
+    "syncDataDir": true,
+    "bakExists": true,
+    "bakCaptureCount": 1
+  },
+  {
+    "browser": "chrome",
+    "profile": "Profile 4",
+    "syncKeepEveryting": false,
+    "syncTypes": [
+      "AOZPLLyHyUrunzsQDenlqtR3ufSb1lwF80gzAWs24ZM="
+    ],
+    "bookmarksSynced": null,
+    "signedIn": true,
+    "account": null,
+    "syncDataDir": true,
+    "bakExists": false
+  },
+  {
+    "browser": "chrome",
+    "profile": "Profile 5",
+    "syncKeepEveryting": false,
+    "syncTypes": [
+      "qNj9TRPM5JDPi9TgRS/SCKjF4ZUk9E9AQdLG+aCjdfg="
+    ],
+    "bookmarksSynced": null,
+    "signedIn": true,
+    "account": null,
+    "syncDataDir": true,
+    "bakExists": true,
+    "bakCaptureCount": 1
+  },
+  {
+    "browser": "chrome",
+    "profile": "Profile 6",
+    "syncKeepEveryting": false,
+    "syncTypes": null,
+    "bookmarksSynced": null,
+    "signedIn": true,
+    "account": null,
+    "syncDataDir": true,
+    "bakExists": false
+  },
+  {
+    "browser": "edge",
+    "topEntries": []
+  },
+  {
+    "browser": "edge",
+    "profile": "Default",
+    "syncKeepEveryting": false,
+    "syncTypes": null,
+    "bookmarksSynced": null,
+    "signedIn": false,
+    "account": null,
+    "syncDataDir": true,
+    "bakExists": true,
+    "bakCaptureCount": 2
+  },
+  {
+    "chromeExeExists": false
+  }
+]

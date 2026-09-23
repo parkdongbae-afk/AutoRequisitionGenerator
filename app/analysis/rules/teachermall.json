@@ -1,0 +1,18 @@
+{
+  "id": "teachermall",
+  "name": "티처몰",
+  "match": ["teacherville.co.kr"],
+  "rowSelector": "tr[class*=goods_][class*=_delivery]",
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": "a.order_name" },
+    "qty": { "sel": "td:nth-child(2)", "regex": "(\\d+)" },
+    "price": { "sel": "td:nth-child(3)", "regex": "([\\d,]+)원" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": ".std_delivery_price",
+    "regex": "([\\d,]+)"
+  },
+  "notes": "주문/결제(settle) 페이지. 기본배송비 std_delivery_price(선결제). 페이지 상품금액과 3,000원 차이 가능(즉시할인)"
+}

@@ -1,0 +1,563 @@
+[
+  {
+    "fileName": "G마켓 - 주문서.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://checkout.gmarket.co.kr/ko/pc/checkout?chid=9261508084%2C9261508085%2C9261508086%2C9261508087%2C9261508088%2C9261508089%2C9261508090%2C9261508091&autoCoupon=true&spm=gmktpc.cart.0.i3.2f096d1c1u5XJz#/",
+    "partCount": 47,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://checkout.gmarket.co.kr/ko/pc/checkout?chid=9261508084%2C9261508085%2C9261508086%2C",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/jpeg",
+        "loc": "https://gdimg.gmarket.co.kr/3890020285/Still/210?ver=1781042976",
+        "rawCt": "image/jpeg"
+      }
+    ],
+    "htmlLen": 105412,
+    "replacementChars": 0,
+    "hangulChars": 3579,
+    "mojibakePattern": 0,
+    "matchedRule": "gmarket (G마켓)",
+    "rowCount": 8,
+    "fieldSamples": {
+      "name": "더이안 금색 은색 오링세트 / 오링+작업반지+평집게",
+      "qty": "1개",
+      "price": "8,280",
+      "option": "색상은색 오링 세트"
+    }
+  },
+  {
+    "fileName": "G마켓 - 주문서1.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://checkout.gmarket.co.kr/ko/pc/checkout?chid=9261655300%2C9261655301%2C9261655302%2C9261655303%2C9261655304%2C9261655305&autoCoupon=true&spm=gmktpc.cart.0.i2.639532f1XVIdJT#/",
+    "partCount": 39,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://checkout.gmarket.co.kr/ko/pc/checkout?chid=9261655300%2C9261655301%2C9261655302%2C",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/jpeg",
+        "loc": "https://gdimg.gmarket.co.kr/1651150851/Still/210?ver=1743604866",
+        "rawCt": "image/jpeg"
+      }
+    ],
+    "htmlLen": 96718,
+    "replacementChars": 0,
+    "hangulChars": 3024,
+    "mojibakePattern": 0,
+    "matchedRule": "gmarket (G마켓)",
+    "rowCount": 6,
+    "fieldSamples": {
+      "name": "1+1 캔손 몽발 수채패드 1면제본12매 300g 24x32",
+      "qty": "1개",
+      "price": "15,900",
+      "option": ""
+    }
+  },
+  {
+    "fileName": "교보문고.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://order.kyobobook.co.kr/order/order?ordrId=O26095454101&frbeSlctPageViewYsno=Y",
+    "partCount": 69,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://order.kyobobook.co.kr/order/order?ordrId=O26095454101&frbeSlctPageViewYsno=Y",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/gif",
+        "loc": "https://analytics.twitter.com/i/adsct?bci=4&cv=100%261&dv=Asia%2FSeoul%26ko-KR%2Cko%26Goog",
+        "rawCt": "image/gif"
+      },
+      {
+        "ct": "image/gif",
+        "loc": "https://t.co/i/adsct?bci=4&cv=100%261&dv=Asia%2FSeoul%26ko-KR%2Cko%26Google%20Inc.%26Win32",
+        "rawCt": "image/gif"
+      }
+    ],
+    "htmlLen": 596009,
+    "replacementChars": 0,
+    "hangulChars": 38024,
+    "mojibakePattern": 0,
+    "matchedRule": "kyobo (교보문고)",
+    "rowCount": 3,
+    "fieldSamples": {
+      "name": "[국내도서]실전 ComfyUI",
+      "qty": "1개",
+      "price": "22,500"
+    }
+  },
+  {
+    "fileName": "네이버-주문_결제.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://orders.pay.naver.com/ordersheet/seller/63130624-ae74-03cc-a4c6-3ce5df4670d8?backUrl=https://shopping.naver.com/cart&nl-au=ce6a561240fb41258c8a554e8a494d8c",
+    "partCount": 32,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://orders.pay.naver.com/ordersheet/seller/63130624-ae74-03cc-a4c6-3ce5df4670d8?backUr",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/png",
+        "loc": "https://financial.pstatic.net/orders/ordersheet/c802ac7-real/_next/static/media/DefaultSho",
+        "rawCt": "image/png"
+      }
+    ],
+    "htmlLen": 74050,
+    "replacementChars": 0,
+    "hangulChars": 664,
+    "mojibakePattern": 0,
+    "matchedRule": "naver (네이버쇼핑)",
+    "rowCount": 1,
+    "fieldSamples": {
+      "name": "상품명DTF 출력 대행 티셔츠 커스텀 프린팅 DIY 인쇄 열전사 필름 폭 57cm",
+      "qty": "8개",
+      "price": "41,600원",
+      "option": "(폭)57cm x (길이)1.0m"
+    },
+    "htmlHead": "<!DOCTYPE html><html lang=\"ko\" data-hwp-extension=\"rhwp\" data-hwp-extension-version=\"0.8.6\"><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta name=\"viewport\" content=\"width=device-width\" data-next-head=\"\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge, chrome=1\"><title>주문/결제</title><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,maximum-scale=1,m",
+    "naverClassHits": {
+      "ProductItem_article": 1,
+      "ProductDetail_name": 1,
+      "ProductOption_amount": 1,
+      "ProductOrder": 0,
+      "cart": 0,
+      "CartPage": 0,
+      "OrderSheet": 0
+    },
+    "pageTitle": "주문/결제",
+    "canonical": null,
+    "ogUrl": null
+  },
+  {
+    "fileName": "드림디포 쇼핑몰 _ 사는 곳은 달라도 문구는 드림디포!.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://www.dreamdepot.co.kr/shop/cart.php",
+    "partCount": 42,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://www.dreamdepot.co.kr/shop/cart.php",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/png",
+        "loc": "https://www.dreamdepot.co.kr/shop/skin/basic/images/btn_sch_bottom.png",
+        "rawCt": "image/png"
+      }
+    ],
+    "htmlLen": 376637,
+    "replacementChars": 0,
+    "hangulChars": 9741,
+    "mojibakePattern": 0,
+    "matchedRule": "dreamdepot (드림디포)",
+    "rowCount": 2,
+    "fieldSamples": {
+      "name": "[아카데미] 원목회전독서대 (MW-684)",
+      "qty": "",
+      "price": "40,000원"
+    }
+  },
+  {
+    "fileName": "아이스크림 _ 아이스크림몰.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://i-screammall.co.kr/order/order",
+    "partCount": 82,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://i-screammall.co.kr/order/order",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/svg+xml",
+        "loc": "https://i-screammall.co.kr/images/icons/common/ico_top.svg",
+        "rawCt": "image/svg+xml"
+      }
+    ],
+    "htmlLen": 70330,
+    "replacementChars": 0,
+    "hangulChars": 1474,
+    "mojibakePattern": 0,
+    "matchedRule": "icecreammall (아이스크림몰)",
+    "rowCount": 2,
+    "fieldSamples": {
+      "name": "판타지 유니콘 목걸이 팔찌 만들기 DS1111",
+      "qty": "단일상품 / 1개",
+      "price": "4,500원"
+    }
+  },
+  {
+    "fileName": "알파몰-배송지선택.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://www.alpha.co.kr/order/order/orderDeliveryChoiceForm.do",
+    "partCount": 36,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://www.alpha.co.kr/order/order/orderDeliveryChoiceForm.do",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/png",
+        "loc": "https://www.alpha.co.kr/common/img/Alpha//footer_icon.png",
+        "rawCt": "image/png"
+      }
+    ],
+    "htmlLen": 145841,
+    "replacementChars": 0,
+    "hangulChars": 11043,
+    "mojibakePattern": 0,
+    "matchedRule": "alphamall (알파몰)",
+    "rowCount": 2,
+    "fieldSamples": {
+      "name": "[프랑스 마패드] 컬러펩스 젤크레용/836310 (10색)",
+      "qty": "1개",
+      "price": "11,000원"
+    }
+  },
+  {
+    "fileName": "장바구니.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://shopping.naver.com/cart?frm=gnb&prevUrl=https%3A%2F%2Fshopping.naver.com%2Fns%2Fhome",
+    "partCount": 132,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://shopping.naver.com/cart?frm=gnb&prevUrl=https%3A%2F%2Fshopping.naver.com%2Fns%2Fho",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/jpeg",
+        "loc": "https://shop-phinf.pstatic.net/20260602_125/1780368247197NECtn_JPEG/114501052296394625_147",
+        "rawCt": "image/jpeg"
+      }
+    ],
+    "htmlLen": 109373,
+    "replacementChars": 0,
+    "hangulChars": 1810,
+    "mojibakePattern": 0,
+    "matchedRule": null,
+    "htmlHead": "<!DOCTYPE html><html data-hwp-extension=\"rhwp\" data-hwp-extension-version=\"0.8.6\"><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><link rel=\"stylesheet\" type=\"text/css\" href=\"cid:css-fa35cf18-18e9-416d-a0a8-dc0461524551@mhtml.blink\" /><link rel=\"stylesheet\" type=\"text/css\" href=\"cid:css-d0317974-b822-4e84-be88-1dcd631f829c@mhtml.blink\" /><link rel=\"stylesheet\" type=\"text/c",
+    "naverClassHits": {
+      "ProductItem_article": 0,
+      "ProductDetail_name": 0,
+      "ProductOption_amount": 0,
+      "ProductOrder": 0,
+      "cart": 3,
+      "CartPage": 0,
+      "OrderSheet": 0
+    },
+    "pageTitle": "장바구니",
+    "canonical": null,
+    "ogUrl": null
+  },
+  {
+    "fileName": "주문_결제 - 11번가.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://buy.11st.co.kr/pay/OrderInfoAction.tmall",
+    "partCount": 26,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://buy.11st.co.kr/pay/OrderInfoAction.tmall",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/png",
+        "loc": "https://c.011st.com/img/lfs/order/card_shinhan_11street.png",
+        "rawCt": "image/png"
+      }
+    ],
+    "htmlLen": 226146,
+    "replacementChars": 0,
+    "hangulChars": 19249,
+    "mojibakePattern": 0,
+    "matchedRule": "11st (11번가)",
+    "rowCount": 2,
+    "fieldSamples": {
+      "name": "단추 비닐 서류봉투 A4",
+      "price": "할인모음가 10,600원"
+    }
+  },
+  {
+    "fileName": "주문_결제 - 예스24.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://ssl.yes24.com/dMyCart/OrderPayment?giftGoodses=&supplementGoodses=&GUIDH=a7dee60d-a76b-4c83-8e93-ece4fb420291&giftUsePoint=0&giftPayAmt=0&CLASS24_GUIDH=&Class24TimeSeq=&Class24DiscountInfo=&Class24ConnInfo=",
+    "partCount": 189,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://ssl.yes24.com/dMyCart/OrderPayment?giftGoodses=&supplementGoodses=&GUIDH=a7dee60d-",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/gif",
+        "loc": "https://adn.caprofitx.com/v1/cookiesync?rtbhouse_uid=0r1gn-T7NmaHrBZqYLBR8xk4cG1rChEqA-aVz",
+        "rawCt": "image/gif"
+      },
+      {
+        "ct": "image/gif",
+        "loc": "https://analytics.twitter.com/i/adsct?bci=4&cv=100%261&dv=Asia%2FSeoul%26ko-KR%2Cko%26Goog",
+        "rawCt": "image/gif"
+      }
+    ],
+    "htmlLen": 345331,
+    "replacementChars": 9,
+    "hangulChars": 20247,
+    "mojibakePattern": 0,
+    "matchedRule": "yes24 (예스24)",
+    "rowCount": 6,
+    "fieldSamples": {
+      "name": "[도서] 오디세이아",
+      "qty": "1",
+      "price": "24,300원 (10%할인) YES포인트1,350원"
+    }
+  },
+  {
+    "fileName": "___ ic114.com- 국내최대전자부품 전문 쇼핑몰___.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "euc-kr",
+    "contentLocation": "https://www.ic114.com/WebSite/SITE/MY/00L0.aspx",
+    "partCount": 31,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://www.ic114.com/WebSite/SITE/MY/00L0.aspx",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/gif",
+        "loc": "https://www.ic114.com/WebSite/html/images/cornertrust.gif",
+        "rawCt": "image/gif"
+      }
+    ],
+    "htmlLen": 56493,
+    "replacementChars": 0,
+    "hangulChars": 1873,
+    "mojibakePattern": 0,
+    "matchedRule": "ic114 (IC114)",
+    "rowCount": 2,
+    "fieldSamples": {
+      "name": "MEGA2560 SENSOR SHIELD For Arduino",
+      "qty": "",
+      "price": "7,700원"
+    }
+  },
+  {
+    "fileName": "결제 - 전자부품 쇼핑의 기준_엘레파츠.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://www.eleparts.co.kr/order/settle?mode=cart",
+    "partCount": 68,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://www.eleparts.co.kr/order/settle?mode=cart",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/jpeg",
+        "loc": "https://www.eleparts.co.kr/data/skin/default/images/layout/isms_up.jpg",
+        "rawCt": "image/jpeg"
+      }
+    ],
+    "htmlLen": 80335,
+    "replacementChars": 0,
+    "hangulChars": 4482,
+    "mojibakePattern": 0,
+    "matchedRule": "eleparts (엘레파츠)",
+    "rowCount": 1,
+    "fieldSamples": {
+      "name": "JMOD-BT-1 블루투스 시리얼 모듈 /브레드보드 장착가능",
+      "qty": "2",
+      "price": "46,838"
+    }
+  },
+  {
+    "fileName": "옥션 - 주문서.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://checkout.auction.co.kr/ko/pc/checkout?chid=5841796669%2C5841796670%2C5841796671&autoCoupon=true#/",
+    "partCount": 28,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://checkout.auction.co.kr/ko/pc/checkout?chid=5841796669%2C5841796670%2C5841796671&au",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/png",
+        "loc": "https://pics.iacstatic.co.kr/common/footer/button_check_biz_info.png",
+        "rawCt": "image/png"
+      }
+    ],
+    "htmlLen": 55029,
+    "replacementChars": 9,
+    "hangulChars": 6825,
+    "mojibakePattern": 0,
+    "matchedRule": "auction (옥션)",
+    "rowCount": 3,
+    "fieldSamples": {
+      "name": "HUSKYLENS허스키렌즈 머신러닝적용 인공지능 비전센서",
+      "qty": "1개 85,800원",
+      "price": "85,800원"
+    }
+  },
+  {
+    "fileName": "쿠팡! _ 장바구니.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://cart.coupang.com/cartView.pang",
+    "partCount": 69,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://cart.coupang.com/cartView.pang",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/png",
+        "loc": "https://assets.coupangcdn.com/front/front-web-next/_next/static/media/s.a7aca4ea.png",
+        "rawCt": "image/png"
+      }
+    ],
+    "htmlLen": 326606,
+    "replacementChars": 0,
+    "hangulChars": 4107,
+    "mojibakePattern": 0,
+    "matchedRule": "coupang (쿠팡)",
+    "rowCount": 8,
+    "fieldSamples": {
+      "name": "아모스 딱풀 35g 6개입",
+      "qty": "",
+      "price": "18,890",
+      "option": "옵션: 35g, 1세트"
+    },
+    "htmlHead": "<!DOCTYPE html><html lang=\"ko-KR\" data-hwp-extension=\"rhwp\" data-hwp-extension-version=\"0.8.6\"><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><link rel=\"stylesheet\" type=\"text/css\" href=\"cid:css-064cb08c-c5fd-41be-baa3-4d901e6a3366@mhtml.blink\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><meta name=\"viewport\" content=\"width=device-width, initial-",
+    "naverClassHits": {
+      "ProductItem_article": 0,
+      "ProductDetail_name": 0,
+      "ProductOption_amount": 0,
+      "ProductOrder": 0,
+      "cart": 13,
+      "CartPage": 0,
+      "OrderSheet": 0
+    },
+    "pageTitle": "쿠팡! | 장바구니",
+    "canonical": null,
+    "ogUrl": null
+  },
+  {
+    "fileName": "티처몰 _ 학급경영의 필수 파트너.mhtml",
+    "rootRawContentType": "text/html",
+    "rootCharset": "utf-8",
+    "contentLocation": "https://shop.teacherville.co.kr/order/settle?mode=cart&nation=KOREA",
+    "partCount": 93,
+    "firstParts": [
+      {
+        "ct": "text/html",
+        "loc": "https://shop.teacherville.co.kr/order/settle?mode=cart&nation=KOREA",
+        "rawCt": "text/html"
+      },
+      {
+        "ct": "image/png",
+        "loc": "chrome-extension://jgjaeacdkonaoafenlfkkkmbaopkbilf/static/logo.png",
+        "rawCt": "image/png"
+      },
+      {
+        "ct": "image/png",
+        "loc": "https://shopcache.teacherville.co.kr/site/mall/gnb/login_popup/business.png",
+        "rawCt": "image/png"
+      }
+    ],
+    "htmlLen": 168617,
+    "replacementChars": 0,
+    "hangulChars": 8696,
+    "mojibakePattern": 0,
+    "matchedRule": "teachermall (티처몰)",
+    "rowCount": 2,
+    "fieldSamples": {
+      "name": "[티처몰ONLY] 나의 아바타 만들기",
+      "qty": "2",
+      "price": "3,000원"
+    }
+  }
+]

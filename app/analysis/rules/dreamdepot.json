@@ -1,0 +1,18 @@
+{
+  "id": "dreamdepot",
+  "name": "드림디포",
+  "match": ["dreamdepot.co.kr"],
+  "rowSelector": "tr:has(input.pm_number)",
+  "checkedOnly": { "sel": "input[name='ps_cartuid[]']" },
+  "fields": {
+    "name": { "sel": "p.goods_list_name" },
+    "qty": { "sel": "input.pm_number", "attr": "value" },
+    "price": { "sel": "p.goods_list_sale_price", "regex": "([\\d,]+)" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "span:contains('기본배송비')",
+    "regex": "([\\d,]+)"
+  },
+  "notes": "장바구니 테이블. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). 배송비는 페이지의 '기본배송비 : N 원' 표시를 사용(5만원 이상 무료 정책은 선택 항목 기준이라 조건식 대신 페이지 표시값)"
+}

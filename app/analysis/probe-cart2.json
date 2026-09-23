@@ -1,0 +1,71 @@
+{
+  "priceChains": [
+    {
+      "price": "219,000원",
+      "chain": "span.price--68b74054d9 < div.price_area--ee2ccbc03d < div.info_area--3482fb1141 < div.inner--c3ae6998e5 < div.product_description--32b8640a68 < div.product--d208e6e0e5 < div.products--90f3c5fdd5 < div.store_content--f33cdec2cb < div.store_card--5973931e90"
+    },
+    {
+      "price": "438,000원",
+      "chain": "em.price--9a8602c4c6 < div.price_area--1763b7affd < div.number_price--47644f0428 < div.option_area--a1d09ad3b7 < div.product_item--5fd0953e56.is_deletable--4a2e1d945c < div.product--d208e6e0e5 < div.products--90f3c5fdd5 < div.store_content--f33cdec2cb < div.store_card--5973931e90"
+    },
+    {
+      "price": "169,000원",
+      "chain": "span.price--68b74054d9 < div.price_area--ee2ccbc03d < div.info_area--3482fb1141 < div.inner--c3ae6998e5 < div.product_description--32b8640a68 < div.product--d208e6e0e5 < div.products--90f3c5fdd5 < div.store_content--f33cdec2cb < div.store_card--5973931e90"
+    },
+    {
+      "price": "169,000원",
+      "chain": "em.price--9a8602c4c6 < div.price_area--1763b7affd < div.number_price--47644f0428 < div.option_area--a1d09ad3b7 < div.product_item--5fd0953e56.is_deletable--4a2e1d945c < div.product--d208e6e0e5 < div.products--90f3c5fdd5 < div.store_content--f33cdec2cb < div.store_card--5973931e90"
+    },
+    {
+      "price": "5,200원",
+      "chain": "span.price--68b74054d9 < div.price_area--ee2ccbc03d < div.info_area--3482fb1141 < div.inner--c3ae6998e5 < div.product_description--32b8640a68 < div.product--d208e6e0e5 < div.products--90f3c5fdd5 < div.store_content--f33cdec2cb < div.store_card--5973931e90"
+    },
+    {
+      "price": "41,600원",
+      "chain": "em.price--9a8602c4c6 < div.price_area--1763b7affd < div.number_price--47644f0428 < div.option_area--a1d09ad3b7 < div.product_item--5fd0953e56.is_deletable--4a2e1d945c < div.product--d208e6e0e5 < div.products--90f3c5fdd5 < div.store_content--f33cdec2cb < div.store_card--5973931e90"
+    }
+  ],
+  "cssModulePrefixes": {
+    "title": 22,
+    "price_area": 22,
+    "num": 13,
+    "check": 10,
+    "inner": 7,
+    "btn_check": 7,
+    "price": 6,
+    "ico_btn": 6,
+    "svg_arrow": 5,
+    "total": 5,
+    "btn_area": 4,
+    "discount": 4,
+    "store_container": 3,
+    "store_card": 3,
+    "store_header": 3,
+    "mall_info": 3,
+    "link_mall": 3,
+    "store_content": 3,
+    "products": 3,
+    "product": 3,
+    "product_description": 3,
+    "thumb_area": 3,
+    "info_area": 3,
+    "ico_npay_plus": 3,
+    "svg_npay": 3,
+    "btn_zzim": 3,
+    "icon": 3,
+    "svg_zzim": 3,
+    "link_product": 3,
+    "product_item": 3,
+    "is_deletable": 3,
+    "option_area": 3,
+    "number_price": 3,
+    "number_controller": 3,
+    "btn_minus": 3,
+    "number": 3,
+    "btn_plus": 3,
+    "btn_option_delete": 3,
+    "store_price": 3,
+    "btn_more": 3
+  },
+  "koreanLeaves": []
+}

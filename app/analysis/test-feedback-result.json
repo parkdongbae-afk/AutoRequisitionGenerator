@@ -1,0 +1,195 @@
+[
+  {
+    "name": "드림디포 주문서 규칙",
+    "ok": true,
+    "detail": {
+      "url": "https://www.dreamdepot.co.kr/shop/order.php?&ps_cartuid%5B%5D=5712174&ps_cartuid%5B%5D=5712170",
+      "ruleId": "dreamdepot-order"
+    }
+  },
+  {
+    "name": "드림디포 주문서 품목",
+    "ok": true,
+    "detail": {
+      "items": [
+        "1x38000",
+        "2x5600"
+      ]
+    }
+  },
+  {
+    "name": "드림디포 주문서 상품합계=49,200",
+    "ok": true,
+    "detail": {
+      "sub": 49200
+    }
+  },
+  {
+    "name": "드림디포 주문서 배송비=3,000",
+    "ok": true,
+    "detail": {
+      "shipping": 3000
+    }
+  },
+  {
+    "name": "G마켓 카트 규칙 유지",
+    "ok": true,
+    "detail": {
+      "ruleId": "gmarket-cart"
+    }
+  },
+  {
+    "name": "G마켓 카트 무료배송 → 배송비 행 없음",
+    "ok": true,
+    "detail": {
+      "shipping": null
+    }
+  },
+  {
+    "name": "G마켓 카트 품목 3건(수동 폴백)",
+    "ok": true,
+    "detail": {
+      "items": [
+        "2x21900",
+        "1x69900",
+        "2x36350"
+      ]
+    }
+  },
+  {
+    "name": "알파몰 주문서 배송비=3,000(페이지 실측)",
+    "ok": true,
+    "detail": {
+      "shipping": 3000,
+      "ruleId": "alphamall"
+    }
+  },
+  {
+    "name": "알파몰 주문서 품목 2건",
+    "ok": true,
+    "detail": {}
+  },
+  {
+    "name": "checkedScope: 미체크 그룹 배송비 제외(스탬프)",
+    "ok": true,
+    "detail": {
+      "shipping": 3000,
+      "items": 1
+    }
+  },
+  {
+    "name": "checkedScope: 수동 저장(속성) 그룹 배송비 3,000",
+    "ok": true,
+    "detail": {
+      "shipping": 3000
+    }
+  },
+  {
+    "name": "checkedScope: 전 그룹 무료 → 배송비 null",
+    "ok": true,
+    "detail": {
+      "shipping": null
+    }
+  },
+  {
+    "name": "드림디포 카트 규칙 유지",
+    "ok": true,
+    "detail": {
+      "ruleId": "dreamdepot",
+      "items": [
+        "1x38000",
+        "2x5600",
+        "4x2700"
+      ],
+      "shipping": 3000
+    }
+  },
+  {
+    "name": "드림디포 카트 배송비=3,000",
+    "ok": true,
+    "detail": {
+      "shipping": 3000
+    }
+  },
+  {
+    "name": "다이소 주문서 규칙=daisomall-order",
+    "ok": true,
+    "detail": {
+      "ruleId": "daisomall-order"
+    }
+  },
+  {
+    "name": "다이소 주문서 품목 정답 일치",
+    "ok": true,
+    "detail": {
+      "extracted": [
+        "3x1000",
+        "2x5000"
+      ],
+      "missing": [],
+      "extras": []
+    }
+  },
+  {
+    "name": "다이소 주문서 배송비 정답 일치",
+    "ok": true,
+    "detail": {
+      "extShip": 3000,
+      "ansShip": 3000
+    }
+  },
+  {
+    "name": "알라딘 주문서 규칙=aladin-order",
+    "ok": true,
+    "detail": {
+      "ruleId": "aladin-order"
+    }
+  },
+  {
+    "name": "알라딘 주문서 품목 정답 일치",
+    "ok": true,
+    "detail": {
+      "extracted": [
+        "2x17100",
+        "1x15800"
+      ],
+      "missing": [],
+      "extras": []
+    }
+  },
+  {
+    "name": "알라딘 주문서 배송비 정답 일치",
+    "ok": true,
+    "detail": {
+      "extShip": 0,
+      "ansShip": 0
+    }
+  },
+  {
+    "name": "오피스디포 주문서 규칙=officedepot-order",
+    "ok": true,
+    "detail": {
+      "ruleId": "officedepot-order"
+    }
+  },
+  {
+    "name": "오피스디포 주문서 품목 정답 일치",
+    "ok": true,
+    "detail": {
+      "extracted": [
+        "2x3240",
+        "1x155000"
+      ],
+      "missing": [],
+      "extras": []
+    }
+  },
+  {
+    "name": "오피스디포 주문서 배송비 정답 일치",
+    "ok": true,
+    "detail": {
+      "extShip": 0,
+      "ansShip": 0
+    }
+  }
+]

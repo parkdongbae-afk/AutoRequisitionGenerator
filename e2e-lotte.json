@@ -1,0 +1,132 @@
+{
+  "results": [
+    {
+      "fileName": "장바구니ㅣ롯데마트 제타 온라인 신선 장보기 몰.mhtml",
+      "mall": "롯데마트 제타",
+      "items": 2,
+      "shipping": 3000,
+      "err": null,
+      "specs": [
+        "롯데 쉐푸드 꽈사삭 크리스피 치킨 => 330g",
+        "오늘좋은 미네랄워터 (2L*6입) => 2L"
+      ]
+    }
+  ],
+  "protocolOk": true,
+  "pickerServed": true,
+  "cssPartCheck": [
+    {
+      "idx": 29,
+      "status": 200,
+      "len": 215031,
+      "head": "@charset \"utf-8\"; html { line-height: 1.15; tex"
+    },
+    {
+      "idx": 30,
+      "status": 200,
+      "len": 15393,
+      "head": "@charset \"utf-8\"; @font-face { font-family: Pre"
+    },
+    {
+      "idx": 31,
+      "status": 200,
+      "len": 58592,
+      "head": "@charset \"utf-8\"; .dQLUIa { color: var(--typogr"
+    }
+  ],
+  "shotInfo": {
+    "saved": "..\\e2e-lotte-shot.png",
+    "bytes": 137470,
+    "frameUrls": [
+      "app-mhtml://b2890da0/?picker=0"
+    ],
+    "renderCheck": {
+      "fontFamily": "Pretendard, sans-serif",
+      "horizontalNav": true,
+      "liCount": 73,
+      "sheets": [
+        {
+          "href": "app-mhtml://b2890da0/31",
+          "rules": 524
+        },
+        {
+          "href": "app-mhtml://b2890da0/30",
+          "rules": 6
+        },
+        {
+          "href": "app-mhtml://b2890da0/29",
+          "rules": 1618
+        }
+      ]
+    }
+  },
+  "receiverCheck": {
+    "ping": true,
+    "bookmarkInfo": true,
+    "install": true,
+    "capture": true
+  },
+  "appendRes": {
+    "appended": 2,
+    "totalRows": 2,
+    "sheetName": "품목내역"
+  },
+  "excelOk": true,
+  "shippingAggOk": true,
+  "excelLoadOk": true,
+  "excelReplaceOk": true,
+  "coupangCheckedOk": null,
+  "aggRows": [
+    [
+      "E2E 품목",
+      "",
+      "개",
+      1,
+      1000
+    ],
+    [
+      "배송비",
+      "",
+      "식",
+      3,
+      3000
+    ],
+    [
+      "배송비",
+      "",
+      "식",
+      1,
+      4000
+    ]
+  ],
+  "readBack": [
+    [
+      "E2E 품목",
+      "",
+      "개",
+      2,
+      1570
+    ],
+    [
+      "배송비",
+      "",
+      "식",
+      1,
+      3000
+    ]
+  ],
+  "rendererCheck": {
+    "errs": [],
+    "rootChildren": 1,
+    "hasHeader": true,
+    "footer": "MHTML 2개품목 3건총액 31,960원엑셀 경로 미지정단가0%3%5%7%10%15%20%25%30%50%",
+    "tableCols": 9
+  },
+  "mappingCheck": {
+    "started": true,
+    "waiting": true,
+    "frame": "ok",
+    "rowClick": true,
+    "nameClick": true
+  }
+}

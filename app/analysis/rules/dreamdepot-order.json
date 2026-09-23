@@ -1,0 +1,17 @@
+{
+  "id": "dreamdepot-order",
+  "name": "드림디포 주문서",
+  "match": ["dreamdepot.co.kr/shop/order"],
+  "rowSelector": "tr:has(input.pm_number)",
+  "fields": {
+    "name": { "sel": "td.left a" },
+    "qty": { "sel": "input.pm_number", "attr": "value" },
+    "price": { "sel": "td:nth-of-type(4)", "regex": "([\\d,]+)" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "span.total_delivery_price",
+    "regex": "([\\d,]+)"
+  },
+  "notes": "주문서(shop/order.php) 화면 — 장바구니(dreamdepot 규칙)와 표 구조가 달라 분리. td.left a=상품명(상품코드 제외), td 4번째=단가(6번째는 합계), input.pm_number value=수량. 배송비는 [배송비 합계 : N 원](span.total_delivery_price) 표시값."
+}

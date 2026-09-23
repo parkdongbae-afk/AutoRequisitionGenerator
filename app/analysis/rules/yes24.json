@@ -1,0 +1,17 @@
+{
+  "id": "yes24",
+  "name": "예스24",
+  "match": ["yes24.com"],
+  "rowSelector": "table.tbl_l tbody tr:has(td)",
+  "fields": {
+    "name": { "sel": "a.pd_a" },
+    "qty": { "sel": "td:nth-child(4)", "regex": "(\\d+)" },
+    "price": { "sel": "td:nth-child(5)", "regex": "([\\d,]+)원" }
+  },
+  "shipping": {
+    "mode": "conditional",
+    "fee": 2500,
+    "freeOver": 15000
+  },
+  "notes": "상품테이블 5번째 td = 할인적용 단가(실결제가). 배송비: 도서 1.5만원 이상 무료/미만 2,500원"
+}

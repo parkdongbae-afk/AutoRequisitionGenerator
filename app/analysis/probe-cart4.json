@@ -1,0 +1,49 @@
+{
+  "selectorCounts": {
+    "div[class^=product--]": 3,
+    "div[class*=product--]": 3,
+    "[class^=link_product--]": 3,
+    "[class*=title--]": 24,
+    "input[class^=number--]": 3,
+    "[class^=product_item--]": 3,
+    "[class^=option_area--]": 3,
+    "[class*=store_price--] .price_area--": 6,
+    "em[class^=price--]": 3,
+    "span[class^=price--]": 3
+  },
+  "rows": [
+    {
+      "titleText": "네이버플러스멤버십PreSonus 에리스스피커 3.5 2세대 모니터 화이트 1조 프리소너스 Eris 3.5 GEN2",
+      "linkText": "상품 바로가기",
+      "inputValue": "2",
+      "emPrice": "438,000원",
+      "spanPrice": "219,000원",
+      "optionHtml": "<div class=\"number_price--47644f0428\"><div class=\"btn_area--03407e0f6b\"><div class=\"number_controller--dd204079b9\"><button type=\"button\" class=\"btn_minus--ef1460c19c _nlog_click\" data-shp-page-key=\"100352080\" data-shp-nsc=\"smartstore.cart\" data-shp-inventory=\"gct\" data-shp-area=\"gct.quantityminus\" data-shp-area-type=\"action\" data-shp-area-id=\"quantityminus\" data-nlog-area=\"gct.quantityminus\" data-nlog-params=\"{&quot;area_type&quot;:&quot;action&quot;,&quot;inventory_cd&quot;:&quot;gct&quot;,&quo"
+    },
+    {
+      "titleText": "오늘출발",
+      "linkText": "상품 바로가기",
+      "inputValue": "1",
+      "emPrice": "169,000원",
+      "spanPrice": "169,000원",
+      "optionHtml": "<div class=\"option--3481bc2c90\">화이트</div><div class=\"number_price--47644f0428\"><div class=\"btn_area--03407e0f6b\"><div class=\"number_controller--dd204079b9\"><button type=\"button\" class=\"btn_minus--ef1460c19c _nlog_click\" disabled=\"\" data-shp-page-key=\"100352080\" data-shp-nsc=\"smartstore.cart\" data-shp-inventory=\"gct\" data-shp-area=\"gct.quantityminus\" data-shp-area-type=\"action\" data-shp-area-id=\"quantityminus\" data-nlog-area=\"gct.quantityminus\" data-nlog-params=\"{&quot;area_type&quot;:&quot;actio"
+    },
+    {
+      "titleText": "맞춤제작",
+      "linkText": "상품 바로가기",
+      "inputValue": "8",
+      "emPrice": "41,600원",
+      "spanPrice": "5,200원",
+      "optionHtml": "<div class=\"option--3481bc2c90\">(폭)57cm x (길이)1.0m</div><div class=\"number_price--47644f0428\"><div class=\"btn_area--03407e0f6b\"><div class=\"number_controller--dd204079b9\"><button type=\"button\" class=\"btn_minus--ef1460c19c _nlog_click\" data-shp-page-key=\"100352080\" data-shp-nsc=\"smartstore.cart\" data-shp-inventory=\"gct\" data-shp-area=\"gct.quantityminus\" data-shp-area-type=\"action\" data-shp-area-id=\"quantityminus\" data-nlog-area=\"gct.quantityminus\" data-nlog-params=\"{&quot;area_type&quot;:&quot;ac"
+    }
+  ],
+  "shippingAreas": [
+    "총 배송비무료",
+    "예상 주문금액438,000원상세내용보기",
+    "총 배송비0원",
+    "예상 주문금액0원상세내용보기",
+    "총 배송비0원",
+    "예상 주문금액0원상세내용보기"
+  ],
+  "titleHtml": "<span class=\"ico_npay_plus--3dce4732e2\"><svg xmlns=\"http://www.w3.org/2000/svg\" height=\"15\" viewBox=\"0 0 52 15\" class=\"svg_npay--ebb2d1a020\"><path fill=\"url(#___SVG_ID__1__0___)\" d=\"M0 7.5A7.5 7.5 0 0 1 7.5 0h37a7.5 7.5 0 0 1 0 15h-37A7.5 7.5 0 0 1 0 7.5\"></path><path fill=\"#fff\" fill-rule=\"evenodd\" d=\"M12.073 10.556a5.5 5.5 0 1 0-9.146-6.112 5.5 5.5 0 0 0 9.146 6.112m-3.425-2.69V4.669h1.684v5.664H8.595l-2.243-3.2v3.2H4.668V4.667h1.737zm24.677 4.267L37 3.902l-1.712.002-1.693 3.844-1.871-3.844h-1.737l2.811 5.621-1.168 2.608zm-5.788-1.91h1.623V3.901h-1.623v.454a2.94 2.94 0 0 0-1.819-.596 3.306 3.306 0 0 0 0 6.606 2.94 2.94 0 0 0 1.82-.598v.454Zm-3.397-3.16c0-1.104.772-1.936 1.794-1.936h.01c1.023 0 1.785.834 1.785 1.936s-.772 1.936-1.795 1.936-1.794-.831-1.794-1.936m-7.517-3.161H15v8.231h1.68V9.81a2.93 2.93 0 0 0 1.762.556 3.306 3.306 0 0 0 0-6.606 2.94 2.94 0 0 0-1.819.596zm1.593 5.097c-1."
+}

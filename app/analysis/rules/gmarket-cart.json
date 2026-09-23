@@ -1,0 +1,20 @@
+{
+  "id": "gmarket-cart",
+  "name": "G마켓 장바구니",
+  "match": ["cart.gmarket.co.kr"],
+  "rowSelector": "div.item",
+  "checkedOnly": { "sel": "input.input__checkbox" },
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": "span.item_name" },
+    "qty": { "sel": "input.item_qty_count", "attr": "value" },
+    "price": { "sel": "div.item_price strong.text__value", "regex": "([\\d,]+)" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "div.sub_sec.delivery strong.price",
+    "regex": "([\\d,]+)",
+    "checkedScope": true
+  },
+  "notes": "장바구니(cart.gmarket.co.kr) 화면. V체크된 상품만 추출 — 상품 체크박스(input.input__checkbox, 숫자 id)의 checked 속성이 MHTML 저장 시 보존됨(판매자 그룹 체크박스는 div.item 밖). item_price=상품합계금액(lineTotal→단가=합계÷수량), item_qty_count value=수량. 배송비는 판매자 그룹 footer(div.sub_sec.delivery strong.price)의 표시값 합산(무료배송/0원 제외), checkedScope로 미체크 그룹 제외."
+}

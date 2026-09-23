@@ -1,0 +1,20 @@
+{
+  "id": "st11-cart",
+  "name": "11번가 장바구니",
+  "match": ["11st.co.kr/cart"],
+  "rowSelector": "li[id^=bunchPrdWrap_]",
+  "checkedOnly": { "sel": "input[name=bcktSeq_B_0]" },
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": ".prd_name a" },
+    "qty": { "sel": "button[title=수량변경]", "regex": "(\\d+)" },
+    "price": { "sel": ".total_price .number", "regex": "([\\d,]+)" },
+    "option": { "sel": "li.option" }
+  },
+  "shipping": {
+    "mode": "perItem",
+    "sel": ".c-order-delivery__price .number",
+    "regex": "([\\d,]+)"
+  },
+  "notes": "장바구니(buy.11st.co.kr/cart) 화면. V체크된 상품만 추출 — input[name=bcktSeq_B_0]의 checked 속성이 MHTML 저장 시 보존됨. 할인모음가(.total_price)=합계(lineTotal), 수량변경 버튼 텍스트=수량, 상품별 배송비(.c-order-delivery__price)는 '<상품명> 배송비' 행으로 추가."
+}

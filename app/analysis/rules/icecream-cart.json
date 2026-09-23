@@ -1,0 +1,20 @@
+{
+  "id": "icecream-cart",
+  "name": "아이스크림몰 장바구니",
+  "match": ["i-screammall.co.kr/order/cart", "screammall.co.kr/order/cart"],
+  "rowSelector": "div.flex.items-start:has(input[value=option-one])",
+  "checkedOnly": { "sel": "input[value=option-one]" },
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": "p.body3" },
+    "qty": { "sel": "div.label1 span", "regex": "(\\d+)개" },
+    "price": { "sel": "p.body2", "regex": "([\\d,]+)" },
+    "option": { "sel": "div.label1 span" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "span.text-gray3",
+    "regex": "배송비\\s*([\\d,]+)원"
+  },
+  "notes": "장바구니(i-screammall.co.kr/order/cart) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). p.body2=상품합계(lineTotal→단가=합계÷수량), 옵션 span '별 / 4개'에서 수량 추출, 묶음그룹별 '배송비 N원'(span.text-gray3) 합산. lazy-load 상품명은 '로딩 중'으로 추출되어 수동 수정 필요."
+}

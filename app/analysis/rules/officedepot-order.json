@@ -1,0 +1,18 @@
+{
+  "id": "officedepot-order",
+  "name": "오피스디포 주문서",
+  "match": ["officedepot.co.kr/order"],
+  "rowSelector": "tr:has(td.qt)",
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": "td.info", "regex": "^\\(\\d+\\)\\s*(.*)$" },
+    "qty": { "sel": "td.qt" },
+    "price": { "sel": "td.bm", "match": "last", "regex": "([\\d,]+)" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "li.pay_ship",
+    "regex": "배송비\\s*([\\d,]+)\\s*원"
+  },
+  "notes": "주문서(order/orderList.do) 화면 — 장바구니(myCart.do)와 분리. td.info '(품목코드)상품명'에서 코드 제거, td.qt=수량, 마지막 td.bm=합계금액(lineTotal→단가=합계÷수량, '정가 할인가'가 함께 있는 첫 td.bm 대신). 배송비는 ul.lastAmount의 pay_ship '배송비 N원'(업체별도배송 0원 → 행 없음)."
+}

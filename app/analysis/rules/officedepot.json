@@ -1,0 +1,14 @@
+{
+  "id": "officedepot",
+  "name": "오피스디포",
+  "match": ["officedepot.co.kr"],
+  "rowSelector": "tr:has(input.itemId)",
+  "checkedOnly": { "sel": "input.itemId" },
+  "fields": {
+    "name": { "sel": "p.name a" },
+    "qty": { "sel": "input.itemCount", "attr": "value" },
+    "price": { "sel": "span.price:not(.rowPrice)", "regex": "([\\d,]+)" }
+  },
+  "shipping": { "mode": "none" },
+  "notes": "장바구니(officedepot.co.kr/cart/myCart.do) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). 첫 span.price=판매가(단가), input.itemCount value=수량. 업체별도배송 상품이라 배송비 추출 없음."
+}

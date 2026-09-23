@@ -1,0 +1,254 @@
+[
+  {
+    "id": "cart_01",
+    "mall": "교보문고 장바구니",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 8,
+      "extracted": [
+        "1x16000",
+        "1x18000",
+        "1x20000",
+        "1x22500",
+        "2x11700"
+      ],
+      "expected": [
+        "1x16000",
+        "1x18000",
+        "1x20000",
+        "1x22500",
+        "2x11700"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "checkedFallback": false
+    }
+  },
+  {
+    "id": "cart_02",
+    "mall": "알라딘",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 3,
+      "extracted": [
+        "1x15800",
+        "2x17100"
+      ],
+      "expected": [
+        "1x15800",
+        "2x17100"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "checkedFallback": false
+    }
+  },
+  {
+    "id": "cart_03",
+    "mall": "네이버 장바구니 (스탬프 불필요 — aria-checked)",
+    "pass": true,
+    "detail": {
+      "skipped": true
+    }
+  },
+  {
+    "id": "cart_04",
+    "mall": "쿠팡",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 7,
+      "extracted": [
+        "1x18890",
+        "1x2310",
+        "1x4330",
+        "1x6500",
+        "2x10360"
+      ],
+      "expected": [
+        "1x18900",
+        "1x2310",
+        "1x4330",
+        "1x6500",
+        "2x10360"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "checkedFallback": false
+    }
+  },
+  {
+    "id": "cart_05",
+    "mall": "G마켓 장바구니",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 3,
+      "extracted": [
+        "2x21900",
+        "2x36350"
+      ],
+      "expected": [
+        "2x21900",
+        "2x36350"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "checkedFallback": false
+    }
+  },
+  {
+    "id": "cart_06",
+    "mall": "드림디포",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 3,
+      "extracted": [
+        "1x38000",
+        "2x5600"
+      ],
+      "expected": [
+        "1x38000",
+        "2x5600"
+      ],
+      "shipping": 3000,
+      "ansShipping": 3000,
+      "checkedFallback": false
+    }
+  },
+  {
+    "id": "cart_07",
+    "mall": "아이스크림몰 장바구니",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 4,
+      "extracted": [
+        "1x4500",
+        "3x12600",
+        "4x2500"
+      ],
+      "expected": [
+        "1x4500",
+        "3x12600",
+        "4x2500"
+      ],
+      "shipping": 6000,
+      "ansShipping": 6000,
+      "checkedFallback": false
+    }
+  },
+  {
+    "id": "cart_08",
+    "mall": "오피스디포",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 4,
+      "extracted": [
+        "1x155000",
+        "2x2900",
+        "2x3240"
+      ],
+      "expected": [
+        "1x155000",
+        "2x2900",
+        "2x3240"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "checkedFallback": false
+    }
+  },
+  {
+    "id": "cart_09",
+    "mall": "옥션 장바구니",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 4,
+      "extracted": [
+        "1x63600",
+        "3x6780"
+      ],
+      "expected": [
+        "1x63600",
+        "3x6780"
+      ],
+      "shipping": 2700,
+      "ansShipping": 2700,
+      "checkedFallback": false
+    }
+  },
+  {
+    "id": "cart_10",
+    "mall": "11번가 장바구니",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 3,
+      "extracted": [
+        "10x1060",
+        "2x17900"
+      ],
+      "expected": [
+        "10x1060",
+        "2x17900"
+      ],
+      "shipping": 6500,
+      "ansShipping": 6500,
+      "checkedFallback": false
+    }
+  },
+  {
+    "id": "cart_11",
+    "mall": "알파몰 장바구니",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 4,
+      "extracted": [
+        "1x11000",
+        "3x2800"
+      ],
+      "expected": [
+        "1x11000",
+        "3x2800"
+      ],
+      "shipping": 3000,
+      "ansShipping": 3000,
+      "checkedFallback": false
+    }
+  },
+  {
+    "id": "cart_12",
+    "mall": "예스24 장바구니",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 3,
+      "extracted": [
+        "1x19800",
+        "1x5400"
+      ],
+      "expected": [
+        "1x19800",
+        "1x5400"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "checkedFallback": false
+    }
+  },
+  {
+    "id": "cart_13",
+    "mall": "다이소몰",
+    "pass": true,
+    "detail": {
+      "stampedBoxes": 3,
+      "extracted": [
+        "2x5000",
+        "3x1000"
+      ],
+      "expected": [
+        "2x5000",
+        "3x1000"
+      ],
+      "shipping": 3000,
+      "ansShipping": 3000,
+      "checkedFallback": false
+    }
+  }
+]

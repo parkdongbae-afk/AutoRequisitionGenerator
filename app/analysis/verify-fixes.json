@@ -1,0 +1,149 @@
+{
+  "cases": [
+    {
+      "case": "A_euckr_bytes_euckr_meta",
+      "ok": true
+    },
+    {
+      "case": "B_utf8_bytes_euckr_meta(stale)",
+      "ok": true
+    },
+    {
+      "case": "C1_euckr_deepmeta",
+      "ok": true
+    },
+    {
+      "case": "C2_utf8_deepmeta",
+      "ok": true
+    },
+    {
+      "case": "D_utf16le_bom",
+      "ok": true
+    },
+    {
+      "case": "E_mhtml_euckr_qp",
+      "ok": true,
+      "location": "https://example.co.kr/cart"
+    },
+    {
+      "case": "F_mhtml_mislabeled_utf8",
+      "ok": true
+    }
+  ],
+  "cart": {
+    "itemCount": 3,
+    "shippingFee": 0,
+    "items": [
+      {
+        "name": "PreSonus 에리스스피커 3.5 2세대 모니터 화이트 1조 프리소너스",
+        "qty": 2,
+        "unit": 219000,
+        "option": ""
+      },
+      {
+        "name": "에디파이어 MR4 MKII EDIFIER 블루투스 스튜디오 모니터 스피커",
+        "qty": 1,
+        "unit": 169000,
+        "option": "화이트"
+      },
+      {
+        "name": "DTF 출력 대행 티셔츠 커스텀 프린팅 DIY 인쇄 열전사 필름 폭 57",
+        "qty": 8,
+        "unit": 5200,
+        "option": "(폭)57cm x (길이)1.0m"
+      }
+    ]
+  },
+  "regress": [
+    {
+      "fileName": "G마켓 - 주문서.mhtml",
+      "rule": "gmarket",
+      "bad": 0,
+      "hangul": 3579
+    },
+    {
+      "fileName": "G마켓 - 주문서1.mhtml",
+      "rule": "gmarket",
+      "bad": 0,
+      "hangul": 3024
+    },
+    {
+      "fileName": "교보문고.mhtml",
+      "rule": "kyobo",
+      "bad": 0,
+      "hangul": 38024
+    },
+    {
+      "fileName": "네이버-주문_결제.mhtml",
+      "rule": "naver",
+      "bad": 0,
+      "hangul": 664
+    },
+    {
+      "fileName": "드림디포 쇼핑몰 _ 사는 곳은 달라도 문구는",
+      "rule": "dreamdepot",
+      "bad": 0,
+      "hangul": 9741
+    },
+    {
+      "fileName": "아이스크림 _ 아이스크림몰.mhtml",
+      "rule": "icecreammall",
+      "bad": 0,
+      "hangul": 1474
+    },
+    {
+      "fileName": "알파몰-배송지선택.mhtml",
+      "rule": "alphamall",
+      "bad": 0,
+      "hangul": 11043
+    },
+    {
+      "fileName": "장바구니.mhtml",
+      "rule": "naver-cart",
+      "bad": 0,
+      "hangul": 1810
+    },
+    {
+      "fileName": "주문_결제 - 11번가.mhtml",
+      "rule": "11st",
+      "bad": 0,
+      "hangul": 19249
+    },
+    {
+      "fileName": "주문_결제 - 예스24.mhtml",
+      "rule": "yes24",
+      "bad": 9,
+      "hangul": 20247
+    },
+    {
+      "fileName": "new/___ ic114.com- 국내최대전",
+      "rule": "ic114",
+      "bad": 0,
+      "hangul": 1873
+    },
+    {
+      "fileName": "new/결제 - 전자부품 쇼핑의 기준_엘레파",
+      "rule": "eleparts",
+      "bad": 0,
+      "hangul": 4482
+    },
+    {
+      "fileName": "new/옥션 - 주문서.mhtml",
+      "rule": "auction",
+      "bad": 9,
+      "hangul": 6825
+    },
+    {
+      "fileName": "new/쿠팡! _ 장바구니.mhtml",
+      "rule": "coupang",
+      "bad": 0,
+      "hangul": 4107
+    },
+    {
+      "fileName": "new/티처몰 _ 학급경영의 필수 파트너.m",
+      "rule": "teachermall",
+      "bad": 0,
+      "hangul": 8696
+    }
+  ]
+}

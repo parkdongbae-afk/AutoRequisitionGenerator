@@ -1,0 +1,30 @@
+{
+  "items": [
+    {
+      "name": "모조색종이 100매",
+      "qty": 3,
+      "unit": 3000,
+      "rounded": 3000
+    },
+    {
+      "name": "물풀 500g",
+      "qty": 2,
+      "unit": 2000,
+      "rounded": 2000
+    },
+    {
+      "name": "안전가위 (학생용)",
+      "qty": 1,
+      "unit": 2500,
+      "rounded": 2500
+    }
+  ],
+  "shipping": 2500,
+  "check": {
+    "three": true,
+    "paper": true,
+    "glue": true,
+    "scissors": true,
+    "shipping": true
+  }
+}

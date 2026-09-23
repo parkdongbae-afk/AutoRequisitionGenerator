@@ -1,0 +1,18 @@
+{
+  "id": "auction",
+  "name": "옥션",
+  "match": ["auction.co.kr"],
+  "rowSelector": "tr.box__goods",
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": "span.text__goods-title" },
+    "qty": { "sel": "span.text__count", "regex": "(\\d+)개" },
+    "price": { "sel": "td.list__cut-price", "regex": "([\\d,]+)" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "li.benefit_item:contains('배송비')",
+    "regex": "([\\d,]+)원"
+  },
+  "notes": "주문서(checkout) 화면. 쿠폰 적용가 td.list__cut-price 기준(쿠폰 없으면 원가). 배송비 benefit_item 첫 금액"
+}

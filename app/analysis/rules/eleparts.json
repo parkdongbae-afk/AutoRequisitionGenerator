@@ -1,0 +1,18 @@
+{
+  "id": "eleparts",
+  "name": "엘레파츠",
+  "match": ["eleparts.co.kr"],
+  "rowSelector": "div.cart_list table tbody tr",
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": "ul.goodsList li.title a" },
+    "qty": { "sel": "td.sendDate", "regex": "(\\d+)" },
+    "price": { "sel": "span.price", "regex": "([\\d,]+)" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "div[id^=price_delivery]",
+    "regex": "([\\d,]+)"
+  },
+  "notes": "결제(settle) 화면. 주문금액(VAT포함)을 수량으로 나눠 단가 환산. 배송그룹별 price_delivery 합산"
+}

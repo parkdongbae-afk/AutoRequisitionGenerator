@@ -1,0 +1,159 @@
+[
+  {
+    "browser": "chrome",
+    "profile": "Default",
+    "captureBookmarks": 2,
+    "detail": [
+      {
+        "name": "물품 품의 메이커",
+        "port": null,
+        "js": false,
+        "where": "bookmark_bar > 북마크바 > 수업",
+        "guid": "cac7e157-f193-4ddb-a30b-e6b05b1daf2e",
+        "id": "2291"
+      },
+      {
+        "name": "HP15-cs1047TX 제품의 HDD 1TB 업그레이드가 가능한가요? - HP 지식 커뮤니티 - 91903",
+        "port": null,
+        "js": false,
+        "where": "bookmark_bar > 북마크바 > 수업",
+        "guid": "3c291677-f5f8-48f6-8aaa-da2bbd9f032c",
+        "id": "879"
+      }
+    ]
+  },
+  {
+    "browser": "chrome",
+    "profile": "Guest Profile",
+    "captureBookmarks": 1,
+    "detail": [
+      {
+        "name": "🛒품의캡처",
+        "port": "57330",
+        "js": true,
+        "where": "bookmark_bar > 북마크바",
+        "guid": "6634f9e6-4cb0-4e63-ac45-ea0a55031470",
+        "id": "4"
+      }
+    ]
+  },
+  {
+    "browser": "chrome",
+    "profile": "Profile 1",
+    "captureBookmarks": 3,
+    "detail": [
+      {
+        "name": "🛒품의캡처",
+        "port": "57330",
+        "js": true,
+        "where": "bookmark_bar > 북마크바",
+        "guid": "f1123a76-e975-423f-9e4c-23a22312236d",
+        "id": "446"
+      },
+      {
+        "name": "HP15-cs1047TX 제품의 HDD 1TB 업그레이드가 가능한가요? - HP 지식 커뮤니티 - 91903",
+        "port": null,
+        "js": false,
+        "where": "bookmark_bar > 북마크바 > 학교",
+        "guid": "3c291677-f5f8-48f6-8aaa-da2bbd9f032c",
+        "id": "301"
+      },
+      {
+        "name": "🛒품의캡처",
+        "port": "57330",
+        "js": true,
+        "where": "bookmark_bar > 북마크바",
+        "guid": "a4f4390b-f379-46b5-862a-31f1f74231e5",
+        "id": "445"
+      }
+    ]
+  },
+  {
+    "browser": "chrome",
+    "profile": "Profile 2",
+    "captureBookmarks": 1,
+    "detail": [
+      {
+        "name": "🛒품의캡처",
+        "port": "57330",
+        "js": true,
+        "where": "bookmark_bar > 북마크바",
+        "guid": "c4cc9ba7-f9c1-436b-9b17-7b3c2c9d41fb",
+        "id": "4"
+      }
+    ]
+  },
+  {
+    "browser": "chrome",
+    "profile": "Profile 3",
+    "captureBookmarks": 2,
+    "detail": [
+      {
+        "name": "🛒품의캡처",
+        "port": "57330",
+        "js": true,
+        "where": "bookmark_bar > 북마크바",
+        "guid": "de362790-3b6f-4017-be42-63bfb8cae135",
+        "id": "5"
+      },
+      {
+        "name": "🛒품의캡처",
+        "port": "57330",
+        "js": true,
+        "where": "bookmark_bar > 북마크바",
+        "guid": "7dc31322-d5f9-418a-913e-c660f70cf528",
+        "id": "4"
+      }
+    ]
+  },
+  {
+    "browser": "chrome",
+    "profile": "Profile 5",
+    "captureBookmarks": 1,
+    "detail": [
+      {
+        "name": "🛒품의캡처",
+        "port": "57330",
+        "js": true,
+        "where": "bookmark_bar > 북마크바",
+        "guid": "deee2886-6836-4720-9220-31591ef4a64d",
+        "id": "11"
+      }
+    ]
+  },
+  {
+    "browser": "edge",
+    "profile": "Default",
+    "captureBookmarks": 3,
+    "detail": [
+      {
+        "name": "🛒품의캡처",
+        "port": "57330",
+        "js": true,
+        "where": "bookmark_bar > 즐겨찾기 모음",
+        "guid": "890eb4db-7a72-4cdd-aeab-9571c3a1adf9",
+        "id": "1837"
+      },
+      {
+        "name": "HP15-cs1047TX 제품의 HDD 1TB 업그레이드가 가능한가요? - HP 지식 커뮤니티 - 91903",
+        "port": null,
+        "js": false,
+        "where": "bookmark_bar > 즐겨찾기 모음 > 수업",
+        "guid": "c88009d0-7fe9-45f8-9195-a437f1cda34c",
+        "id": "787"
+      },
+      {
+        "name": "HP15-cs1047TX 제품의 HDD 1TB 업그레이드가 가능한가요? - HP 지식 커뮤니티 - 91903",
+        "port": null,
+        "js": false,
+        "where": "bookmark_bar > 즐겨찾기 모음",
+        "guid": "d7cae356-2d30-441c-bce8-daedbf1e6939",
+        "id": "1734"
+      }
+    ]
+  },
+  {
+    "browser": "whale",
+    "installed": false
+  }
+]

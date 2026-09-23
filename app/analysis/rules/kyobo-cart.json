@@ -1,0 +1,14 @@
+{
+  "id": "kyobo-cart",
+  "name": "교보문고 장바구니",
+  "match": ["order.kyobobook.co.kr/cart"],
+  "rowSelector": "tr:has(input[name=chkList])",
+  "checkedOnly": { "sel": "input[name=chkList]" },
+  "fields": {
+    "name": { "sel": "span.prod_name" },
+    "qty": { "sel": "input.form_spinner", "attr": "value" },
+    "price": { "sel": ".prod_price span.price .val", "regex": "([\\d,]+)" }
+  },
+  "shipping": { "mode": "none" },
+  "notes": "장바구니(order.kyobobook.co.kr/cart) 화면. V체크된 상품만 추출 — 체크박스 input[name=chkList]의 checked 속성이 MHTML 저장 시 보존됨. prod_price의 판매가=단가, 수량은 spinner input의 value 속성."
+}

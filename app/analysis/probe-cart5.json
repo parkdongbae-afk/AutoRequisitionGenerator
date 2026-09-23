@@ -1,0 +1,45 @@
+{
+  "infoArea2": "<div class=\"title--32bbf60a02\"><span class=\"ico_npay_plus--3dce4732e2\">[SVG]<span class=\"blind\">네이버플러스멤버십</span></span>에디파이어 MR4 MKII EDIFIER 블루투스 스튜디오 모니터 스피커</div><div class=\"price_area--ee2ccbc03d\"><span class=\"rate--5b676678af\">32%</span><span class=\"price--68b74054d9\"><span class=\"num--5da48c6ad9\">169,000</span>원</span><del>249,000원</del></div><div class=\"label_area--1d0629cf00\"><span class=\"label--10f9e79a12\">선물가능상품</span></div>",
+  "titleFull2": "오늘출발",
+  "titleFull3": "맞춤제작",
+  "titleChildren1": [
+    {
+      "kind": "el",
+      "tag": "span",
+      "cls": "ico_npay_plus--3dce4732e2",
+      "val": "네이버플러스멤버십"
+    },
+    {
+      "kind": "text",
+      "val": "PreSonus 에리스스피커 3.5 2세대 모니터 화이트 1조 프리소너스"
+    }
+  ],
+  "allTitlePerProduct": [
+    [
+      {
+        "cls": "title--32bbf60a02",
+        "txt": "네이버플러스멤버십PreSonus 에리스스피커 3.5 2세대 모니터 화이트 1조 프리소너스 "
+      }
+    ],
+    [
+      {
+        "cls": "title--8362aa23dc",
+        "txt": "오늘출발"
+      },
+      {
+        "cls": "title--32bbf60a02",
+        "txt": "네이버플러스멤버십에디파이어 MR4 MKII EDIFIER 블루투스 스튜디오 모니터 스피커"
+      }
+    ],
+    [
+      {
+        "cls": "title--b470b69474",
+        "txt": "맞춤제작"
+      },
+      {
+        "cls": "title--32bbf60a02",
+        "txt": "네이버플러스멤버십DTF 출력 대행 티셔츠 커스텀 프린팅 DIY 인쇄 열전사 필름 폭 57c"
+      }
+    ]
+  ]
+}

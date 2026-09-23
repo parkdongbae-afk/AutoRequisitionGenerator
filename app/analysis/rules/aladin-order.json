@@ -1,0 +1,13 @@
+{
+  "id": "aladin-order",
+  "name": "알라딘 주문서",
+  "match": ["aladin.co.kr/order/worder"],
+  "rowSelector": "tr:has(a[href*='wproduct.aspx'])",
+  "fields": {
+    "name": { "sel": "td:nth-of-type(2) a[href*='wproduct.aspx']" },
+    "qty": { "sel": "td:nth-of-type(4)" },
+    "price": { "sel": "td:nth-of-type(3)", "regex": "([1-9][\\d,]*)원" }
+  },
+  "shipping": { "mode": "none" },
+  "notes": "주문서(order/worder_step1.aspx) 화면 — 장바구니(wbasket)와 분리. 상품명 td의 첫 wproduct.aspx 링크=제목, 3번째 td '17,100원 / 950원'의 첫 값=단가, 4번째 td=수량. 사은품/마일리지 프로모션 행(가격 0원)은 price 정규식([1-9] 시작)으로 제외. 배송비는 이 단계에 표시되지 않아 추출 없음(다음 단계에서 반영된다는 안내 문구)."
+}

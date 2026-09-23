@@ -1,0 +1,10 @@
+{
+  "aladin": {
+    "prodHtml": "<tr><td height=\"28\" align=\"center\" bgcolor=\"#FFFFFF\"><img src=\"https://www.aladin.co.kr/ucl_editor/img_secur/order/thanks_b.gif\"></td><td bgcolor=\"#FFFFFF\" style=\"padding-left:8px\"><a href=\"https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=399289554\" target=\"_blank\">노화는 어디까지 늦출 수 있는가</a> - 오토파지부터 NMN까지, 과학이 밝혀낸 늙지 않는 시대의 비밀 <a href=\"http://www.aladin.co.kr/events/wevent.aspx?EventId=179240\" target=\"_blank\"><span class=\"label_deduct\">소득공제</span></a></td><td align=\"center\" bgcolor=\"#FFFFFF\">17,100원 / 950원</td><td align=\"center\" bgcolor=\"#FFFFFF\">2</td></tr>",
+    "junkHtml": "<tr><td height=\"28\" align=\"center\" bgcolor=\"#FFFFFF\"><img src=\"https://www.aladin.co.kr/ucl_editor/img_secur/order/gift_b.gif\"></td><td bgcolor=\"#FFFFFF\" style=\"padding-left:8px\"><a href=\"https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=8221225\" target=\"_blank\">5만원 이상 주문시 추가 2천 마일리지</a></td><td align=\"center\" bgcolor=\"#FFFFFF\">0원 / 0원</td><td align=\"center\" bgcolor=\"#FFFFFF\">1</td></tr>",
+    "tableChain": "Table15||"
+  },
+  "daiso": {
+    "rows": []
+  }
+}

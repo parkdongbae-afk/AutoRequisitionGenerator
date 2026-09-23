@@ -1,0 +1,19 @@
+{
+  "id": "daisomall",
+  "name": "다이소몰",
+  "match": ["daisomall.co.kr"],
+  "rowSelector": "div.goods-unit",
+  "checkedOnly": { "sel": "input.el-checkbox__original", "legacySel": "label.el-checkbox.is-checked" },
+  "priceIs": "lineTotal",
+  "qtyFromUnit": "div.goods-inner.price span.value",
+  "fields": {
+    "name": { "sel": "a.ellipsis1" },
+    "price": { "sel": "div.goods-inner.total span.value", "regex": "([\\d,]+)" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "li:contains('배송비')",
+    "regex": "배송비:\\s*([\\d,]+)원"
+  },
+  "notes": "장바구니(daisomall.co.kr/or/orc) 화면. V체크된 상품만 추출 — Vue 카트라 input에 checked 속성이 없지만 label.el-checkbox의 is-checked 클래스가 MHTML 저장 시 보존됨. 수량 input에 value 속성이 없어 qtyFromUnit(합계금액÷단가)으로 계산. 합계(span.value)=lineTotal, '배송비: N원 (3만원 이상 무료)' 안내 문구에서 배송비 추출."
+}

@@ -1,0 +1,69 @@
+{
+  "name": "auto-requisition-generator",
+  "productName": "자동 품의 요구 생성기",
+  "version": "1.0.0",
+  "description": "쇼핑몰 장바구니 MHTML에서 품목을 추출하여 품의 서식 엑셀에 자동 기입하는 데스크톱 앱",
+  "main": "./out/main/index.js",
+  "author": "dongbae",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "start": "electron-vite preview",
+    "e2e": "electron-vite build && electron out/main/index.js",
+    "dist": "electron-vite build && electron-builder --win portable",
+    "dist:all": "electron-vite build && electron-builder --win portable nsis"
+  },
+  "build": {
+    "appId": "com.dongbae.autorequisition",
+    "productName": "자동 품의 요구 생성기",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**"
+    ],
+    "extraResources": [
+      {
+        "from": "extension",
+        "to": "extension"
+      },
+      {
+        "from": "resources",
+        "to": "resources"
+      }
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "artifactName": "AutoRequisitionGenerator-Portable.${ext}"
+    },
+    "portable": {
+      "artifactName": "AutoRequisitionGenerator-Portable.${ext}"
+    }
+  },
+  "dependencies": {
+    "cheerio": "1.0.0",
+    "iconv-lite": "^0.7.3",
+    "xlsx": "0.18.5",
+    "zustand": "5.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.4",
+    "@vitejs/plugin-react": "4.4.1",
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8",
+    "electron-vite": "2.3.0",
+    "pdfkit": "^0.20.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tailwindcss": "4.1.4",
+    "vite": "5.4.11"
+  },
+  "allowScripts": {
+    "electron@33.2.1": true,
+    "esbuild@0.21.5": true
+  }
+}

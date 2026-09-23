@@ -1,0 +1,14 @@
+{
+  "id": "aladin",
+  "name": "알라딘",
+  "match": ["aladin.co.kr"],
+  "rowSelector": "tr[id^=CartTr_]",
+  "checkedOnly": { "sel": "input.ShopCode_Basket_Check" },
+  "fields": {
+    "name": { "sel": "span.basket_tit" },
+    "qty": { "sel": "input.input1", "attr": "value" },
+    "price": { "sel": "span.p1", "regex": "([\\d,]+)" }
+  },
+  "shipping": { "mode": "none" },
+  "notes": "장바구니(wbasket.aspx) 화면. V체크된 상품만 추출 — input[name^=chkCart]의 checked 속성이 MHTML 저장 시 보존됨. span.basket_tit=상품명(부제 포함), span.p1=판매가(단가), input.input1 value=수량."
+}

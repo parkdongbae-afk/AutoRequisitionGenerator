@@ -1,0 +1,21 @@
+# 의존성 / 빌드 산출물
+node_modules/
+out/
+release/
+dist/
+
+# 도구 상태
+.codegraph/
+.omo/
+
+# 대용량 배포 바이너리
+*.exe
+*.zip
+
+# 대용량 캡처 테스트 자료 (제외 결정)
+shoping_cart/
+장바구니_html/
+test_OK/
+
+# 임시 파일
+.git-commit-msg.txt

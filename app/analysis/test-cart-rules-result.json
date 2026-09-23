@@ -1,0 +1,229 @@
+[
+  {
+    "id": "cart_01",
+    "mall": "교보문고 장바구니 (kyobo-cart)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "1x16000 [국내도서] 중학 역사2 자습서",
+        "2x11700 [국내도서] New 똑똑한 하루 독해 4단계 4A(3~4학년)",
+        "1x18000 [국내도서] 디자인 구구단",
+        "1x22500 [국내도서] 실전 ComfyUI",
+        "1x20000 [국내도서] CODAP으로 통계 수업 디자인하기",
+        "1x32400 [국내도서] AI 인공지능 페인팅"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "missing": [],
+      "extras": []
+    }
+  },
+  {
+    "id": "cart_02",
+    "mall": "알라딘 (aladin)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "2x17100 [국내도서] 노화는 어디까지 늦출 수 있는가 - 오토파지부터 ",
+        "1x15800 [알라딘굿즈] 미니 무선 클립 독서등 - 화이트"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "missing": [],
+      "extras": []
+    }
+  },
+  {
+    "id": "cart_03",
+    "mall": "네이버 장바구니 (naver-cart)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "1x249000 에디파이어 M90 EDIFIER 블루투스 멀티미디어 스피커",
+        "2x219000 PreSonus 에리스스피커 3.5 2세대 모니터 화이트 1조"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "missing": [],
+      "extras": []
+    }
+  },
+  {
+    "id": "cart_04",
+    "mall": "쿠팡 (coupang)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "1x18890 아모스 딱풀 35g 6개입",
+        "2x10360 ESP32-S3 듀얼 Type-C 개발 보드 코어 보드 온보드",
+        "1x2310 리튬폴리머배터리3.7V 60mAh",
+        "1x6500 I2C 멀티플렉서 8채널 확장 보드 PCA9548",
+        "1x4330 모닝글로리 3000 오피스 연필 B"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "missing": [],
+      "extras": []
+    }
+  },
+  {
+    "id": "cart_05",
+    "mall": "G마켓 장바구니 (gmarket-cart)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "2x21900 (타임딜)삼다수 2L 24펫 (유라벨/무라벨 랜덤발송)",
+        "1x69900 (신선집중) 농협안심한우 1등급 한우모듬채반 1kg",
+        "2x36350 (신선집중) 5-6미 활전복 1kg 특특대 기삼산지직송 신선특"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "missing": [],
+      "extras": []
+    }
+  },
+  {
+    "id": "cart_06",
+    "mall": "드림디포 (dreamdepot)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "1x38000 [무아스] 투명 와이드 접이식 프리미엄 독서대",
+        "4x2700 [3M] 스카치 포장용테이프 48mmx50M (PK65/투명)",
+        "2x5600 [바이하츠] 점보실버크립 JCC (1통=약 230~250개입)"
+      ],
+      "shipping": 3000,
+      "ansShipping": 3000,
+      "missing": [],
+      "extras": [
+        "4x2700 [3M] 스카치 포장용테이프 48mmx50M (PK65"
+      ]
+    }
+  },
+  {
+    "id": "cart_07",
+    "mall": "아이스크림몰 장바구니 (icecream-cart)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "4x2500 LED 크리스마스 조명등 만들기(2종 택1)",
+        "1x52500 펠트지-유수지(35색 세트/택 1)",
+        "3x12600 로딩 중",
+        "1x4500 판타지 유니콘 목걸이 팔찌 만들기 DS1111"
+      ],
+      "shipping": 6000,
+      "ansShipping": 6000,
+      "missing": [],
+      "extras": [
+        "1x52500 펠트지-유수지(35색 세트/택 1)"
+      ]
+    }
+  },
+  {
+    "id": "cart_08",
+    "mall": "오피스디포 (officedepot)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "1x155000 [업체별도배송]무선 키보드(MX KEYS MINI/페일그레이/",
+        "2x7000 점보크립(JCC/오피스디포)",
+        "2x3240 포스트-잇 플래그(필름) 683-9KN (9색/3M)",
+        "2x2900 PLUS수정테이프(WH-605/5*6)"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "missing": [],
+      "extras": [
+        "2x7000 점보크립(JCC/오피스디포)"
+      ]
+    }
+  },
+  {
+    "id": "cart_09",
+    "mall": "옥션 장바구니 (auction-cart)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "3x6780 마이크로비트 전용 확장 똑닥이 연결핀 점퍼 홀더",
+        "1x85800 HUSKYLENS허스키렌즈 머신러닝적용 인공지능 비전센서",
+        "1x3250 농심 닭다리너겟 130g",
+        "1x63600 자일렉 오븐형 에어프라이어 18L ZL-2514AF 누적판매 "
+      ],
+      "shipping": 2700,
+      "ansShipping": 2700,
+      "missing": [],
+      "extras": [
+        "1x85800 HUSKYLENS허스키렌즈 머신러닝적용 인공지능 비전센",
+        "1x3250 농심 닭다리너겟 130g"
+      ]
+    }
+  },
+  {
+    "id": "cart_10",
+    "mall": "11번가 장바구니 (st11-cart)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "2x17900 대동소방 ABC분말소화기 국산 가정용 업소용 3.3KG",
+        "10x1060 단추 비닐 서류봉투 A4"
+      ],
+      "shipping": 6500,
+      "ansShipping": 6500,
+      "missing": [],
+      "extras": []
+    }
+  },
+  {
+    "id": "cart_11",
+    "mall": "알파몰 장바구니 (alphamall-cart)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "1x11000 [프랑스 마패드] 컬러펩스 젤크레용/836310 (10색)",
+        "1x6800 [모나미] 모니주 크레파스 36색 (파랑)",
+        "3x2800 [오공] 접착오피스세트2/다용도접착제,목공용원더풀 40g/30",
+        "13x60000 [초월홍삼] 녹용발효홍삼 진 30포 1개월분 녹용 홍삼 쇼핑백"
+      ],
+      "shipping": 3000,
+      "ansShipping": 3000,
+      "missing": [],
+      "extras": [
+        "1x6800 [모나미] 모니주 크레파스 36색 (파랑)",
+        "13x60000 [초월홍삼] 녹용발효홍삼 진 30포 1개월분 녹용 홍삼"
+      ]
+    }
+  },
+  {
+    "id": "cart_12",
+    "mall": "예스24 장바구니 (yes24-cart)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "1x19800 [도서] 환율의 온도",
+        "1x24300 [도서] 오디세이아",
+        "1x5400 [도서] 교양 브런치"
+      ],
+      "shipping": 0,
+      "ansShipping": 0,
+      "missing": [],
+      "extras": [
+        "1x24300 [도서] 오디세이아"
+      ]
+    }
+  },
+  {
+    "id": "cart_13",
+    "mall": "다이소몰 (daisomall)",
+    "pass": true,
+    "detail": {
+      "items": [
+        "3x1000 [2차 입고] 호빵앤양갱 에폭시 스티커",
+        "2x5000 [공용] 소프트 스판 사계절 파자마 상의 XL 카키"
+      ],
+      "shipping": 3000,
+      "ansShipping": 3000,
+      "missing": [],
+      "extras": []
+    }
+  }
+]

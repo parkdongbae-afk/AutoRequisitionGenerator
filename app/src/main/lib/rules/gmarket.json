@@ -1,0 +1,19 @@
+{
+  "id": "gmarket",
+  "name": "G마켓",
+  "match": ["gmarket.co.kr"],
+  "rowSelector": "div.box__goods-info.product__list",
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": ".text__item-name" },
+    "qty": { "sel": ".box__sum .text__sum--number", "regex": "(\\d+)개" },
+    "price": { "sel": ".box__couponwrap strong.text__value", "match": "last" },
+    "option": { "sel": ".box__option" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "li.benefit_item:contains('배송비')",
+    "regex": "([\\d,]+)원"
+  },
+  "notes": "판매자 그룹 li 안에 상품이 여러 개 담기는 구조 - 상품 컨테이너 div.box__goods-info 기준으로 추출(2026-09-13 수정). 상품금액은 box__couponwrap strong 첫 번째 값"
+}

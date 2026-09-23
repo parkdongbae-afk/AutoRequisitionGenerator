@@ -1,0 +1,723 @@
+{
+  "gmarketCart": {
+    "url": "https://cart.gmarket.co.kr/ko/pc/cart/?spm=gmktpc.myaccount.0.0.250c24219PQpaA#/",
+    "ruleId": "gmarket-cart",
+    "extracted": [
+      "2x21900 (타임딜)삼다수 2L 24펫 (유라벨/무라벨 랜덤발송)",
+      "1x69900 (신선집중) 농협안심한우 1등급 한우모듬채반 1kg",
+      "2x36350 (신선집중) 5-6미 활전복 1kg 특특대 기삼산지직송"
+    ],
+    "shipping": null,
+    "answer": [
+      {
+        "name": "삼다수",
+        "qty": 2,
+        "price": 21900
+      },
+      {
+        "name": "활전복",
+        "qty": 2,
+        "price": 36350
+      }
+    ],
+    "shipEls": [
+      {
+        "txt": "배송비",
+        "chain": "span.text < div.delivery < div.shipping--info < div.shipping--no--group"
+      },
+      {
+        "txt": "배송비",
+        "chain": "span.label < div.sub_sec.delivery < div.cart--basket--total < div.cart--basket_footer"
+      },
+      {
+        "txt": "배송비",
+        "chain": "span.label < div.sub_sec.delivery < div.cart--basket--total < div.cart--basket_footer"
+      },
+      {
+        "txt": "배송비",
+        "chain": "span.label < div.sub_sec.delivery < div.cart--basket--total < div.cart--basket_footer"
+      },
+      {
+        "txt": "배송비",
+        "chain": "span.label < li.benefit_item < ul.benefit_list < div.box__option_list"
+      }
+    ]
+  },
+  "kyoboCart": {
+    "url": "https://order.kyobobook.co.kr/cart",
+    "stampedEverywhere": 0,
+    "boxes": [
+      {
+        "id": "brandAllchk01",
+        "checkedAttr": false,
+        "stamp": null,
+        "aria": null,
+        "rowName": "",
+        "rowPrice": ""
+      },
+      {
+        "id": "brand0100",
+        "checkedAttr": true,
+        "stamp": null,
+        "aria": null,
+        "rowName": "[국내도서] 중학 역사2 자습서",
+        "rowPrice": "16,000"
+      },
+      {
+        "id": "brand0101",
+        "checkedAttr": true,
+        "stamp": null,
+        "aria": null,
+        "rowName": "[국내도서] New 똑똑한 하루 독해 4단계 4",
+        "rowPrice": "11,700"
+      },
+      {
+        "id": "brand0102",
+        "checkedAttr": false,
+        "stamp": null,
+        "aria": null,
+        "rowName": "[국내도서] IT 용어 상식 사전",
+        "rowPrice": "19,800"
+      },
+      {
+        "id": "brand0103",
+        "checkedAttr": true,
+        "stamp": null,
+        "aria": null,
+        "rowName": "[국내도서] 디자인 구구단",
+        "rowPrice": "18,000"
+      },
+      {
+        "id": "brand0104",
+        "checkedAttr": false,
+        "stamp": null,
+        "aria": null,
+        "rowName": "[국내도서] 최고의 프롬프트 엔지니어링 강의",
+        "rowPrice": "21,600"
+      },
+      {
+        "id": "brand0105",
+        "checkedAttr": true,
+        "stamp": null,
+        "aria": null,
+        "rowName": "[국내도서] 실전 ComfyUI",
+        "rowPrice": "22,500"
+      },
+      {
+        "id": "brand0106",
+        "checkedAttr": true,
+        "stamp": null,
+        "aria": null,
+        "rowName": "[국내도서] CODAP으로 통계 수업 디자인하기",
+        "rowPrice": "20,000"
+      },
+      {
+        "id": "brand01015",
+        "checkedAttr": true,
+        "stamp": null,
+        "aria": null,
+        "rowName": "[국내도서] AI 인공지능 페인팅",
+        "rowPrice": "32,400"
+      }
+    ],
+    "answer": [
+      {
+        "name": "[국내도서] 중학 역사2 자습서",
+        "qty": 1,
+        "price": 16000
+      },
+      {
+        "name": "[국내도서] New 똑똑한 하루 독해 4단계 4A(3~4학년)(2026)",
+        "qty": 2,
+        "price": 11700
+      },
+      {
+        "name": "[국내도서] 디자인 구구단",
+        "qty": 1,
+        "price": 18000
+      },
+      {
+        "name": "[국내도서] 실전 ComfyUI",
+        "qty": 1,
+        "price": 22500
+      },
+      {
+        "name": "[국내도서] CODAP으로 통계 수업 디자인하기",
+        "qty": 1,
+        "price": 20000
+      }
+    ]
+  },
+  "kyoboOrder": {
+    "url": "https://order.kyobobook.co.kr/order/order?ordrId=O26095454101&frbeSlctPageViewYsno=Y",
+    "ruleId": "kyobo",
+    "extracted": [
+      "1x22500 [국내도서]실전 ComfyUI",
+      "1x18000 [국내도서]디자인 구구단",
+      "1x19800 [국내도서]IT 용어 상식 사전"
+    ],
+    "shipping": 0,
+    "rows": [
+      {
+        "name": "[국내도서]실전 ComfyUI",
+        "qty": "1개",
+        "priceCells": [
+          {
+            "cls": "price",
+            "txt": "22,500 원"
+          },
+          {
+            "cls": "price_normal",
+            "txt": "25,000원"
+          }
+        ]
+      },
+      {
+        "name": "[국내도서]디자인 구구단",
+        "qty": "1개",
+        "priceCells": [
+          {
+            "cls": "price",
+            "txt": "18,000 원"
+          },
+          {
+            "cls": "price_normal",
+            "txt": "20,000원"
+          }
+        ]
+      },
+      {
+        "name": "[국내도서]IT 용어 상식 사전",
+        "qty": "1개",
+        "priceCells": [
+          {
+            "cls": "price",
+            "txt": "19,800 원"
+          },
+          {
+            "cls": "price_normal",
+            "txt": "22,000원"
+          }
+        ]
+      }
+    ]
+  },
+  "dreamdepot": {
+    "url": "https://www.dreamdepot.co.kr/shop/order.php?&ps_cartuid%5B%5D=5712174&ps_cartuid%5B%5D=5712170",
+    "ruleId": "dreamdepot",
+    "rowSelectorHits": 2,
+    "extracted": [],
+    "shipping": 6000
+  },
+  "icecream": {
+    "url": "https://i-screammall.co.kr/order/order",
+    "ruleId": "icecreammall",
+    "rowSelectorHits": 2,
+    "extracted": [
+      "1x4500 판타지 유니콘 목걸이 팔찌 만들기 DS1111",
+      "1x12600 로딩 중"
+    ],
+    "shipping": 0,
+    "body3Count": 5,
+    "body2Count": 4
+  },
+  "alphamallOrder": {
+    "url": "https://www.alpha.co.kr/order/order/orderDeliveryChoiceForm.do",
+    "ruleId": "alphamall",
+    "extracted": [
+      "1x11000 [프랑스 마패드] 컬러펩스 젤크레용/836310",
+      "1x6800 [모나미] 모니주 크레파스 36색 (파랑)"
+    ],
+    "subtotal": 17800,
+    "shippingConditional": 3000,
+    "shipEls": [
+      {
+        "txt": "배송비",
+        "chain": "span < th < tr < thead"
+      },
+      {
+        "txt": "주문금액 17,800원 과 배송비 3,000원 총 주문 금액 20,800원",
+        "chain": "div.price.pull-right < td < tr.total-price < tfoot"
+      }
+    ]
+  },
+  "daisoCart": {
+    "url": "https://www.daisomall.co.kr/or/orc/SCR_ORC_0001?tab=01",
+    "extracted": [
+      "3x1000 [2차 입고] 호빵앤양갱 에폭시 스티커",
+      "2x5000 [공용] 소프트 스판 사계절 파자마 상의 XL 카키"
+    ],
+    "shipping": 3000,
+    "rows": [
+      {
+        "name": "[2차 입고] 호빵앤양갱 에폭시 스티커",
+        "total": "3,000",
+        "price": "1,000",
+        "qtyCandidates": [
+          {
+            "type": "checkbox",
+            "cls": "el-checkbox__original",
+            "value": null,
+            "stamp": null
+          },
+          {
+            "type": "number",
+            "cls": "el-input__inner",
+            "value": null,
+            "stamp": null
+          }
+        ]
+      },
+      {
+        "name": "노랑 투명 테이프 리필 12 mm X 33 m 14",
+        "total": "2,000",
+        "price": "2,000",
+        "qtyCandidates": [
+          {
+            "type": "checkbox",
+            "cls": "el-checkbox__original",
+            "value": null,
+            "stamp": null
+          },
+          {
+            "type": "number",
+            "cls": "el-input__inner",
+            "value": null,
+            "stamp": null
+          }
+        ]
+      },
+      {
+        "name": "[공용] 소프트 스판 사계절 파자마 상의 XL 카키",
+        "total": "10,000",
+        "price": "5,000",
+        "qtyCandidates": [
+          {
+            "type": "checkbox",
+            "cls": "el-checkbox__original",
+            "value": null,
+            "stamp": null
+          },
+          {
+            "type": "number",
+            "cls": "el-input__inner",
+            "value": null,
+            "stamp": null
+          }
+        ]
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      },
+      {
+        "name": "",
+        "total": "",
+        "price": "",
+        "qtyCandidates": []
+      }
+    ],
+    "answer": [
+      {
+        "name": "호빵앤양갱 에폭시 스티커",
+        "qty": 3,
+        "price": 1000
+      },
+      {
+        "name": "[공용] 소프트 스판 사계절 파자마 상의",
+        "qty": 2,
+        "price": 5000
+      },
+      {
+        "name": "배송비",
+        "qty": 1,
+        "price": 3000
+      }
+    ]
+  },
+  "coupangRender": {
+    "url": "https://cart.coupang.com/cartView.pang",
+    "parts": 55,
+    "cssParts": [
+      {
+        "i": 48,
+        "ct": "text/css",
+        "loc": "https://assets.coupangcdn.com/front/front-web-next/_next/static/web-adapter/style-C7btonFG"
+      },
+      {
+        "i": 50,
+        "ct": "text/css",
+        "loc": "https://assets.coupangcdn.com/front/purchase-next/_next/static/css/8990066e07fe8123.css"
+      },
+      {
+        "i": 52,
+        "ct": "text/css",
+        "loc": "https://assets.coupangcdn.com/front/purchase-next/_next/static/css/6f6b6e8c4e89ac98.css"
+      },
+      {
+        "i": 53,
+        "ct": "text/css",
+        "loc": "cid:css-5d3f1afa-5442-4174-bcb3-63d3e4365a21@mhtml.blink"
+      }
+    ],
+    "partsWithoutLocation": 0,
+    "styleBlocks": 0,
+    "cssLinks": [
+      "app-mhtml://docid/53",
+      "app-mhtml://docid/52",
+      "app-mhtml://docid/50",
+      "app-mhtml://docid/48"
+    ],
+    "unresolvedCssLinks": 0
+  }
+}

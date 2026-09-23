@@ -1,0 +1,138 @@
+{
+  "cidRefs": 90,
+  "partsWithCid": 11,
+  "partsWithLoc": 125,
+  "cssParts": [
+    {
+      "cid": "",
+      "loc": "https://static-resource-smartstore.pstatic.net/cart/rc-rb-20260916-054"
+    },
+    {
+      "cid": "",
+      "loc": "https://static-resource-smartstore.pstatic.net/cart/rc-rb-20260916-054"
+    },
+    {
+      "cid": "",
+      "loc": "cid:css-1a0c8247-2350-4941-92fd-00fdc5285498@mhtml.blink"
+    },
+    {
+      "cid": "",
+      "loc": "cid:css-e89720f9-1948-4f87-b061-29c347a69f05@mhtml.blink"
+    },
+    {
+      "cid": "",
+      "loc": "cid:css-16086443-f32f-4dc5-afa4-a6917376d49b@mhtml.blink"
+    }
+  ],
+  "priceClassHistogram": {
+    "price--68b74054d9": [
+      "219,000원",
+      "169,000원",
+      "5,200원"
+    ],
+    "num--5da48c6ad9": [
+      "219,000",
+      "169,000",
+      "5,200"
+    ],
+    "price_area--1763b7affd": [
+      "438,000원",
+      "169,000원",
+      "41,600원"
+    ],
+    "price--9a8602c4c6": [
+      "438,000원",
+      "169,000원",
+      "41,600원"
+    ],
+    "(none)": [
+      "438,000원",
+      "249,000원",
+      "0원"
+    ],
+    "num--f0e468e757": [
+      "438,000",
+      "0",
+      "0"
+    ],
+    "num--0a9a9a4893": [
+      "3",
+      "0"
+    ],
+    "price_area--ee2ccbc03d": [
+      "219,000원",
+      "5,200원"
+    ],
+    "num--54b1213bf4": [
+      "438,000",
+      "438,000"
+    ],
+    "num--a3812a4a93": [
+      "438,000"
+    ]
+  },
+  "productAnchors": [
+    {
+      "href": "https://sell.smartstore.naver.com/#/home/about?tipModal=WINDOW_EXPOSURE&tap=home",
+      "text": "쇼핑윈도 노출안내",
+      "cls": "N=a:fot.shoppingw _footer_link_CU-2O _nlog_click"
+    }
+  ],
+  "productAnchorCount": 1,
+  "qtyLeafClasses": [],
+  "shippingTexts": [
+    {
+      "cls": "store_price--a0feeb677c",
+      "txt": "총 배송비무료예상 주문금액438,000원상세내용보기"
+    },
+    {
+      "cls": "price_area--684f77d29e",
+      "txt": "총 배송비무료"
+    },
+    {
+      "cls": "title--8400dcf2d3",
+      "txt": "총 배송비"
+    },
+    {
+      "cls": "store_price--a0feeb677c",
+      "txt": "총 배송비0원예상 주문금액0원상세내용보기"
+    },
+    {
+      "cls": "price_area--684f77d29e",
+      "txt": "총 배송비0원"
+    },
+    {
+      "cls": "title--8400dcf2d3",
+      "txt": "총 배송비"
+    },
+    {
+      "cls": "store_price--a0feeb677c",
+      "txt": "총 배송비0원예상 주문금액0원상세내용보기"
+    },
+    {
+      "cls": "price_area--684f77d29e",
+      "txt": "총 배송비0원"
+    },
+    {
+      "cls": "title--8400dcf2d3",
+      "txt": "총 배송비"
+    },
+    {
+      "cls": "price_area--074497a634",
+      "txt": "총 배송비0원"
+    },
+    {
+      "cls": "title--711bcf517d",
+      "txt": "총 배송비"
+    },
+    {
+      "cls": "price_area--074497a634",
+      "txt": "총 배송비0원"
+    },
+    {
+      "cls": "title--711bcf517d",
+      "txt": "총 배송비"
+    }
+  ],
+  "classPaths": []
+}

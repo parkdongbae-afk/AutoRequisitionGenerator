@@ -1,0 +1,19 @@
+{
+  "id": "naver",
+  "name": "네이버쇼핑",
+  "match": ["pay.naver.com", "smartstore.naver.com", "order.naver.com", "cart.naver.com"],
+  "rowSelector": "[class*=ProductItem_article]",
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": "[class*=ProductDetail_name]", "regex": "상품명\\s*(.+)" },
+    "qty": { "sel": "[class*=ProductOption_amount-option]", "regex": "(\\d+)개" },
+    "price": { "sel": "[class*=ProductOption_price-final]", "regex": "([\\d,]+)원" },
+    "option": { "sel": "[class*=ProductOption_name]" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "[class*=ProductStore_delivery]",
+    "regex": "([\\d,]+)원"
+  },
+  "notes": "CSS모듈 해시클래스 - prefix 매칭. ProductStore_delivery는 판매자그룹별 배송비"
+}

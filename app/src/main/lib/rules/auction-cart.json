@@ -1,0 +1,18 @@
+{
+  "id": "auction-cart",
+  "name": "옥션 장바구니",
+  "match": ["cart.auction.co.kr"],
+  "rowSelector": "li.list-item__item",
+  "checkedOnly": { "sel": "input.form__checkbox" },
+  "fields": {
+    "name": { "sel": "span.text__item-name" },
+    "qty": { "sel": "input.form__quantity", "attr": "value" },
+    "price": { "sel": "div.box__item-price strong.text__value", "regex": "([\\d,]+)" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "div.box__group-seller-summary",
+    "regex": "배송비\\s*([\\d,]+)원"
+  },
+  "notes": "장바구니(cart.auction.co.kr) SPA 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). box__item-price(할인적용금액)=단가, form__quantity value=수량, 배송비는 판매자 소계(box__group-seller-summary)의 '배송비 N원 포함' 합산 — 그룹 배송비 정책 문구(box__group-shipping-summary)가 아니라 선택 항목 기준 실제 금액."
+}

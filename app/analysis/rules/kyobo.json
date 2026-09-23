@@ -1,0 +1,17 @@
+{
+  "id": "kyobo",
+  "name": "교보문고",
+  "match": ["kyobobook.co.kr"],
+  "rowSelector": "table.tbl_prod tbody tr",
+  "fields": {
+    "name": { "sel": "span.prod_name" },
+    "qty": { "sel": "span.prd_num", "regex": "(\\d+)개" },
+    "price": { "sel": "span.price > .val", "regex": "([\\d,]+)" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "li.payments_info_item:contains('배송비')",
+    "regex": "([\\d,]+)\\s*원"
+  },
+  "notes": "주문상품 테이블 tbl_prod, 결제가 span.price > .val (정가 price_normal 제외)"
+}

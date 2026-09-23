@@ -1,0 +1,19 @@
+{
+  "id": "naver-cart",
+  "name": "네이버 장바구니",
+  "match": ["shopping.naver.com/cart"],
+  "rowSelector": "div[class^=product--]:has(button[role=checkbox][aria-checked=true])",
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": "[class*=title--]", "match": "last", "regex": "^(?:네이버플러스멤버십)?(.+)$" },
+    "qty": { "sel": "input[class^=number--]", "attr": "value" },
+    "price": { "sel": "em[class^=price--]", "regex": "([\\d,]+)원" },
+    "option": { "sel": "[class^=option--]" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "[class*=store_price--] [class^=price_area--]",
+    "regex": "총\\s*배송비\\s*(무료|[\\d,]+)"
+  },
+  "notes": "네이버쇼핑 장바구니(shopping.naver.com/cart) — CSS모듈 해시클래스 prefix 매칭. V체크된 상품만 추출(상품 체크버튼 role=checkbox의 aria-checked=true가 MHTML 저장 시 보존). title--는 배지(오늘출발/맞춤제작 등)와 상품명이 같은 prefix라 match:last로 상품명 선택, '네이버플러스멤버십' 배지 접두어 제거. em.price--=옵션별 합계금액(lineTotal→단가=합계÷수량), input number--의 value=수량, 상점별 '총 배송비' 라벨로 배송비 합산(무료=0원)."
+}

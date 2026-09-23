@@ -1,0 +1,227 @@
+{
+  "results": [
+    {
+      "fileName": "G마켓 - 주문서.mhtml",
+      "mall": "G마켓",
+      "items": 8,
+      "shipping": 3000,
+      "err": null,
+      "specs": [
+        "더이안 금색 은색 오링세트 / 오 => 은색 오링 세트, 오링+작업반지+평집게",
+        "파워에이드 마운틴블라스트 무라벨  => 355ml, 20개입, 1상자",
+        "빅파이 딸기 324g 4개 => 324g, 4개",
+        "파워에이드 마운틴블라스트 무라벨  => 355ml, 20개입, 1상자"
+      ]
+    },
+    {
+      "fileName": "G마켓 - 주문서1.mhtml",
+      "mall": "G마켓",
+      "items": 6,
+      "shipping": 0,
+      "err": null,
+      "specs": [
+        "1+1 캔손 몽발 수채패드 1면제 => 12매, 300g, 24x32",
+        "파브리아노 아띠스띠코 고평량 64 => 170x240mm, 640g",
+        "세르지오 프로페셔널 트래블 300 => 300g, A5, 20매",
+        "캔손 몽발 수채화 낱장팩 A4 2 => A4, 21x29.7cm, 300g, 20매"
+      ]
+    },
+    {
+      "fileName": "교보문고.mhtml",
+      "mall": "교보문고",
+      "items": 3,
+      "shipping": 0,
+      "err": null,
+      "specs": [
+        "[국내도서]실전 ComfyUI => (빈칸)",
+        "[국내도서]디자인 구구단 => (빈칸)",
+        "[국내도서]IT 용어 상식 사전 => (빈칸)"
+      ]
+    },
+    {
+      "fileName": "네이버-주문_결제.mhtml",
+      "mall": "네이버쇼핑",
+      "items": 1,
+      "shipping": 3000,
+      "err": null,
+      "specs": [
+        "DTF 출력 대행 티셔츠 커스텀  => 폭 57cm, 길이 1.0m"
+      ]
+    },
+    {
+      "fileName": "드림디포 쇼핑몰 _ 사는 곳은 달라도 문구는 드림디포!.mhtml",
+      "mall": "드림디포",
+      "items": 2,
+      "shipping": null,
+      "err": null,
+      "specs": [
+        "[아카데미] 원목회전독서대 (MW => (빈칸)",
+        "[더블에이] 복사지A4 80g 5 => A4, 80g, 500매"
+      ]
+    },
+    {
+      "fileName": "아이스크림 _ 아이스크림몰.mhtml",
+      "mall": "아이스크림몰",
+      "items": 2,
+      "shipping": 0,
+      "err": null,
+      "specs": [
+        "판타지 유니콘 목걸이 팔찌 만들기 => (빈칸)",
+        "로딩 중 => (빈칸)"
+      ]
+    },
+    {
+      "fileName": "알파몰-배송지선택.mhtml",
+      "mall": "알파몰",
+      "items": 2,
+      "shipping": 3000,
+      "err": null,
+      "specs": [
+        "[프랑스 마패드] 컬러펩스 젤크레 => 10색",
+        "[모나미] 모니주 크레파스 36색 => 36색"
+      ]
+    },
+    {
+      "fileName": "주문_결제 - 11번가.mhtml",
+      "mall": "11번가",
+      "items": 2,
+      "shipping": 3500,
+      "err": null,
+      "specs": [
+        "단추 비닐 서류봉투 A4 => A4",
+        "Lenovo 씽크센터 Neo 50 => (빈칸)"
+      ]
+    },
+    {
+      "fileName": "주문_결제 - 예스24.mhtml",
+      "mall": "예스24",
+      "items": 2,
+      "shipping": null,
+      "err": null,
+      "specs": [
+        "[도서] 오디세이아 => (빈칸)",
+        "[도서] 교양 브런치 => (빈칸)"
+      ]
+    },
+    {
+      "fileName": "new\\결제 - 전자부품 쇼핑의 기준_엘레파츠.mhtml",
+      "mall": "엘레파츠",
+      "items": 1,
+      "shipping": 3000,
+      "err": null,
+      "specs": [
+        "JMOD-BT-1 블루투스 시리얼 => (빈칸)"
+      ]
+    },
+    {
+      "fileName": "new\\옥션 - 주문서.mhtml",
+      "mall": "옥션",
+      "items": 3,
+      "shipping": 3000,
+      "err": null,
+      "specs": [
+        "HUSKYLENS허스키렌즈 머신러 => (빈칸)",
+        "농심 닭다리너겟 130g => 130g",
+        "자일렉 오븐형 에어프라이어 18L => 18L"
+      ]
+    },
+    {
+      "fileName": "new\\쿠팡! _ 장바구니.mhtml",
+      "mall": "쿠팡",
+      "items": 8,
+      "shipping": 0,
+      "err": null,
+      "specs": [
+        "아모스 딱풀 35g 6개입 => 35g, 1세트, 6개입",
+        "ESP32 Super Mini E => 1개",
+        "기능성 아치 깔창 발 피로 완화  => 1개, 245mm",
+        "오트몬드 오리지널 => 190ml, 48개"
+      ]
+    },
+    {
+      "fileName": "new\\티처몰 _ 학급경영의 필수 파트너.mhtml",
+      "mall": "티처몰",
+      "items": 2,
+      "shipping": 3000,
+      "err": null,
+      "specs": [
+        "[티처몰ONLY] 나의 아바타 만 => (빈칸)",
+        "[티처몰ONLY] 점자블록 지우개 => (빈칸)"
+      ]
+    },
+    {
+      "fileName": "test_OK/new/쿠팡! _ 장바구니.mhtml",
+      "mall": "쿠팡",
+      "items": 4,
+      "shipping": 0,
+      "err": null,
+      "checkedOnly": true
+    }
+  ],
+  "protocolOk": true,
+  "pickerServed": true,
+  "receiverCheck": {
+    "ping": true,
+    "bookmarkInfo": true,
+    "install": true,
+    "capture": true
+  },
+  "appendRes": {
+    "appended": 2,
+    "totalRows": 2,
+    "sheetName": "품목내역"
+  },
+  "excelOk": true,
+  "shippingAggOk": true,
+  "coupangCheckedOk": true,
+  "aggRows": [
+    [
+      "E2E 품목",
+      "",
+      "개",
+      1,
+      1000
+    ],
+    [
+      "배송비",
+      "",
+      "식",
+      3,
+      3000
+    ],
+    [
+      "배송비",
+      "",
+      "식",
+      1,
+      4000
+    ]
+  ],
+  "readBack": [
+    [
+      "E2E 품목",
+      "",
+      "개",
+      2,
+      1570
+    ],
+    [
+      "배송비",
+      "",
+      "식",
+      1,
+      3000
+    ]
+  ],
+  "rendererCheck": {
+    "errs": [],
+    "rootChildren": 1,
+    "hasHeader": true,
+    "footer": "MHTML 0개품목 0건총액 0원엑셀 경로 미지정 (기본 경로 사용)엑셀에 누적 저장하기📂 다른 경로에 저",
+    "tableCols": 9
+  },
+  "mappingCheck": {
+    "started": true,
+    "err": "TypeError: Cannot read properties of null (reading 'click')\n    at <anonymous>:1:46"
+  }
+}

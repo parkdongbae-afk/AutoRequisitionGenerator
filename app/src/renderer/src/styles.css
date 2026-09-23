@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  font-family: "Malgun Gothic", "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+}
+
+.viewer-frame {
+  border: 0;
+  background: #fff;
+}
+
+.cell-input {
+  @apply w-full px-1 py-0.5 text-[12.5px] border border-blue-400 rounded-sm outline-none bg-white;
+}
+
+.row-highlight {
+  background-color: #eff6ff;
+}
+
+.row-shipping {
+  background-color: #fefce8;
+}
+
+tr.excel-source td:first-child{box-shadow:inset 3px 0 0 #94a3b8}
+tr.active-row td{background:#fff4cc !important}

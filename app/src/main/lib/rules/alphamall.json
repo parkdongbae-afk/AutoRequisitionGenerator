@@ -1,0 +1,17 @@
+{
+  "id": "alphamall",
+  "name": "알파몰",
+  "match": ["alpha.co.kr"],
+  "rowSelector": "table.list-product-a tbody tr",
+  "fields": {
+    "name": { "sel": "p.name" },
+    "qty": { "sel": "td.mount", "regex": "(\\d+)개" },
+    "price": { "sel": "p.price-after", "regex": "([\\d,]+)원" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "tr.total-price div.price",
+    "regex": "배송비\\s*([\\d,]+)\\s*원"
+  },
+  "notes": "배송지선택 단계 페이지. 판매가 p.price-after, 구매금액 strong.warning과 구분. 배송비는 tfoot tr.total-price의 '주문금액 N원 과 배송비 M원' 실측 표시값 사용(판매자 그룹별 합산, 무료면 행 없음) — 5만원 무료 조건식은 그룹별 기준이라 계산식 대신 페이지 표시값"
+}

@@ -1,0 +1,104 @@
+{
+  "doc": {
+    "location": "https://lottemartzetta.com/basket",
+    "charset": "utf-8",
+    "parts": 34,
+    "hangul": 2698,
+    "title": "장바구니ㅣ롯데마트 제타 온라인 신선 장보기 몰"
+  },
+  "refStats": {
+    "css-link:cid-miss": {
+      "count": 1,
+      "samples": [
+        "cid:css-12d0fe35-4e2a-414d-a128-514c1d54d659@mhtml.blink"
+      ]
+    },
+    "css-link:matched": {
+      "count": 2,
+      "samples": [
+        "https://lottemartzetta.com/theme-assets/37427739-1788253624-bG90dGUK/css/theme-variables.css",
+        "https://lottemartzetta.com/static/style-Dqa3a83Q.css"
+      ]
+    },
+    "css-link2:cid-miss": {
+      "count": 1,
+      "samples": [
+        "cid:css-12d0fe35-4e2a-414d-a128-514c1d54d659@mhtml.blink"
+      ]
+    },
+    "css-link2:matched": {
+      "count": 2,
+      "samples": [
+        "https://lottemartzetta.com/theme-assets/37427739-1788253624-bG90dGUK/css/theme-variables.css",
+        "https://lottemartzetta.com/static/style-Dqa3a83Q.css"
+      ]
+    },
+    "img:matched": {
+      "count": 22,
+      "samples": [
+        "https://images.ctfassets.net/8ope8jx7a7m3/6zHqaYWq0s0aXAj47bVPQZ/b896bdc2d89ac22467cebf4ffd6af3db/%C3%AB__%C3%",
+        "https://images.ctfassets.net/8ope8jx7a7m3/3NRjzhV4seMAxDKYbtSO7U/7a9597182cc12c44b45b40c88ce141f3/%C3%AC__%C3%",
+        "https://images.ctfassets.net/8ope8jx7a7m3/48GHyVd3MIg60nn3FxmnDg/90a8d30ba3a5dcef71d50eebc9417c0e/zettapass_rg",
+        "https://images.ctfassets.net/8ope8jx7a7m3/1uXX2lWAvZARgrmO7uPD5l/a1f3dbb31fba8d02ced6a5181d5079c1/%C3%AB__%C3%"
+      ]
+    },
+    "img:unmatched-abs": {
+      "count": 8,
+      "samples": [
+        "https://images.ctfassets.net/8ope8jx7a7m3/1hi0H5nfjNRgqxIDVNORax/46d269716dafe27029e9cde595e6da2c/250515_SIS_%",
+        "https://images.ctfassets.net/8ope8jx7a7m3/2VSnK7feohj0skwxTk5fGJ/8c73bed910af05f8feb94f4c386cbd2c/a533c81c-091",
+        "https://images.ctfassets.net/8ope8jx7a7m3/3VeeDCoEAfYiG2rmTwbezW/2f10057b2424b3b73c107bc7df9c4b9c/250203_%C3%A",
+        "https://images.ctfassets.net/8ope8jx7a7m3/nCijABMWbxB8YeoJq9GZH/8eac96713258e2fb6b92c4ccfd34e1b8/%C3%AB__%C3%A"
+      ]
+    }
+  },
+  "cssInternals": {
+    "total": 2,
+    "miss": 2,
+    "samples": [
+      "/theme-assets/fonts/pretendard/Pretendard-Regular.ttf  =>  https://lottemartzetta.com/theme-assets/fonts/pretendard/Pretendard-Regular.ttf",
+      "/theme-assets/fonts/pretendard/Pretendard-SemiBold.ttf  =>  https://lottemartzetta.com/theme-assets/fonts/pretendard/Pretendard-SemiBold.ttf"
+    ]
+  },
+  "partTypes": {
+    "text/html": 3,
+    "image/png": 20,
+    "image/avif": 6,
+    "image/webp": 2,
+    "text/css": 3
+  },
+  "answerError": "XLSX.readFile is not a function",
+  "priceClassHistogram": [
+    {
+      "cls": "sc-eu3tjp-2 kiBtZk",
+      "samples": [
+        "28,940원",
+        "3,000원"
+      ]
+    },
+    {
+      "cls": "_*_*_* _*--promotion_*_* sc-1fkdssq-1 eDGgtR",
+      "samples": [
+        "24,940원"
+      ]
+    },
+    {
+      "cls": "_*_*_* _*--strikethrough_*_* _*--m_*_* sc-1fkdssq-0 cZhBLK",
+      "samples": [
+        "26,940원"
+      ]
+    },
+    {
+      "cls": "_*_*_* sc-1fkdssq-1 eDGgtR",
+      "samples": [
+        "2,000원"
+      ]
+    },
+    {
+      "cls": "_*_*_* salt-d--inline-block",
+      "samples": [
+        "24,940원"
+      ]
+    }
+  ]
+}

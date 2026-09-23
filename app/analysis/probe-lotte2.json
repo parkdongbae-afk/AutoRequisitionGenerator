@@ -1,0 +1,136 @@
+{
+  "cssParts": [
+    {
+      "idx": 29,
+      "cid": null,
+      "hasContentLocation": true,
+      "contentLocation": "https://lottemartzetta.com/static/style-Dqa3a83Q.css",
+      "size": 215031
+    },
+    {
+      "idx": 30,
+      "cid": null,
+      "hasContentLocation": true,
+      "contentLocation": "https://lottemartzetta.com/theme-assets/37427739-1788253624-bG90dGUK/css/theme-v",
+      "size": 15341
+    },
+    {
+      "idx": 31,
+      "cid": null,
+      "hasContentLocation": true,
+      "contentLocation": "cid:css-12d0fe35-4e2a-414d-a128-514c1d54d659@mhtml.blink",
+      "size": 58748
+    }
+  ],
+  "priceChains": [
+    {
+      "txt": "24,940원",
+      "chain": "span._display_xy0eg_1._display--promotion_xy0eg_8.sc-1fkdssq-1 < div.sc-mmemlz-0.kImdqr < div.price-pack-size-container < div.sc-mmemlz-0.hbYzCI < div.footer-container < div.product-card-container. < div.sc-filq44-0.kvEmnc < div.sc-b2j0rc-1.dWsGyD"
+    },
+    {
+      "txt": "26,940원",
+      "chain": "span._text_cn5lb_1._text--strikethrough_cn5lb_13._text--m_cn5lb_23 < div.sc-mmemlz-0.kImdqr < div.price-pack-size-container < div.sc-mmemlz-0.hbYzCI < div.footer-container < div.product-card-container. < div.sc-filq44-0.kvEmnc < div.sc-b2j0rc-1.dWsGyD"
+    },
+    {
+      "txt": "2,000원",
+      "chain": "span._display_xy0eg_1.sc-1fkdssq-1.eDGgtR < div.sc-mmemlz-0.kImdqr < div.price-pack-size-container < div.sc-mmemlz-0.hbYzCI < div.footer-container < div.product-card-container. < div.sc-filq44-0.kvEmnc < div.sc-b2j0rc-1.dWsGyD"
+    },
+    {
+      "txt": "28,940원",
+      "chain": "dd.sc-eu3tjp-2.kiBtZk < div.sc-1sylob6-0.kbKGZt < dl.sc-eu3tjp-0.fCkXmt < div.sc-x8anbu-0.eYHyzw < div._box_scheu_1.sc-ayw1my-2.bLxUzM < div.sc-ayw1my-1.bNtVsX < div.sc-mmemlz-0.dYNMlH < div._grid-item-12_tilop_45._grid-item-lg-3_tilop_252"
+    },
+    {
+      "txt": "3,000원",
+      "chain": "dd.sc-eu3tjp-2.kiBtZk < div.sc-1sylob6-0.kbKGZt < dl.sc-eu3tjp-0.fCkXmt < div.sc-x8anbu-0.eYHyzw < div._box_scheu_1.sc-ayw1my-2.bLxUzM < div.sc-ayw1my-1.bNtVsX < div.sc-mmemlz-0.dYNMlH < div._grid-item-12_tilop_45._grid-item-lg-3_tilop_252"
+    },
+    {
+      "txt": "24,940원",
+      "chain": "span._display_xy0eg_1.salt-d--inline-block < dd.sc-eu3tjp-2.kiBtZk.sc-1n4mmxr-2 < div.sc-1sylob6-0.kbKGZt < dl.sc-eu3tjp-0.sc-1n4mmxr-0.fCkXmt < div.sc-x8anbu-0.eYHyzw < div._box_scheu_1.sc-ayw1my-2.bLxUzM < div.sc-ayw1my-1.bNtVsX < div.sc-mmemlz-0.dYNMlH"
+    }
+  ],
+  "anchors": [
+    {
+      "href": "https://lottemartzetta.com/products?source=navigation",
+      "text": "전체보기",
+      "chain": "a._text_cn5lb_1._text--m_cn5lb_23._link-standalone_v2p9r_8 < li.sc-n4hwqs-6.eGGDNP < ul.sc-1ll8pj3-0.cCHmWN < div.sc-pja"
+    },
+    {
+      "href": "https://lottemartzetta.com/products?source=navigation&sublocationId=83",
+      "text": "추석 선물세트 당일배송",
+      "chain": "a._text_cn5lb_1._text--m_cn5lb_23._link-standalone_v2p9r_8 < li.sc-n4hwqs-6.eGGDNP < ul.sc-1ll8pj3-0.cCHmWN < div.sc-pja"
+    },
+    {
+      "href": "https://lottemartzetta.com/products?source=navigation&sublocationId=e7",
+      "text": "과일",
+      "chain": "a._text_cn5lb_1._text--m_cn5lb_23._link-standalone_v2p9r_8 < li.sc-n4hwqs-6.eGGDNP < ul.sc-1ll8pj3-0.cCHmWN < div.sc-pja"
+    },
+    {
+      "href": "https://lottemartzetta.com/products?source=navigation&sublocationId=d4",
+      "text": "채소",
+      "chain": "a._text_cn5lb_1._text--m_cn5lb_23._link-standalone_v2p9r_8 < li.sc-n4hwqs-6.eGGDNP < ul.sc-1ll8pj3-0.cCHmWN < div.sc-pja"
+    },
+    {
+      "href": "https://lottemartzetta.com/products?source=navigation&sublocationId=17",
+      "text": "쌀ㆍ잡곡ㆍ견과류",
+      "chain": "a._text_cn5lb_1._text--m_cn5lb_23._link-standalone_v2p9r_8 < li.sc-n4hwqs-6.eGGDNP < ul.sc-1ll8pj3-0.cCHmWN < div.sc-pja"
+    },
+    {
+      "href": "https://lottemartzetta.com/products?source=navigation&sublocationId=44",
+      "text": "정육ㆍ계란",
+      "chain": "a._text_cn5lb_1._text--m_cn5lb_23._link-standalone_v2p9r_8 < li.sc-n4hwqs-6.eGGDNP < ul.sc-1ll8pj3-0.cCHmWN < div.sc-pja"
+    },
+    {
+      "href": "https://lottemartzetta.com/products?source=navigation&sublocationId=22",
+      "text": "수산물ㆍ건해산물",
+      "chain": "a._text_cn5lb_1._text--m_cn5lb_23._link-standalone_v2p9r_8 < li.sc-n4hwqs-6.eGGDNP < ul.sc-1ll8pj3-0.cCHmWN < div.sc-pja"
+    },
+    {
+      "href": "https://lottemartzetta.com/products?source=navigation&sublocationId=6c",
+      "text": "델리ㆍ즉석조리",
+      "chain": "a._text_cn5lb_1._text--m_cn5lb_23._link-standalone_v2p9r_8 < li.sc-n4hwqs-6.eGGDNP < ul.sc-1ll8pj3-0.cCHmWN < div.sc-pja"
+    }
+  ],
+  "qtyInputs": [
+    {
+      "type": "number",
+      "cls": "_counter__input_d04rl_15",
+      "value": "3"
+    },
+    {
+      "type": "number",
+      "cls": "_counter__input_d04rl_15",
+      "value": "1"
+    }
+  ],
+  "qtyTexts": [],
+  "answer": [
+    [
+      "내용",
+      "규격",
+      "단위",
+      "수량",
+      "예상단가"
+    ],
+    [
+      "롯데 쉐푸드 콰사삭 크리스피 치킨",
+      "330g",
+      "개",
+      "3",
+      "8320"
+    ],
+    [
+      "오늘좋은 미네랄워터",
+      "2L, 6개입",
+      "상자",
+      "1",
+      "2000"
+    ],
+    [
+      "배송비",
+      null,
+      "개",
+      "1",
+      "3000"
+    ]
+  ]
+}

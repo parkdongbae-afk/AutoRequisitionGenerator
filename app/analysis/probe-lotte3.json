@@ -1,0 +1,22 @@
+{
+  "cssLinksAfterRewrite": [
+    "app-mhtml://DOCID/31",
+    "app-mhtml://DOCID/30",
+    "app-mhtml://DOCID/29"
+  ],
+  "inlineStyleBlocks": 0,
+  "unresolvedCidRefs": [],
+  "cardCount": 2,
+  "firstCardText": "롯데 쉐푸드 꽈사삭 크리스피 치킨 (330G)냉동냉동(2)평점 5점 만점에 4.0, 리뷰 2개롯데 쉐푸드 꽈사삭 크리스피 치킨 (330G)할인 정보: 2개씩 골라 담으면, 2,000원 할인, 2개 중 3개 추가됨: 이 할인이 적용되는 전체 상품 보기1/22개씩 골라 담으면, 2,000원 할인330g(100g당 2,520원)가격24,940원이전 가격26,940원장바구니에 이 품목 3개가 있습니다.",
+  "cardNameLeaves": [],
+  "summaryDls": [
+    {
+      "text": "품목 4개28,940원상품 할인-2,000원[첫구매] 2만↑ 20% 할인 (최대 5천원)-5,000원배송비3,000원",
+      "html": "<div data-test=\"summary-items\" class=\"sc-1sylob6-0 kbKGZt\"><dt data-test=\"summary-items-title\" class=\"sc-eu3tjp-1 doezWF\"><span>품목 4개</span></dt><dd data-test=\"summary-items-description\" class=\"sc-eu3tjp-2 kiBtZk\">28,940원</dd></div><div data-test=\"summary-savings\" class=\"sc-1sylob6-0 kbKGZt\"><dt class=\"sc-eu3tjp-1 doezWF\"><span>상품 할인</span></dt><dd class=\"sc-eu3tjp-2 kiBtZk\"><span class=\"_text_cn5lb_1 _text--bold_cn5lb_7 _text--m_cn5lb_23 _text--promotion_cn5lb_31\" data-test=\"summary-savings-amo"
+    },
+    {
+      "text": "총 결제 금액 24,940원",
+      "html": "<div class=\"sc-1sylob6-0 kbKGZt\"><dt class=\"sc-eu3tjp-1 doezWF sc-1n4mmxr-1 hrIKNz\"><span class=\"_display_xy0eg_1 salt-d--inline-block\"><strong><span data-test=\"summary-total-label\">총 결제 금액&nbsp;<span class=\"_text_cn5lb_1 _text--s_cn5lb_13 salt-d--inline-block\" data-test=\"summary-total-note\"> </span></span></strong></span></dt><dd class=\"sc-eu3tjp-2 kiBtZk sc-1n4mmxr-2 fNjBmg\"><span class=\"_display_xy0eg_1 salt-d--inline-block\" data-test=\"summary-total-amount\">24,940원</span></dd></div>"
+    }
+  ]
+}

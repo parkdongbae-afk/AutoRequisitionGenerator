@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "품의 생성기 - 주문화면 전송 (Chrome/Edge/Whale)",
+  "version": "1.4.3",
+  "description": "현재 주문/장바구니 페이지를 캡처하여 '자동 품의 요구 생성기' 데스크톱 앱으로 전송합니다. Chrome·Edge·웨일 호환.",
+  "permissions": ["pageCapture", "activeTab", "bookmarks", "scripting"],
+  "host_permissions": ["http://127.0.0.1:57330/*"],
+  "action": {
+    "title": "품의 생성기로 이 페이지 전송"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

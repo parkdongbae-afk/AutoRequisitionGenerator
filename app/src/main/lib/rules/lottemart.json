@@ -1,0 +1,18 @@
+{
+  "id": "lottemart",
+  "name": "롯데마트 제타",
+  "match": ["lottemartzetta.com"],
+  "rowSelector": "div[class*=product-card-container]",
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": "[data-test=fop-product-link]" },
+    "qty": { "sel": "input[class*=_counter__input]", "attr": "value" },
+    "price": { "sel": "[class*=_display]", "regex": "([\\d,]+)원" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "[data-test=summary-cost-delivery-charge]",
+    "regex": "([\\d,]+)"
+  },
+  "notes": "롯데마트 제타 온라인(lottemartzetta.com/basket) — salt 디자인시스템. data-test 속성 기반(안정): fop-product-link=상품명, summary-cost-delivery-charge=배송비. 수량은 input._counter__input의 value. 가격 span _display_ 는 할인가(합계, lineTotal→단가=합계÷수량), _text_--strikethrough는 원가이므로 매칭 제외. CSSOM 스타일은 캡처에서 누락되므로 확장/북마크릿이 adopted 스타일을 박제(v1.6.12)."
+}

@@ -1,0 +1,20 @@
+{
+  "id": "coupang",
+  "name": "쿠팡",
+  "match": ["coupang.com"],
+  "rowSelector": "div[id^=item_][data-selected=true]",
+  "checkedOnly": { "sel": "input[type=checkbox]" },
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": "div#name span.twc-break-all" },
+    "qty": { "sel": "input.cart-quantity-input", "attr": "value", "regex": "(\\d+)" },
+    "price": { "sel": "div[data-component-id=price-area] span.twc-text-\\[20px\\]\\/\\[27px\\]" },
+    "option": { "sel": "div#name span.twc-line-clamp-2" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "span[data-component-id=vendor-delivery-charge]",
+    "regex": "배송비\\s*([\\d,]+)원"
+  },
+  "notes": "장바구니(cartView) 화면. 체크(V)된 상품만 추출 — data-selected=true(익스텐션 캡처)와 input[checked](수동 MHTML 저장)의 교집합으로 두 캡처 경로 모두 정확히 필터링. 상품별 합계금액(할인가)을 수량으로 나눠 단가 환산. 판매자별 배송비(vendor-delivery-charge) 합산, 무료는 제외. 추천상품(recommendation-widget)은 미포함"
+}
