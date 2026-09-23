@@ -1,0 +1,19 @@
+{
+  "id": "teachermall-cart",
+  "name": "티처몰 장바구니",
+  "match": ["teacherville.co.kr/order/cart"],
+  "rowSelector": "tr:has(input.chk01)",
+  "checkedOnly": { "sel": "input.chk01" },
+  "fields": {
+    "name": { "sel": "a.order_name" },
+    "qty": { "sel": "input[id^=cart_cnt]", "attr": "value" },
+    "price": { "sel": ".cost_info p.flexbox", "regex": "([\\d,]+)원" }
+  },
+  "shipping": {
+    "mode": "selector",
+    "sel": "em.fc_blue1",
+    "regex": "배송비\\s*([\\d,]+)원",
+    "checkedScope": true
+  },
+  "notes": "장바구니(order/cart) 화면. 행=체크박스 input.chk01을 포함한 tr. 수량 input[id^=cart_cnt]의 value 속성, 단가는 cost_info '개당 N원'(합계 아님). 판매자 그룹 배송비는 tr.shop_info의 em.fc_blue1('배송비 N원') — 그룹이 형제 행으로 나열되므로 checkedScope(문서 순서 그룹 판정)로 체크 상품 없는 그룹의 배송비 제외. 익스텐션/북마크릿 캡처는 data-arge-checked 스탬프로 V체크 필터, 수동 저장은 checked 속성."
+}

@@ -3,9 +3,10 @@
   "name": "11번가",
   "match": ["11st.co.kr"],
   "rowSelector": "li.group_prd",
+  "priceIs": "lineTotal",
   "fields": {
     "name": { "sel": ".prd_name a" },
-    "qty": null,
+    "qty": { "sel": ".c_order_quantity .number" },
     "price": { "sel": ".c_order_prd_price", "regex": "([\\d,]+)원" }
   },
   "shipping": {
@@ -13,5 +14,5 @@
     "sel": "#dlvTotalAmountView",
     "regex": "([\\d,]+)"
   },
-  "notes": "li.group_prd 상품블록. 수량 표시 없음(기본 1). 배송비는 결제예정금액 dlvTotalAmountView (도서산간 display:none 제외)"
+  "notes": "li.group_prd 상품블록. c_order_quantity .number=수량, c_order_prd_price=할인모음가(단가×수량 라인합계 → lineTotal로 단가 환산). 배송비는 결제예정금액 dlvTotalAmountView (도서산간 display:none 제외)"
 }

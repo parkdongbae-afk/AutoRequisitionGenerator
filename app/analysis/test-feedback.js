@@ -64,9 +64,9 @@ try {
   <div class="cart--basket">
     <div class="item"><input type="checkbox" class="input__checkbox" ${stamp ? `data-arge-checked="${stamp}"` : (checked ? 'checked' : '')}>
       <span class="item_name">상품${fee}</span><div class="item_price"><strong class="text__value">10,000</strong></div></div>
-    <div class="cart--basket_footer"><div class="cart--basket--total"><div class="sub_sec delivery">
-      <span class="label">배송비</span><strong class="price${fee === 0 ? ' free' : ''}">${fee === 0 ? '무료배송' : fee.toLocaleString() + '원'}</strong>
-    </div></div></div>
+    <div class="shipping--info"><div class="delivery">
+      <span class="text">배송비</span><strong class="text__value">${fee === 0 ? '무료배송' : fee.toLocaleString() + '원'}</strong>
+    </div></div>
   </div>`;
   const rule = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'lib', 'rules', 'gmarket-cart.json'), 'utf-8'));
   const stampedHtml = `<html><body>${g(true, 3000, 'true')}${g(false, 4000, 'false')}</body></html>`;

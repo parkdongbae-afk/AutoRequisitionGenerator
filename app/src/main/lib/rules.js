@@ -16,6 +16,7 @@ import st11 from './rules/11st.json'
 import st11Cart from './rules/st11-cart.json'
 import yes24 from './rules/yes24.json'
 import yes24Cart from './rules/yes24-cart.json'
+import teachermallCart from './rules/teachermall-cart.json'
 import teachermall from './rules/teachermall.json'
 import auction from './rules/auction.json'
 import auctionCart from './rules/auction-cart.json'
@@ -39,7 +40,7 @@ const builtin = [
   gmarket, kyobo, naver, naverCart,
   dreamdepotOrder, dreamdepot, icecreamCart, icecreammall,
   alphamallCart, alphamall, st11Cart, st11,
-  yes24Cart, yes24, teachermall,
+  yes24Cart, yes24, teachermallCart, teachermall,
   auctionCart, auction, coupang,
   eleparts, ic114, lottemart, officedepotOrder, officedepot,
   daisomallOrder, daisomall

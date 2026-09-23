@@ -6,6 +6,7 @@
   "checkedOnly": { "sel": "input.el-checkbox__original", "legacySel": "label.el-checkbox.is-checked" },
   "priceIs": "lineTotal",
   "qtyFromUnit": "div.goods-inner.price span.value",
+  "qtyInputSel": "div.goods-inner.count input.el-input__inner",
   "fields": {
     "name": { "sel": "a.ellipsis1" },
     "price": { "sel": "div.goods-inner.total span.value", "regex": "([\\d,]+)" }
