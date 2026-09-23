@@ -195,11 +195,14 @@
     },
     {
       "fileName": "new\\티처몰 _ 학급경영의 필수 파트너.mhtml",
-      "mall": "티처몰",
-      "items": 0,
-      "shipping": null,
+      "mall": "티처몰 장바구니",
+      "items": 2,
+      "shipping": 3000,
       "err": null,
-      "specs": []
+      "specs": [
+        "[티처몰ONLY] 나의 아바타 만 => (빈칸)",
+        "[티처몰ONLY] 점자블록 지우개 => (빈칸)"
+      ]
     },
     {
       "fileName": "test_OK/new/쿠팡! _ 장바구니.mhtml",
@@ -236,7 +239,7 @@
       "idx": 42,
       "status": 200,
       "len": 411628,
-      "head": "@charset \"utf-8\"; @import url(\"app-mhtml://2adf"
+      "head": "@charset \"utf-8\"; @import url(\"app-mhtml://285c"
     },
     {
       "idx": 43,
