@@ -1,6 +1,6 @@
 # 프로젝트 작업 요약 (다른 세션 인계용)
 
-**작성일:** 2026-09-23 | **현재 버전:** v1.7.2 | **작업 폴더:** `C:\Users\dongbae\Desktop\Automatic_generation_of_approval_requests_html`
+**작성일:** 2026-09-23 | **현재 버전:** v1.7.3 | **작업 폴더:** `C:\Users\dongbae\Desktop\Automatic_generation_of_approval_requests_html`
 
 ## 1. 프로젝트 개요
 
@@ -9,10 +9,11 @@
 - **배포 산출물:** `자동품의요구생성기_Portable.exe` (72MB, 작업폴더 루트) = `app\release\AutoRequisitionGenerator-Portable.exe` 사본
 - **원본 소스:** `app\` 폴더 전체 (명세 MD 4종은 루트에 있으며 as-built로 갱신 완료: RPD/SYSTEM/ALGO/UIUX)
 
-## 2. 현재 구현 기능 (v1.7.1)
+## 2. 현재 구현 기능 (v1.7.3)
 
 | 기능 | 상태 |
 |---|---|
+| [🐞 4건 버그 수정: 11st 수량·티처몰 장바구니·다이소 뷰 수량·아이스크림 V체크] ① **11번가 주문서**: `c_order_quantity .number` 수량 추출 + priceIs lineTotal(할인모음가=단가×수량 → 봉투 10개=1,060원 환산) ② **티처몰 장바구니** teachermall-cart 신규 — `tr:has(input.chk01)` 행, 수량 `input[id^=cart_cnt]` value, 단가 cost_info '개당 N원', 판매자 그룹 배송비 `em.fc_blue1`(checkedScope로 미체크 그룹 제외, 정답 6,000원 일치) ③ **다이소몰 장바구니 뷰어**: 규칙 `qtyInputSel` 신설 — 엔진이 계산한 수량을 mhtml 뷰의 수량 input value 속성에 주입(Vue 카트 수량 빈칸 해소, docstore가 주입 html 서빙) ④ **아이스크림몰**: 수동 저장 문서엔 V체크 상태가 파일에 존재하지 않음 확인(스탬프·checked·aria-checked·is-checked 전무) → 폴백 안내에 "품의캡처(익스텐션·북마크릿)로 다시 담으면 V체크만 자동 추출" 추가 + docstore `reflectCheckStates`(스탬프→checked 속성)로 캡처 채널 문서는 뷰어에도 V표시 ⑤ **G마켓 장바구니**: 페이지 개편 대응 — 그룹 배송비 셀렉터 `div.sub_sec.delivery strong.price`(하단 합계 계산기)→`div.shipping--info div.delivery strong.text__value`(그룹 footer, 4그룹 12,000원) ⑥ **네이버 장바구니**: 상점별 '무료' 대신 하단 예상금액 패널 '총 배송비 +3,000원' 채택(regex `\+` 필수 + first:true — 패널 2중 렌더·total_price_area 부모 중복 매칭 방지). **checkedScope 판정 하이브리드 재작성**: ①그룹 컨테이너형(G마켓, 배송비가 그룹 뒤)=다른 배송비 요소를 품지 않는 가장 가까운 조상의 박스로 판정 ②형제 행형(티처몰, 배송비 행이 그룹 앞)=다음 배송비 요소 전 구간의 박스로 판정. 검증: `analysis/test-cart-fix.js` 24/24 + test-feedback 23/23 + test-cart-rules 13몰 + E2E 2세트(errs 0, 티처몰 75MB 포함) | ✅ v1.7.3 |
 | [📌📌 캡처 시점 V체크 박제(data-arge-checked)] v1.7.0의 checked 속성 필터는 **수동 MHTML 저장에서만** 동작 — 익스텐션(saveAsMHTML)/북마크릿(outerHTML)은 체크박스의 checked **프로퍼티를 직렬화하지 않아** G마켓 장바구니가 0건 추출→거부 팝업되던 것 수정. 익스텐션(1.4.3)·북마크릿이 캡처 직전 `input.checked` 프로퍼티를 `data-arge-checked="true/false"` **속성으로 박제**해 상태가 캡처에 함께 전송됨. 엔진 신규 `checkedOnly: {sel, legacySel}` — ① 스탬프 문서: true 행만 추출(스탬프 시뮬레이션 13몰 정답 정확 일치, 교보 AI페인팅·G마켓 한우도 정답대로 제외) ② 수동 저장: checked 속성/legacySel(다이소 label.is-checked) ③ 상태 전혀 없으면 전체 추출 폴백+안내 팝업(doc.checkedFallback → store.js `CART_FALLBACK_NOTICE`, 기존 몰별 고정 안내 대체). 12몰 카트 규칙에 checkedOnly 적용(예스24·옥션·드림디포·아이스크림·알파몰·오피스디포도 이제 캡처 채널에선 V체크만 추출). 카트 몰 0건 시 거부 메시지 "V체크된 상품이 없습니다…" 추가. bookmarks.js — 북마크릿 URL 변경 시 옛 URL 변종(`javascript:…127.0.0.1:573x…/html`)도 같은 🛒품의캡처 노드로 취급해 **기존 guid 보존·URL 갱신 교체**(중복 생성 방지) | ✅ v1.7.1 |
 | [🛒🛒 장바구니 V체크 캡처 전면 지원] 주문서뿐 아니라 **장바구니 상태에서 품의캡처 → V체크한 상품만 자동 추가** (v1.7.0, 13몰 정답 대조 전수 통과 `analysis/test-cart-rules.js`). ① 체크 상태가 MHTML DOM에 보존되는 몰은 V체크만 추출: 교보(`input[checked]`)·알라딘·G마켓·11번가·쿠팡(`data-selected=true`∩`input[checked]` — 익스텐션/수동저장 두 경로 모두 정확)·네이버(`aria-checked=true`)·**다이소(`label.is-checked` Vue 클래스 — not_ok 폴더였지만 DOM엔 보존)** ② 체크가 소실되는 몰(드림디포·아이스크림몰·옥션·알파몰·예스24·오피스디포)은 전체 추출 + "선택하지 않은 상품은 삭제해 주세요" 안내 팝업(store.js `RULE_CART_NOTICES`) ③ 신규 몰: 알라딘·오피스디포·다이소몰 ④ 엔진 확장: `shipping.mode:'perItem'`(상품별 배송비 → "`<상품명> 배송비`" 행, 11번가), `shipping.first`(첫 값만, 알파몰), `qtyFromUnit`(합계÷단가 수량 계산, 다이소) ⑤ 내장 규칙 15종 → **25종**(`-cart` 접미사 규칙이 같은 도메인 주문서 규칙보다 우선) | ✅ v1.7.0 |
 | 15종 내장 규칙 자동 추출 (G마켓·교보문고·네이버(주문+**장바구니**)·드림디포·아이스크림몰·알파몰·11번가·예스24·티처몰(주문+장바구니) + 옥션·쿠팡(장바구니)·엘레파츠·IC114·**롯데마트 제타**) | ✅ 총액 검증 완료 — IC114는 배송비 3,000원 고정(페이지에 배송비 없음), 주문서 캡처 거부 메시지 별도 |

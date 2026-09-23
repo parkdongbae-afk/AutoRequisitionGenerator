@@ -23,9 +23,12 @@
 - 필드 해석: `rowSelector` 각 요소에서 `row.find(sel)` → `attr`(기본 text, value 등 가능) → 선택적 `regex`(group 기본 1) → 숫자 정리. `"match": "last"` 지정 시 첫 요소 대신 마지막 요소 사용 (G마켓 쿠폰적용가: 할인 행은 strong 2개 — 마지막이 할인가, 무할인 행은 1개)
 - **`priceIs: "lineTotal"`** (선택): 화면 금액이 "단가×수량 라인 합계"인 쇼핑몰(G마켓·네이버·티처몰)에서 단가 = 합계÷수량로 자동 환산 (수량 1이면 그대로)
 - **`qtyFromUnit: "셀렉터"`** (선택, v1.7.0): 수량 input에 value 속성이 없는 몰(다이소몰 Vue 카트)에서 수량 = 합계금액(price) ÷ 단가(qtyFromUnit 셀렉터 값)로 계산
+- **`qtyInputSel: "셀렉터"`** (선택, v1.7.3): 뷰어 표시용 — 행 안의 수량 input에 계산된 수량을 value 속성으로 주입한 HTML을 반환(docstore가 서빙). 다이소몰처럼 수량 input에 value 속성 자체가 없어 mhtml 뷰에서 수량이 빈칸으로 보이는 몰용. extractItems 반환값에 `html` 추가
+- **`data-arge-checked` 스탬프 → 뷰어 V표시** (v1.7.3, docstore `reflectCheckStates`): 캡처 채널이 박제한 스탬프를 서빙 HTML에서 checked 속성으로 반영(stamp=true→checked 추가, false→checked 제거)해 추출 결과와 뷰어 표시가 일치. 수동 저장 문서는 스탬프가 없어 변화 없음(아이스크림몰은 aria-checked·is-checked 등 흔적 전무 확인 — 폴백+안내 유지)
 - **`checkedOnly: { "sel": "input[name=chkList]", "legacySel": "label.el-checkbox.is-checked" }`** (v1.7.1): 장바구니 V체크 필터. `sel` = 행의 체크박스. 판정 3단계 — ① 문서에 `data-arge-checked` 스탬프가 있으면(익스텐션 1.4.3+/북마크릿이 캡처 직전 `input.checked` 프로퍼티를 박제) `true` 행만 추출 ② 스탬프 없으면(수동 저장) 체크박스 `checked` 속성 또는 `legacySel` 요소 존재 ③ 행 어디에서도 상태를 읽지 못한 문서만 전체 추출으로 폴백(`checkedFallback: true` 반환 → 안내 팝업). 네이버는 `aria-checked`가 그대로 직렬화되므로 rowSelector 필터로 충분(checkedOnly 불필요), 쿠팡은 rowSelector `[data-selected=true]` + checkedOnly 조합
 - **`textWhitespaceNormalize: true`** (선택, v1.7.2): text 노드 추출 시 내부 개행/탭을 단일 공백으로 정규화(오피스디포 주문서 상품명 `div.tit` 텍스트에 2차원 개행이 있어 `^\\(\\d+\\)\\s*(.*)$` 정규식이 `/m` 플래그 없이 실패 → 공백 정규화 후 `^\\(\\d+\\)\\s*([\s\S]*)$` 성공). 규칙 엔진 `extractField`: `attr === 'text'` → `el.text().replace(/\s+/g, ' ')` → `trim()`. 이름·배송비 금액 패턴 매칭에 유리. 기존에는 `.text()` 사용으로 내부 공백 유지 → 오피스디포/교보 상품명 정규식 실패 문제 해결
 - 행 스킵 조건: 이름 비어있음 또는 가격 null. 수량 미지정 시 기본 1
+- **`shipping.checkedScope: true`** (v1.7.3 하이브리드 판정): 그룹별 배송비에서 체크된(V) 상품이 없는 그룹의 배송비 제외. 그룹 구조 2형태 지원 — ① **그룹 컨테이너형**(G마켓: 상품+배송비 footer가 같은 div): 체크박스를 포함하는 가장 가까운 조상이 다른 배송비 요소를 품지 않으면 그 조상 안의 박스로 판정 ② **형제 행형**(티처몰: 배송비 행 tr.shop_info가 그룹 상품 행들 앞에 나열): 이 배송비 요소부터 다음 배송비 요소 전까지의 박스로 판정. 어느 쪽으로도 박스를 못 찾으면(구조 미지 문서) 유지. 박스 판정은 checkedOnly와 동일(스탬프 문서=스탬프값, 수동 문서=checked 속성)
 - **장바구니 V체크 필터링 (v1.7.0):** 체크 상태가 MHTML의 DOM에 남는 몰은 rowSelector에 `:has(...)` 로 필터를 건다 — 교보/알라딘/G마켓/11번가 `input[checked]`, 네이버 `button[aria-checked=true]`, 쿠팡 `[data-selected=true]:has(input[checked])` (익스텐션 캡처=속성, 수동 저장=checked 속성이라 교집합), 다이소 `label.el-checkbox.is-checked`. 체크 상태가 소실되는 몰(드림디포·아이스크림몰·옥션·알파몰·예스24·오피스디포)은 전체 추출 후 안내 팝업(store.js `RULE_CART_NOTICES`)
 - **배송비 모드 5종:**
   - `selector`: 페이지 요소들의 숫자 합산. `discountSel` 지정 시 할인액 차감(예: 아이스크림몰 배송비 5,000 - 할인 5,000 = 0). "무료"는 0원 처리. **`first: true`** (v1.7.0) 지정 시 첫 매칭 값만 사용(알파몰: 행마다 "3,000원 (5만원이상 무료)" 정책 표시라 합산하면 과대)
@@ -63,9 +66,10 @@ function roundUpToTen(n) {
 | dreamdepot | `tr:has(input.pm_number)` | 수량 `input.pm_number.value` | conditional 3,000/50,000 |
 | icecreammall | `div.relative.flex.items-start.border-b:has(p.body3)` | Tailwind 클래스 구조 | selector + discountSel |
 | alphamall | `table.list-product-a tbody tr` | `p.name` / `td.mount` / `p.price-after` | conditional 3,000/50,000 |
-| 11st | `li.group_prd` | `.prd_name a` / 수량 표시 없음(기본 1) | selector `#dlvTotalAmountView` |
+| 11st | `li.group_prd` | `.prd_name a` / 수량 `.c_order_quantity .number` + **priceIs: lineTotal**(할인모음가, v1.7.3) | selector `#dlvTotalAmountView` |
 | yes24 | `table.tbl_l tbody tr:has(td)` | 4/5번째 td (수량/할인단가) | conditional 2,500/15,000 |
 | teachermall | `tr[class*=goods_][class*=_delivery]` | 2/3번째 td, **priceIs: lineTotal** | selector `.std_delivery_price` |
+| teachermall-cart | `tr:has(input.chk01)` | 이름 `a.order_name`, 수량 `input[id^=cart_cnt]` value, 단가 cost_info '개당 N원' | selector `em.fc_blue1` + checkedScope(판매자 그룹, v1.7.3) |
 | dreamdepot-order | `tr:has(td.qt)` | 이름 `td.info` (정규식 `^\\(\\d+\\)\\s*(.*)$`), priceIs: lineTotal, qty `div.goods-num` | selector `div.val` (첫 직계 자손, 중첩 '기본 배송비' 제외) |
 | daisomall-order | `div.goods-unit.order` | 이름 `div.tit` (빈 a태그 앞), priceIs: lineTotal, qty `div.goods-num` | selector `div.val` (첫 직계 자손, 중첩 '기본 배송비' 제외) |
 | aladin-order | `tr.product-row` | 이름 `td.prod-name` (앞의 가격 제거), price: `td.prod-price` (regex `^\\d{1,3}(?:[,\s]\\d{3})*원`) | none (가격=0이면 배송비 없음) |
