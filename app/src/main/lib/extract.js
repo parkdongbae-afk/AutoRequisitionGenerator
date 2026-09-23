@@ -82,6 +82,12 @@ function extractItems(html, rule) {
     if (rule.priceIs === 'lineTotal' && effQty > 1) {
       unitPrice = Math.round(price / effQty);
     }
+    // 뷰어 표시용: 수량 input에 value 속성이 없는 몰(다이소몰 Vue 카트)은 mhtml 뷰에서
+    // 수량이 빈칸으로 보인다 — 계산된 수량을 value 속성으로 주입해 뷰에도 반영한다
+    if (rule.qtyInputSel && effQty) {
+      const qtyBox = row.find(rule.qtyInputSel).first();
+      if (qtyBox.length) qtyBox.attr('value', String(effQty));
+    }
     // 장바구니 V체크 필터: 행의 체크박스 상태(null=상태 알 수 없음)
     let state = null;
     if (checkedSpec) {
@@ -118,28 +124,44 @@ function extractItems(html, rule) {
   }
 
   if (rule.shipping && rule.shipping.mode === 'selector' && rule.shipping.sel) {
-    // checkedScope: 판매자/묶음 그룹별 배송비에서, 그룹 안에 체크된(V) 상품이 하나도 없으면
-    // 그 그룹의 배송비는 제외한다. 배송비 요소에서 위로 올라가며 행 체크박스(checkedSpec.sel)를
-    // 포함하는 가장 가까운 조상을 찾아 스탬프(data-arge-checked) 또는 checked 속성을 판정.
+    // checkedScope: 그룹별 배송비 필터. 그룹 구조는 두 형태가 있다.
+    //  ① 상품과 배송비 footer가 같은 그룹 컨테이너 안에 있는 형태(G마켓) —
+    //    체크박스를 포함하는 가장 가까운 조상이 다른 배송비 요소를 품지 않으면
+    //    그 조상 안의 박스만으로 판정한다.
+    //  ② 판매자 그룹이 형제 행으로 나열되고 배송비 행이 그룹 앞에 오는 형태(티처몰) —
+    //    이 배송비 요소부터 다음 배송비 요소 전까지의 박스로 판정한다.
+    // 어느 쪽으로도 박스를 찾지 못하면(구조를 모르는 문서) 유지한다.
     const wantScope = !!(rule.shipping && rule.shipping.checkedScope && checkedSpec);
-    const scopeOk = (el) => {
-      if (!wantScope) return true;
-      let node = $(el);
-      while (node.length) {
-        const boxes = node.find(checkedSpec.sel);
-        if (boxes.length) {
-          const stampedAny = boxes.is('[data-arge-checked]');
-          const positive = boxes.filter((_, b) => {
-            const a = $(b).attr() || {};
-            if (a['data-arge-checked'] != null) return a['data-arge-checked'] === 'true';
-            return stampedAny ? false : ('checked' in a);
-          });
-          return positive.length > 0;
+    const scopeOk = (() => {
+      if (!wantScope || !checkedSpec.sel) return () => true;
+      const positiveOf = (a) => (stampedMode ? a['data-arge-checked'] === 'true' : ('checked' in a));
+      const pos = new Map($('*').toArray().map((e, i) => [e, i]));
+      const shipPos = $(rule.shipping.sel).toArray()
+        .map(e => pos.get(e)).filter(p => p != null).sort((a, b) => a - b);
+      const boxes = $(checkedSpec.sel).toArray()
+        .map(b => ({ p: pos.get(b), positive: positiveOf($(b).attr() || {}) }))
+        .filter(b => b.p != null);
+      return (el) => {
+        let anc = $(el).parent();
+        while (anc.length) {
+          if (anc.find(checkedSpec.sel).length) {
+            const hasOtherShip = anc.find(rule.shipping.sel).toArray().some(x => x !== el);
+            if (!hasOtherShip) {
+              return anc.find(checkedSpec.sel).toArray().some(b => positiveOf($(b).attr() || {}));
+            }
+            break;
+          }
+          anc = anc.parent();
         }
-        node = node.parent();
-      }
-      return true; // 체크박스를 전혀 못 찾으면(폴백 문서 등) 유지
-    };
+        const start = pos.get(el);
+        if (start == null) return true;
+        let end = Infinity;
+        for (const p of shipPos) { if (p > start) { end = p; break; } }
+        const inGroup = boxes.filter(b => b.p > start && b.p < end);
+        if (inGroup.length === 0) return true;
+        return inGroup.some(b => b.positive);
+      };
+    })();
     const collect = (sel, regex) => {
       let sum = 0, found = false;
       $(sel).each((_, el) => {
@@ -174,7 +196,7 @@ function extractItems(html, rule) {
     if (!shippingFee) shippingFee = null;
   }
 
-  return { items, shippingFee, checkedFallback };
+  return { items, shippingFee, checkedFallback, html: rule.qtyInputSel ? $.html() : undefined };
 }
 
 function roundUpToTen(n) {
