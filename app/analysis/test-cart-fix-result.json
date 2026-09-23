@@ -1,0 +1,197 @@
+[
+  {
+    "name": "티처몰 장바구니 규칙=teachermall-cart",
+    "ok": true,
+    "detail": {
+      "ruleId": "teachermall-cart"
+    }
+  },
+  {
+    "name": "티처몰 장바구니 품목 정답 일치",
+    "ok": true,
+    "detail": {
+      "extracted": [
+        "2x1500",
+        "3x1800"
+      ],
+      "missing": [],
+      "extras": []
+    }
+  },
+  {
+    "name": "티처몰 장바구니 배송비 정답 일치",
+    "ok": true,
+    "detail": {
+      "extShip": 6000,
+      "ansShip": 6000
+    }
+  },
+  {
+    "name": "아이스크림 규칙 유지",
+    "ok": true,
+    "detail": {
+      "ruleId": "icecream-cart"
+    }
+  },
+  {
+    "name": "아이스크림 폴백 인지(안내 팝업 트리거)",
+    "ok": true,
+    "detail": {
+      "checkedFallback": true
+    }
+  },
+  {
+    "name": "아이스크림 전체 추출 4건",
+    "ok": true,
+    "detail": {
+      "items": [
+        "4x2500",
+        "1x52500",
+        "3x12600",
+        "1x4500"
+      ]
+    }
+  },
+  {
+    "name": "다이소 장바구니 규칙=daisomall",
+    "ok": true,
+    "detail": {
+      "ruleId": "daisomall"
+    }
+  },
+  {
+    "name": "다이소 장바구니 품목 정답 일치",
+    "ok": true,
+    "detail": {
+      "extracted": [
+        "3x1000",
+        "2x5000"
+      ],
+      "missing": [],
+      "extras": []
+    }
+  },
+  {
+    "name": "다이소 장바구니 배송비 정답 일치",
+    "ok": true,
+    "detail": {
+      "extShip": 3000,
+      "ansShip": 3000
+    }
+  },
+  {
+    "name": "다이소 뷰 수량 주입(value=3, value=2)",
+    "ok": true,
+    "detail": {
+      "v3": true,
+      "v2": true,
+      "htmlLen": 328343
+    }
+  },
+  {
+    "name": "다이소 주입 html에 doctype 유지",
+    "ok": true,
+    "detail": {
+      "head": "<!DOCTYPE html><html lang=\"ko\" class=\"\" data-hwp-extension=\""
+    }
+  },
+  {
+    "name": "11st 규칙 유지",
+    "ok": true,
+    "detail": {
+      "ruleId": "11st"
+    }
+  },
+  {
+    "name": "11st 수량/단가",
+    "ok": true,
+    "detail": {
+      "items": [
+        "10x1060",
+        "1x1324000"
+      ]
+    }
+  },
+  {
+    "name": "11st 배송비 3,500",
+    "ok": true,
+    "detail": {
+      "shipping": 3500
+    }
+  },
+  {
+    "name": "G마켓 카트 규칙 유지",
+    "ok": true,
+    "detail": {
+      "ruleId": "gmarket-cart"
+    }
+  },
+  {
+    "name": "G마켓 카트 배송비 12,000",
+    "ok": true,
+    "detail": {
+      "shipping": 12000
+    }
+  },
+  {
+    "name": "G마켓 카트 품목 4건",
+    "ok": true,
+    "detail": {
+      "items": [
+        "3x6200",
+        "1x3990",
+        "10x1600",
+        "1x60520"
+      ]
+    }
+  },
+  {
+    "name": "G마켓 구 캡처 배송비 없음",
+    "ok": true,
+    "detail": {
+      "shipping": null
+    }
+  },
+  {
+    "name": "G마켓 구 캡처 품목 3건",
+    "ok": true,
+    "detail": {
+      "items": 3
+    }
+  },
+  {
+    "name": "네이버 카트 규칙 유지",
+    "ok": true,
+    "detail": {
+      "ruleId": "naver-cart"
+    }
+  },
+  {
+    "name": "네이버 카트 배송비 3,000",
+    "ok": true,
+    "detail": {
+      "shipping": 3000
+    }
+  },
+  {
+    "name": "네이버 카트 품목 3건",
+    "ok": true,
+    "detail": {
+      "items": 3
+    }
+  },
+  {
+    "name": "네이버 구 캡처 배송비 없음",
+    "ok": true,
+    "detail": {
+      "shipping": null
+    }
+  },
+  {
+    "name": "네이버 구 캡처 품목 2건",
+    "ok": true,
+    "detail": {
+      "items": 2
+    }
+  }
+]
