@@ -1,0 +1,14 @@
+{
+  "id": "emartmall",
+  "name": "e마트몰",
+  "match": ["pay.ssg.com/order", "ssg.com/order"],
+  "rowSelector": "tr.codr_unit_area",
+  "priceIs": "lineTotal",
+  "fields": {
+    "name": { "sel": ".codr_unit_name", "regex": "^\\s*(?:\\[[^\\]]*\\]\\s*)?(.*)$" },
+    "qty": { "sel": ".codr_unit_count em.num" },
+    "price": { "sel": ".codr_unit_newprice em.ssg_price", "regex": "([\\d,]+)" }
+  },
+  "shipping": { "mode": "selector", "sel": "em.paySummaryOrdCstAmt", "regex": "([\\d,]+)", "first": true },
+  "notes": "SSG.COM(e마트몰) 주문서(pay.ssg.com/order/ordPage.ssg) — 상품 행 tr.codr_unit_area(배송유형 그룹 itemUnit_N 안에 상품별 1행). codr_unit_name=상품명([쿠폰 다운로드] 접두사 regex로 제거), codr_unit_newprice em.ssg_price=라인합계(lineTotal→단가 환산), codr_unit_count em.num=수량. 배송비는 결제 요약 em.paySummaryOrdShppCst 표시값."
+}

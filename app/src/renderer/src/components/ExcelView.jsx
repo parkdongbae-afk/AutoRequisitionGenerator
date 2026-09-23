@@ -65,11 +65,11 @@ export default function ExcelView({ doc }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-white">
-      <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-2 py-1 text-[11.5px] text-slate-600">
+      <div className="flex items-center gap-2 border-b border-[#E2E8F0] bg-[#F8FAFC] px-2 py-1 text-[11.5px] text-[#64748B]">
         <span className="font-semibold">📑 {doc.excel.filePath.split(/[\\/]/).pop()}</span>
         {doc.excel.sheets.length > 1 && (
           <select
-            className="rounded border border-slate-300 bg-white px-1 py-0.5 text-[11px]"
+            className="rounded border border-[#E2E8F0] bg-white px-1 py-0.5 text-[11px]"
             value={sheetIdx}
             onChange={e => setSheetIdx(Number(e.target.value))}
           >
@@ -78,21 +78,21 @@ export default function ExcelView({ doc }) {
             ))}
           </select>
         )}
-        <span className="text-slate-400">읽기 전용 · 수정은 우측 표에서</span>
+        <span className="text-[#94A3B8]">읽기 전용 · 수정은 우측 표에서</span>
       </div>
       {truncated && (
         <div className="border-b border-yellow-200 bg-yellow-50 px-2 py-1 text-[11px] text-yellow-700">
           표시 범위 초과: 상위 {MAX_ROWS}행까지만 표시
         </div>
       )}
-      <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-2">
+      <div className="min-h-0 flex-1 overflow-auto bg-[#F1F5F9] p-2">
         <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%` }}>
           <table ref={tableRef} className="border-collapse text-[12px]" style={{ fontFamily: "'Malgun Gothic', sans-serif" }}>
             <thead>
               <tr>
-                <th className="sticky top-0 z-10 border border-slate-300 bg-slate-200 px-1.5 py-1 text-[10px] text-slate-500" />
+                <th className="sticky top-0 z-10 border border-[#E2E8F0] bg-[#E2E8F0] px-1.5 py-1 text-[10px] text-[#64748B]" />
                 {Array.from({ length: colCount }, (_, c) => (
-                  <th key={c} className="sticky top-0 z-10 border border-slate-300 bg-slate-200 px-2 py-1 text-[10.5px] font-semibold text-slate-600">{colLetter(c)}</th>
+                  <th key={c} className="sticky top-0 z-10 border border-[#E2E8F0] bg-[#E2E8F0] px-2 py-1 text-[10.5px] font-semibold text-[#64748B]">{colLetter(c)}</th>
                 ))}
               </tr>
             </thead>
@@ -109,7 +109,7 @@ export default function ExcelView({ doc }) {
                     className={`${isHeader ? 'detected-header' : ''} ${flashRow === excelRowNo ? 'active-row' : ''}`}
                     style={isHeader ? { boxShadow: 'inset 0 -2px 0 #2563eb' } : flashRow === excelRowNo ? { background: '#fff4cc' } : undefined}
                   >
-                    <td className="border border-slate-300 bg-slate-100 px-1.5 py-1 text-right text-[10px] text-slate-400">{excelRowNo}</td>
+                    <td className="border border-[#E2E8F0] bg-[#F1F5F9] px-1.5 py-1 text-right text-[10px] text-[#94A3B8]">{excelRowNo}</td>
                     {Array.from({ length: colCount }, (_, c) => {
                       const key = `${r}:${c}`
                       if (covered.has(key)) return null
@@ -122,7 +122,7 @@ export default function ExcelView({ doc }) {
                           key={c}
                           rowSpan={m ? m.rowspan : 1}
                           colSpan={m ? m.colspan : 1}
-                          className={`border border-slate-300 px-2 py-1 ${numeric ? 'text-right' : 'text-left'} ${r < 0 ? '' : ''}`}
+                          className={`border border-[#E2E8F0] px-2 py-1 ${numeric ? 'text-right' : 'text-left'} ${r < 0 ? '' : ''}`}
                           style={{ maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         >
                           {numeric ? Number(text.replace(/,/g, '')).toLocaleString() : text}

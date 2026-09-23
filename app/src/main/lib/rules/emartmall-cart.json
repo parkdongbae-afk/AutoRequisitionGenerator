@@ -1,0 +1,8 @@
+{
+  "id": "emartmall-cart",
+  "name": "e마트몰 장바구니",
+  "match": ["pay.ssg.com/cart", "ssg.com/cart"],
+  "rowSelector": "div.__arge_never_match__",
+  "shipping": { "mode": "none" },
+  "notes": "거부 전용 규칙 — e마트몰은 주문서(pay.ssg.com/order)에서만 추출을 지원한다(2026-09-24 사용자 지정). 장바구니 화면에서 품의캡처를 누르면 0건으로 거부되며 store RULE_REJECT_MESSAGES의 '주문서 상태에서 눌러 주세요.' 안내가 표시된다."
+}

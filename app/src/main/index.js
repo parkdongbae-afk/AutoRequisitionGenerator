@@ -148,18 +148,21 @@ function serveDoc(url) {
       else if (/<html[^>]*>/i.test(html)) html = html.replace(/<html[^>]*>/i, m => m + baseTag)
       else html = baseTag + html
     }
-    const measure = `<script>(function(){function rep(){try{parent.postMessage({type:'doc-size',height:Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0),width:Math.max(document.documentElement.scrollWidth,document.body?document.body.scrollWidth:0)},'*')}catch(e){}}rep();window.addEventListener('load',rep);setTimeout(rep,500);setTimeout(rep,2000);new MutationObserver(rep).observe(document.documentElement,{childList:true,subtree:true,attributes:true})})()</script>`
+    const measure = `<script>(function(){function rep(){try{parent.postMessage({type:'doc-size',height:Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0),width:Math.max(document.documentElement.scrollWidth,document.body?document.body.scrollWidth:0)},'*')}catch(e){}}rep();window.addEventListener('load',rep);setTimeout(rep,500);setTimeout(rep,2000);new MutationObserver(rep).observe(document.documentElement,{childList:true,subtree:true,attributes:true});setInterval(rep,600)})()</script>`
+    // 문서 높이는 외부 스크롤 컨테이너의 sizer가 담당하므로 iframe 자체 스크롤바는 숨긴다 —
+    // 축소 시 내부+외부 스크롤바가 동시에 보이는 이중 스크롤 문제 방지
+    const noScroll = `<style>html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}html{scrollbar-width:none!important;-ms-overflow-style:none!important}</style>`
     // 캡처 시점 V체크를 뷰어에 그대로 재현 — MHTML은 checked 프로퍼티를 직렬화하지 않으므로
     // 박제된 data-arge-checked(익스텐션/북마크릿)·data-selected(쿠팡)를 로드 시 프로퍼티로 복원한다.
     // 원본 마크업의 checked 속성(defaultChecked)과 실제 상태가 어긋나 엉뚱한 항목이 체크로 보이는 것도 방지.
     const checkedState = `<script>(function(){try{document.querySelectorAll('input[type=checkbox][data-arge-checked]').forEach(function(el){el.checked=el.getAttribute('data-arge-checked')==='true'});document.querySelectorAll('[data-selected]').forEach(function(el){var on=el.getAttribute('data-selected')==='true';el.querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=on})})}catch(e){}})()</script>`
     const pan = `<script>(function(){var pan=null;function send(t,d){try{parent.postMessage(Object.assign({type:t},d||{}),'*')}catch(e){}}window.addEventListener('mousedown',function(e){if(e.button===1||e.button===2){pan=e.button;e.preventDefault();send('pan-start')}else if(pan!==null){pan=null;send('pan-end')}},true);window.addEventListener('mousemove',function(e){if(pan!==null)send('pan-move',{dx:e.movementX||0,dy:e.movementY||0})},true);window.addEventListener('mouseup',function(e){if(pan!==null){pan=null;send('pan-end')}},true);window.addEventListener('contextmenu',function(e){if(pan!==null)e.preventDefault()},true);window.addEventListener('auxclick',function(e){if(e.button===1)e.preventDefault()},true);window.addEventListener('blur',function(){if(pan!==null){pan=null;send('pan-end')}});window.addEventListener('wheel',function(e){send('doc-wheel',{dy:e.deltaY||0,x:e.clientX||0,y:e.clientY||0});e.preventDefault()},{passive:false,capture:true})})()</script>`
     if (u.searchParams.get('picker') === '1') {
-      const inject = `<script>${PICKER_SCRIPT}</script>` + checkedState + pan + measure
+      const inject = `<script>${PICKER_SCRIPT}</script>` + checkedState + pan + noScroll + measure
       if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, inject + '</body>')
       else html += inject
     } else {
-      const inject = checkedState + pan + measure
+      const inject = checkedState + pan + noScroll + measure
       if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, inject + '</body>')
       else html += inject
     }
@@ -886,6 +889,45 @@ function registerIpc() {
   })
 
   ipcMain.handle('open-manual', () => shell.openPath(manualFile()))
+
+  // version2 확장 자동 설치 도구(ExtensionDeveloperModeManager) 실행 —
+  // 기존 version1 확장(앱 데이터 폴더)은 그대로 두고, extension_auto 내용을
+  // 사용자 데이터의 version2 폴더로 복제한 뒤 설치 도구를 띄운다
+  ipcMain.handle('run-extension-v2', () => {
+    try {
+      const sourceDir = app.isPackaged
+        ? path.join(process.resourcesPath, 'extension_auto')
+        : path.join(app.getAppPath(), '..', 'extension_auto')
+      if (!fs.existsSync(path.join(sourceDir, 'install_and_run.bat'))) {
+        return { error: 'extension_auto 폴더를 찾지 못했습니다: ' + sourceDir }
+      }
+      const v2Dir = path.join(app.getPath('userData'), 'extension_v2')
+      fs.rmSync(v2Dir, { recursive: true, force: true })
+      fs.mkdirSync(v2Dir, { recursive: true })
+      for (const f of fs.readdirSync(sourceDir)) {
+        const src = path.join(sourceDir, f)
+        if (fs.statSync(src).isFile()) fs.copyFileSync(src, path.join(v2Dir, f))
+      }
+      // 설치 도구(ExtensionDeveloperModeManager)는 마지막 선택 경로를 config.json에 기억한다 —
+      // 캡처 확장 코드가 있는 앱 데이터 폴더(%APPDATA%\자동 품의 요구 생성기\extension)를 미리
+      // 지정해 두면 도구 실행 후 버튼만으로 최신 확장이 자동 설치된다
+      const extDir = path.join(app.getPath('userData'), 'extension')
+      try {
+        const mgrDir = path.join(process.env.APPDATA || path.join(app.getPath('userData'), '..'), 'ExtensionDeveloperModeManager')
+        fs.mkdirSync(mgrDir, { recursive: true })
+        const cfgPath = path.join(mgrDir, 'config.json')
+        let cfg = {}
+        try { cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8')) } catch {}
+        cfg.extension_path = extDir
+        fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2), 'utf-8')
+      } catch (e) {}
+      const child = spawn('cmd.exe', ['/c', 'install_and_run.bat'], { cwd: v2Dir, detached: true, stdio: 'ignore' })
+      child.unref()
+      return { ok: true, v2Dir, extDir }
+    } catch (e) {
+      return { error: String(e.message || e) }
+    }
+  })
 
   ipcMain.handle('open-extension-folder', () => {
     const dir = extensionFolder()

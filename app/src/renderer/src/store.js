@@ -4,10 +4,14 @@ let seq = 1
 const nextRowKey = () => `r${seq++}`
 
 const RULE_REJECT_MESSAGES = {
-  naver: 'V버튼을 눌러 모든 항목이 보여진 상태에서 품의캡쳐 해주세요.',
+  naver: '주문서 상태에서 눌러 주세요.',
+  'naver-cart': '주문서 상태에서 눌러 주세요.',
+  'naver-cart': '주문서 상태에서 품의캡처 눌러 주세요.',
   coupang: '장바구니 상태에서 품의캡쳐 해주세요.',
   ic114: '장바구니 상태에서 품의캡쳐를 누르세요. 주문하기 화면에서 배송비는 반드시 확인해 보세요.',
   'naver-cart': '네이버 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
+  'emartmall-cart': 'e마트몰은 주문서 상태에서만 추출할 수 있습니다.\n주문서 상태에서 눌러 주세요.',
+  'emartmall': 'e마트몰은 주문서 상태에서만 추출할 수 있습니다.\n주문서 상태에서 눌러 주세요.',
   'kyobo-cart': '교보문고 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
   aladin: '알라딘 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
   'gmarket-cart': 'G마켓 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
@@ -23,6 +27,13 @@ const RULE_REJECT_MESSAGES = {
 
 // 체크 상태를 읽지 못해 전체 추출로 폴백한 문서에만 표시 (doc.checkedFallback)
 const CART_FALLBACK_NOTICE = '이 쇼핑몰은 수동 저장(MHTML)에서는 V체크 여부를 읽지 못해\n장바구니의 모든 상품이 추가되었습니다. 선택하지 않은 상품은 표에서 행을 삭제해 주세요.\n\n품의캡처(익스텐션·북마크릿)로 다시 담으면 V체크된 상품만 자동 추출됩니다.'
+
+// 페이지가 알려주는 체크 상품 수보다 캡처에 저장된 행이 적은 경우 (doc.countMismatch)
+const countMismatchNotice = m =>
+  `장바구니에 체크된 상품은 ${m.expected}개인데, 캡처 파일에는 ${m.actual}개만 저장되어 있습니다.\n` +
+  '브라우저 저장 시 일부 상품이 누락된 것입니다. 누락된 상품은 표에 없으니 확인해 주세요.\n\n' +
+  '저장 전 장바구니를 끝까지 스크롤해 모든 상품이 화면에 그려진 뒤 다시 저장하거나,\n' +
+  '품의캡처(익스텐션·북마크릿)로 다시 담아 주세요.'
 
 function withKeys(doc) {
   doc.rows = (doc.rows || []).map(r => ({ ...r, key: nextRowKey() }))
@@ -44,6 +55,7 @@ export const useStore = create((set, get) => ({
   settingsModal: false,
   showRuleAdd: false,
   zoomSensitivity: 1.7,
+  gridFontScale: 1.5,
   startupStatus: null,
   bookmarkProgress: null,
   priceMarkup: 0,
@@ -61,6 +73,11 @@ export const useStore = create((set, get) => ({
     const n = Math.min(10, Math.max(0.5, Math.round((Number(v) || 1.7) * 10) / 10))
     set({ zoomSensitivity: n })
     window.api.setSetting('zoomSensitivity', n)
+  },
+  setGridFontScale(v) {
+    const n = Math.min(3, Math.max(1, Math.round((Number(v) || 1.5) * 100) / 100))
+    set({ gridFontScale: n })
+    window.api.setSetting('gridFontScale', n)
   },
   setPriceMarkup(v) { set({ priceMarkup: Math.max(0, Number(v) || 0) }) },
   setSplitRatio(v) {
@@ -95,6 +112,9 @@ export const useStore = create((set, get) => ({
     }
     for (const f of fail) {
       get().toast(`로드 실패: ${f.fileName} - ${f.error}`, 'err')
+    }
+    for (const d of ok) {
+      if (d.countMismatch) window.api.alertBox(countMismatchNotice(d.countMismatch))
     }
   },
 
@@ -146,6 +166,14 @@ export const useStore = create((set, get) => ({
   deleteRow(docId, key) {
     set(s => ({
       docs: s.docs.map(d => (d.id !== docId ? d : { ...d, rows: d.rows.filter(r => r.key !== key) }))
+    }))
+  },
+
+  // 중복 그룹 일괄 삭제 — 같은 장바구니를 2번 추출한 경우 첫 1세트만 남기고 나머지를 지운다
+  deleteDuplicateRows(targets) {
+    const tset = new Set((targets || []).map(t => `${t.docId}|${t.key}`))
+    set(s => ({
+      docs: s.docs.map(d => ({ ...d, rows: d.rows.filter(r => !tset.has(`${d.id}|${r.key}`)) }))
     }))
   },
 
@@ -269,6 +297,7 @@ export const useStore = create((set, get) => ({
         columnRows: { name: null, qty: null, price: null, shipping: null },
         firstProductCol: null,
         picks: { name: null, qty: null, price: null, shipping: null },
+        fieldSamples: { name: [], qty: [], price: [], shipping: [] },
         ruleName: '',
         ruleId: `mall-${Date.now()}`,
         matchPattern: ''
@@ -296,6 +325,7 @@ export const useStore = create((set, get) => ({
         rowSamples: [],
         rowSelector: null,
         rowMatchCount: null,
+        fieldSamples: { name: [], qty: [], price: [], shipping: [] },
         ruleId: host ? host.split('.').slice(-2).join('-').replace(/[^a-z0-9-]/g, '') : m.ruleId,
         matchPattern: host || m.matchPattern
       },
@@ -308,6 +338,28 @@ export const useStore = create((set, get) => ({
     const m = get().mapping
     if (!m) return
     set({ mapping: { ...m, step } })
+  },
+
+  // 매핑 클릭 실수 복구 — 행/필드 샘플을 개별 삭제하면 같은 단계에서 다시 클릭할 수 있다
+  removeRowSample(i) {
+    const m = get().mapping
+    if (!m) return
+    const rowSamples = (m.rowSamples || []).filter((_, j) => j !== i)
+    const rowSelector = rowSamples.length
+      ? rowSamples[rowSamples.length - 1].replace(/:nth-of-type\(\d+\)/g, '')
+      : null
+    set({ mapping: { ...m, rowSamples, rowSelector, rowMatchCount: null } })
+    get().validateRowCount()
+  },
+
+  removeFieldSample(kind, i) {
+    const m = get().mapping
+    if (!m) return
+    const fieldSamples = { ...(m.fieldSamples || { name: [], qty: [], price: [], shipping: [] }) }
+    fieldSamples[kind] = (fieldSamples[kind] || []).filter((_, j) => j !== i)
+    const picks = { ...m.picks }
+    picks[kind] = fieldSamples[kind].length ? fieldSamples[kind][fieldSamples[kind].length - 1] : null
+    set({ mapping: { ...m, fieldSamples, picks } })
   },
 
   setMappingField(k, v) {
@@ -374,7 +426,9 @@ export const useStore = create((set, get) => ({
       const stripped = selector.replace(/:nth-of-type\(\d+\)/g, '')
       const uniq = [...new Set(rowSamples.map(s => s.replace(/:nth-of-type\(\d+\)/g, '')))]
       set({ mapping: { ...m, rowSamples, rowSelector: stripped, rowMatchCount: null } })
-      if (uniq.length === 1) get().toast(`행 ${rowSamples.length}개 선택 — 공통 선택자: ${stripped.slice(0, 50)}`, 'ok')
+      const needRows = parseInt(m.productCount, 10)
+      if (needRows >= 2 && rowSamples.length >= needRows) get().toast(`행 ${needRows}개 선택 완료 — [다음: 상품명 지정]을 누르세요`, 'ok')
+      else if (uniq.length === 1) get().toast(`행 ${rowSamples.length}개 선택 — 공통 선택자: ${stripped.slice(0, 50)}`, 'ok')
       else get().toast('서로 다른 구조가 섞였습니다 — 마지막 클릭한 행 기준으로 갱신됩니다', 'warn')
       get().validateRowCount()
     } else if (['name', 'qty', 'price', 'shipping'].includes(kind)) {
@@ -389,6 +443,24 @@ export const useStore = create((set, get) => ({
         const nextStep = order.find(k2 => !picks[k2]) || 'confirm'
         set({ mapping: { ...m, columnRows, picks, step: nextStep } })
         get().toast(`${kind} 지정: ${sampleText || ''} (표 ${cell.row + 1}번째 줄)`, 'ok')
+        return
+      }
+      // 상품 개수 N(≥2)이 입력된 경우: 각 항목(상품명·수량·주문금액·배송비)도 상품별로
+      // N번 클릭해야 한다 — N개가 모이면 자동으로 다음 단계로 진행한다
+      const need = parseInt(m.productCount, 10)
+      const sample = { selector, sampleText }
+      if (need >= 2) {
+        const fieldSamples = { ...(m.fieldSamples || { name: [], qty: [], price: [], shipping: [] }) }
+        fieldSamples[kind] = [...(fieldSamples[kind] || []), sample]
+        const picks = { ...m.picks, [kind]: sample }
+        const got = fieldSamples[kind].length
+        const order = ['name', 'qty', 'price', 'shipping']
+        const done = got >= need
+        const nextStep = done ? (order[order.indexOf(kind) + 1] || 'confirm') : m.step
+        set({ mapping: { ...m, fieldSamples, picks, step: nextStep } })
+        get().toast(done
+          ? `${kind} ${need}개 지정 완료${nextStep !== 'confirm' ? ' — 다음 항목을 선택하세요' : ' — 규칙 이름을 확인하고 저장하세요'}`
+          : `${kind} ${got}/${need} 선택됨 — ${got + 1}번째 상품의 ${kind}을(를) 클릭하세요`, 'ok')
         return
       }
       const picks = { ...m.picks, [kind]: { selector, sampleText } }
@@ -437,6 +509,29 @@ export const useStore = create((set, get) => ({
         get().toast('행/상품명/단가는 필수입니다', 'err')
         return
       }
+      // 상품별 N샘플이 모이면 샘플들에서 공통 선택자를 도출한다 —
+      // 한 상품만 클릭한 선택자는 :nth-of-type이 박혀 다른 상품을 누락시킨다
+      const deriveSelector = (kind, fallback) => {
+        const arr = (m.fieldSamples && m.fieldSamples[kind]) || []
+        if (arr.length < 2) return fallback
+        const stripped = arr.map(s => String(s.selector || '').replace(/:nth-of-type\(\d+\)/g, '').replace(/:nth-child\(\d+\)/g, ''))
+        const uniq = [...new Set(stripped)]
+        if (uniq.length === 1) return uniq[0]
+        const segs = stripped.map(s => s.split(/\s*>\s*/).filter(Boolean))
+        let common = segs[0]
+        for (const seg of segs.slice(1)) {
+          let k = 0
+          while (k < common.length && k < seg.length && common[common.length - 1 - k] === seg[seg.length - 1 - k]) k++
+          common = common.slice(common.length - k)
+        }
+        return common.length ? common.join(' > ') : stripped[stripped.length - 1]
+      }
+      const nameSel = deriveSelector('name', picks.name.selector)
+      const qtySel = deriveSelector('qty', picks.qty && picks.qty.selector)
+      const priceSel = deriveSelector('price', picks.price.selector)
+      const shipSel = deriveSelector('shipping', picks.shipping && picks.shipping.selector)
+      const nUsed = parseInt(m.productCount, 10)
+      const nNote = nUsed >= 2 ? ` (상품 ${nUsed}개 클릭 매핑)` : ''
       rule = {
         id: ruleId,
         name: ruleName || ruleId,
@@ -444,15 +539,15 @@ export const useStore = create((set, get) => ({
         rowSelector,
         priceIs: 'lineTotal',
         fields: {
-          name: picks.name.selector ? { sel: picks.name.selector } : { sel: '' },
-          qty: picks.qty ? (picks.qty.selector ? { sel: picks.qty.selector, regex: '(\\d+)' } : { sel: '', regex: '(\\d+)' }) : null,
-          price: picks.price.selector ? { sel: picks.price.selector, regex: '([\\d,]+)' } : { sel: '', regex: '([\\d,]+)' }
+          name: nameSel ? { sel: nameSel } : { sel: '' },
+          qty: qtySel ? { sel: qtySel, regex: '(\\d+)' } : null,
+          price: priceSel ? { sel: priceSel, regex: '([\\d,]+)' } : { sel: '', regex: '([\\d,]+)' }
         },
-        shipping: picks.shipping
-          ? { mode: 'selector', sel: picks.shipping.selector, regex: '([\\d,]+)' }
+        shipping: shipSel
+          ? { mode: 'selector', sel: shipSel, regex: '([\\d,]+)' }
           : { mode: 'none' },
         user: true,
-        notes: '캡처 문서 클릭 매핑으로 생성됨'
+        notes: `캡처 문서 클릭 매핑으로 생성됨${nNote}`
       }
     }
 
@@ -604,10 +699,19 @@ export const useStore = create((set, get) => ({
     if (settings && Number(settings.zoomSensitivity) > 0) {
       set({ zoomSensitivity: Math.min(10, Math.max(0.5, Number(settings.zoomSensitivity))) })
     }
+    if (settings && Number(settings.gridFontScale) > 0) {
+      set({ gridFontScale: Math.min(3, Math.max(1, Number(settings.gridFontScale))) })
+    }
     window.api.onMhtmlReceived(doc => {
       const m = get().mapping
       if (m && m.waiting) {
         get().beginMappingCapture(doc)
+        return
+      }
+      // 네이버 장바구니는 확장(품의캡처 아이콘) 캡처만 지원 — 북마크릿/수동 저장은 거부 안내
+      if (doc && doc.ruleId === 'naver-cart' && doc.captureChannel !== 'extension') {
+        if (doc && doc.id) window.api.rejectDoc(doc.id)
+        window.api.alertBox(RULE_REJECT_MESSAGES['naver-cart'])
         return
       }
       const itemRows = ((doc && doc.rows) || []).filter(r => !r.isShipping)

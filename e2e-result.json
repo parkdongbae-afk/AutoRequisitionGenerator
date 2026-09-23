@@ -239,7 +239,7 @@
       "idx": 42,
       "status": 200,
       "len": 411628,
-      "head": "@charset \"utf-8\"; @import url(\"app-mhtml://285c"
+      "head": "@charset \"utf-8\"; @import url(\"app-mhtml://0bda"
     },
     {
       "idx": 43,
@@ -320,7 +320,7 @@
     "errs": [],
     "rootChildren": 1,
     "hasHeader": true,
-    "footer": "MHTML 0개품목 0건총액 0원엑셀 경로 미지정단가0%3%5%7%10%15%20%25%30%50%인상엑셀에",
+    "footer": "MHTML0개품목0건총액0원엑셀 경로 미지정단가0%3%5%7%10%15%20%25%30%50%인상엑셀에 저장",
     "tableCols": 9
   },
   "mappingCheck": {

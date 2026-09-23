@@ -1,0 +1,44 @@
+[
+  {
+    "name": "주문서 규칙=emartmall",
+    "ok": true,
+    "detail": {
+      "ruleId": "emartmall"
+    }
+  },
+  {
+    "name": "주문서 품목 2건",
+    "ok": true,
+    "detail": {
+      "items": [
+        "3x3980",
+        "1x10900"
+      ]
+    }
+  },
+  {
+    "name": "주문서 바나나 품목",
+    "ok": true,
+    "detail": {
+      "names": [
+        "에콰도르산 달콤 바나나",
+        "스미후루 바나나 2.6"
+      ]
+    }
+  },
+  {
+    "name": "주문서 쿠폰 접두사 제거",
+    "ok": true,
+    "detail": {
+      "names": [
+        "에콰도르산 달콤 바나나 1kg",
+        "스미후루 바나나 2.6kg (총 2개)"
+      ]
+    }
+  },
+  {
+    "name": "정답 파일 없음(주문서 갱신 후 미제공)",
+    "ok": true,
+    "detail": {}
+  }
+]

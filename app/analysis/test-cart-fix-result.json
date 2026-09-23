@@ -120,29 +120,107 @@
     }
   },
   {
-    "name": "G마켓 카트 규칙 유지",
+    "name": "11st 주문서 그룹 내 복수 상품",
+    "ok": true,
+    "detail": {
+      "items": [
+        "10x1060",
+        "1x1324000",
+        "2x2500"
+      ]
+    }
+  },
+  {
+    "name": "11st 장바구니 그룹 내 복수 상품(prefix 체크)",
+    "ok": true,
+    "detail": {
+      "prods": [
+        "상품 bcktSeq_B_0",
+        "상품 bcktSeq_B_1"
+      ],
+      "ships": 2
+    }
+  },
+  {
+    "name": "G마켓 신규 규칙 유지",
     "ok": true,
     "detail": {
       "ruleId": "gmarket-cart"
     }
   },
   {
-    "name": "G마켓 카트 배송비 12,000",
-    "ok": true,
-    "detail": {
-      "shipping": 12000
-    }
-  },
-  {
-    "name": "G마켓 카트 품목 4건",
+    "name": "G마켓 신규 품목 3건(유닛 분리)",
     "ok": true,
     "detail": {
       "items": [
-        "3x6200",
+        "1x1990",
         "1x3990",
-        "10x1600",
-        "1x60520"
+        "3x78000"
       ]
+    }
+  },
+  {
+    "name": "G마켓 신규 배송비 6,000(개별 3,000×2 행)",
+    "ok": true,
+    "detail": {
+      "ship": [
+        "1x3000",
+        "1x3000"
+      ],
+      "shippingFee": null
+    }
+  },
+  {
+    "name": "G마켓 신규 감지 제거(카운터 불일치 무경고)",
+    "ok": true,
+    "detail": {
+      "countMismatch": null
+    }
+  },
+  {
+    "name": "G마켓 할인행 match:last(스탬프)",
+    "ok": true,
+    "detail": {
+      "items": [
+        "10x5520"
+      ]
+    }
+  },
+  {
+    "name": "G마켓 할인행 match:last(수동 checked 속성)",
+    "ok": true,
+    "detail": {
+      "items": [
+        "10x5520"
+      ]
+    }
+  },
+  {
+    "name": "G마켓 복수 유닛 분리(스탬프 true → 2품목)",
+    "ok": true,
+    "detail": {
+      "items": [
+        {
+          "name": "플라스틱 정리함 수납함 바구니 바스켓 소쿠리 적층 문구상자",
+          "qty": 5,
+          "unitPrice": 1656,
+          "option": "멀티바스켓(1호)"
+        },
+        {
+          "name": "플라스틱 정리함 수납함 바구니 바스켓 소쿠리 적층 문구상자",
+          "qty": 5,
+          "unitPrice": 1656,
+          "option": "멀티바스켓(2호)"
+        }
+      ]
+    }
+  },
+  {
+    "name": "G마켓 복수 유닛 폴백(상태 없음 → 2품목 전체 추출)",
+    "ok": true,
+    "detail": {
+      "items": 2,
+      "fb": true
     }
   },
   {
@@ -167,31 +245,98 @@
     }
   },
   {
-    "name": "네이버 카트 배송비 3,000",
+    "name": "네이버 카트 배송비 6,000",
+    "ok": true,
+    "detail": {
+      "shipping": 6000
+    }
+  },
+  {
+    "name": "네이버 카트 품목 4건(저장분)",
+    "ok": true,
+    "detail": {
+      "items": 4
+    }
+  },
+  {
+    "name": "네이버 카트 부분저장 감지 6→4",
+    "ok": true,
+    "detail": {
+      "countMismatch": {
+        "expected": 6,
+        "actual": 4
+      }
+    }
+  },
+  {
+    "name": "네이버 추가상품 규칙 유지",
+    "ok": true,
+    "detail": {
+      "ruleId": "naver-cart"
+    }
+  },
+  {
+    "name": "네이버 추가상품 6건(라인 분리)",
+    "ok": true,
+    "detail": {
+      "items": [
+        "1x12000",
+        "1x23900",
+        "1x45000",
+        "2x1590",
+        "3x21300",
+        "3x9500"
+      ]
+    }
+  },
+  {
+    "name": "네이버 추가상품 옵션 접두사 제거",
+    "ok": true,
+    "detail": {
+      "opts": [
+        "",
+        "",
+        "마미손질긴 L (5켤레)",
+        "분홍 소 오른손만 10개입",
+        "블랙 290mm",
+        "소 사이즈 / 화이트 소 미색 양손"
+      ]
+    }
+  },
+  {
+    "name": "네이버 추가상품 부분저장 감지 없음(카운터 5=카드 수)",
+    "ok": true,
+    "detail": {
+      "countMismatch": null
+    }
+  },
+  {
+    "name": "네이버 추가상품 배송비 3,000",
     "ok": true,
     "detail": {
       "shipping": 3000
     }
   },
   {
-    "name": "네이버 카트 품목 3건",
+    "name": "엑셀 배송비 금액별 유지(3000×3+2500×2)",
     "ok": true,
     "detail": {
-      "items": 3
-    }
-  },
-  {
-    "name": "네이버 구 캡처 배송비 없음",
-    "ok": true,
-    "detail": {
-      "shipping": null
-    }
-  },
-  {
-    "name": "네이버 구 캡처 품목 2건",
-    "ok": true,
-    "detail": {
-      "items": 2
+      "feeRows": [
+        [
+          "배송비",
+          "",
+          "식",
+          2,
+          2500
+        ],
+        [
+          "배송비",
+          "",
+          "식",
+          3,
+          3000
+        ]
+      ]
     }
   }
 ]

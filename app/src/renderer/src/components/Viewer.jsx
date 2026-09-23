@@ -4,18 +4,18 @@ import ExcelView from './ExcelView'
 
 function WaitingPanel() {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 bg-slate-50 px-8 text-center">
+    <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#F8FAFC] px-8 text-center">
       <div className="animate-pulse text-[44px]">📡</div>
-      <h2 className="text-[17px] font-bold text-slate-800">캡처 대기 중...</h2>
-      <p className="text-[13px] leading-relaxed text-slate-600">
+      <h2 className="text-[17px] font-bold text-[#1E293B]">캡처 대기 중...</h2>
+      <p className="text-[13px] leading-relaxed text-[#64748B]">
         <b>본인 브라우저</b>(로그인 유지됨)에서 쇼핑몰 주문/장바구니 화면을 열고<br />
         ① 익스텐션 아이콘 또는 ② 북마크릿 <b>🛒품의캡처</b>를 누르면<br />
         이 화면이 자동으로 해당 페이지로 바뀌고 클릭 매핑이 시작됩니다
       </p>
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-[12.5px] font-medium text-amber-800">
+      <div className="rounded-lg border border-amber-200 bg-[#FEF3C7] px-4 py-2 text-[12.5px] font-medium text-[#B45309]">
         📦 <b>2개 이상의 상품을 선택 하세요.</b> — 행 선택자 검증에 필요합니다
       </div>
-      <div className="mt-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-[12px] text-slate-500">
+      <div className="mt-2 rounded-lg border border-[#E2E8F0] bg-white px-4 py-3 text-[12px] text-[#64748B]">
         캡처는 파일로 저장되어 표시됩니다<br />
         (북마크릿: 웹페이지 전부 *.html / 익스텐션: 단일파일 MHTML)
       </div>
@@ -197,10 +197,10 @@ export default function Viewer() {
   }, [docViewActive])
 
   return (
-    <section className="relative flex h-full min-w-0 flex-1 flex-col border-r border-slate-300 bg-white">
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-slate-50 px-1 py-1">
+    <section className="relative flex h-full min-w-0 flex-1 flex-col bg-white">
+      <div className="flex items-center gap-1 overflow-x-auto border-b border-[#E2E8F0] bg-white px-1 py-1">
         {docs.length === 0 && !waiting && (
-          <span className="px-2 py-1 text-[12px] text-slate-400">
+          <span className="px-2 py-1 text-[12px] text-[#94A3B8]">
             MHTML 폴더/파일 열기 또는 🛒품의캡처 북마크릿·익스텐션으로 전송하세요
           </span>
         )}
@@ -208,8 +208,8 @@ export default function Viewer() {
           <button
             key={d.id}
             onClick={() => selectDoc(d.id)}
-            className={`group flex max-w-[180px] shrink-0 items-center gap-1 rounded-t-md px-2.5 py-1.5 text-[11.5px] ${
-              d.id === selectedDocId ? 'bg-white font-semibold text-blue-700 shadow-[inset_0_-2px_0_#2563eb]' : 'bg-slate-200 text-slate-600 hover:bg-slate-100'
+            className={`group flex max-w-[180px] shrink-0 items-center gap-1 rounded-t-lg px-2.5 py-1.5 text-[11.5px] transition-colors duration-150 ${
+              d.id === selectedDocId ? 'bg-[#EEEDFE] font-semibold text-[#5B4DFB] shadow-[inset_0_-2px_0_#5B4DFB]' : 'bg-[#F8FAFC] text-[#64748B] hover:bg-[#F1F5F9]'
             }`}
             title={d.sourceUrl}
           >
@@ -218,7 +218,7 @@ export default function Viewer() {
               {d.fileName.replace(/\.(mhtml?|html?)$/i, '')}
             </span>
             <span
-              className="ml-1 rounded px-1 text-slate-400 opacity-0 hover:bg-slate-300 group-hover:opacity-100"
+              className="ml-1 rounded px-1 text-[#94A3B8] opacity-0 hover:bg-[#E2E8F0] group-hover:opacity-100"
               onClick={e => { e.stopPropagation(); closeDoc(d.id) }}
             >
               ✕
@@ -228,23 +228,23 @@ export default function Viewer() {
       </div>
 
       {pickerActive && (
-        <div className="flex items-center gap-2 border-b border-blue-200 bg-blue-50 px-2 py-1.5 text-[11.5px] text-blue-900">
+        <div className="flex items-center gap-2 border-b border-[#DDD9FC] bg-[#EEEDFE] px-2 py-1.5 text-[11.5px] text-[#4C3DE6]">
           <b>매핑 모드</b> — 좌측 캡처 문서에서 항목을 <b>클릭</b>하여 지정하세요
         </div>
       )}
 
       {!waiting && (
-        <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-2 py-1">
-          <button className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[12px] hover:bg-slate-100" onClick={() => setZoom(zoom + 0.1)}>＋ 확대</button>
-          <button className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[12px] hover:bg-slate-100" onClick={() => setZoom(zoom - 0.1)}>－ 축소</button>
-          <button className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[12px] hover:bg-slate-100" onClick={() => setZoom(1)}>100%</button>
-          <span className="text-[11px] text-slate-500">{Math.round(zoom * 100)}%</span>
-          <div className="ml-auto flex items-center gap-1 text-[11px] text-slate-500">
+        <div className="flex items-center gap-2 border-b border-[#E2E8F0] bg-[#F8FAFC] px-2 py-1">
+          <button className="rounded-md border border-[#E2E8F0] bg-white px-2 py-0.5 text-[12px] text-[#334155] transition-colors duration-150 hover:bg-[#F1F5F9]" onClick={() => setZoom(zoom + 0.1)}>＋ 확대</button>
+          <button className="rounded-md border border-[#E2E8F0] bg-white px-2 py-0.5 text-[12px] text-[#334155] transition-colors duration-150 hover:bg-[#F1F5F9]" onClick={() => setZoom(zoom - 0.1)}>－ 축소</button>
+          <button className="rounded-md border border-[#E2E8F0] bg-white px-2 py-0.5 text-[12px] text-[#334155] transition-colors duration-150 hover:bg-[#F1F5F9]" onClick={() => setZoom(1)}>100%</button>
+          <span className="text-[11px] text-[#64748B]">{Math.round(zoom * 100)}%</span>
+          <div className="ml-auto flex items-center gap-1 text-[11px] text-[#64748B]">
             {selected && (
               <>
                 <span>{selected.mallName}</span>
                 <select
-                  className="rounded border border-slate-300 bg-white px-1 py-0.5 text-[11px]"
+                  className="rounded-md border border-[#E2E8F0] bg-white px-1 py-0.5 text-[11px] text-[#334155]"
                   value={selected.ruleId || ''}
                   disabled={!!selected.excel}
                   onChange={e => e.target.value && applyRule(selected.id, e.target.value)}
@@ -262,7 +262,7 @@ export default function Viewer() {
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 bg-slate-200"
+        className="min-h-0 flex-1 bg-[#EAECEF]"
         style={{ overflow: 'auto', cursor: panning ? 'grabbing' : undefined }}
         onMouseDown={e => {
           if (e.button === 1 || e.button === 2) {
@@ -310,8 +310,16 @@ export default function Viewer() {
             />
           </div>
         ) : (
-          <div className="flex h-full items-center justify-center text-[13px] text-slate-400">
-            좌측 상단에서 캡처를 불러오면 주문 화면이 여기에 표시됩니다
+          <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#F8FAFC] text-[13px] text-[#64748B]">
+            <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true">
+              <rect x="14" y="10" width="50" height="62" rx="8" fill="#EEEDFE" />
+              <rect x="22" y="22" width="34" height="5" rx="2.5" fill="#C9C3FC" />
+              <rect x="22" y="33" width="34" height="5" rx="2.5" fill="#C9C3FC" />
+              <rect x="22" y="44" width="22" height="5" rx="2.5" fill="#DDD9FC" />
+              <circle cx="66" cy="62" r="18" fill="#5B4DFB" />
+              <path d="M58 62l6 6 12-12" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
+            품의캡처 북마크를 클릭하거나 품의 요구 확장 프로그램을 클릭하면 주문 화면이 여기에 표시됩니다
           </div>
         )}
       </div>

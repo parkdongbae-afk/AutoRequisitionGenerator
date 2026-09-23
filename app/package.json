@@ -1,7 +1,7 @@
 {
   "name": "auto-requisition-generator",
   "productName": "자동 품의 요구 생성기",
-  "version": "1.0.0",
+  "version": "1.12.0",
   "description": "쇼핑몰 장바구니 MHTML에서 품목을 추출하여 품의 서식 엑셀에 자동 기입하는 데스크톱 앱",
   "main": "./out/main/index.js",
   "author": "dongbae",
@@ -28,6 +28,10 @@
       {
         "from": "extension",
         "to": "extension"
+      },
+      {
+        "from": "../extension_auto",
+        "to": "extension_auto"
       },
       {
         "from": "resources",

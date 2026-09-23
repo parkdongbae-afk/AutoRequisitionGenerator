@@ -35,7 +35,7 @@ function extractField(scope, spec) {
 
 /**
  * 규칙에 따라 HTML에서 품목 추출
- * @returns {{items: Array<{name:string, qty:number, unitPrice:number}>, shippingFee: number|null, checkedFallback: boolean}}
+ * @returns {{items: Array<{name:string, qty:number, unitPrice:number}>, shippingFee: number|null, checkedFallback: boolean, countMismatch: {expected: number, actual: number}|null}}
  */
 function extractItems(html, rule) {
   if (rule.orientation === 'column') return extractItemsByColumn(html, rule)
@@ -56,39 +56,40 @@ function extractItems(html, rule) {
   $(rule.rowSelector).each((_, el) => {
     const row = $(el);
     const name = extractField(row, rule.fields.name);
-    const priceStr = extractField(row, rule.fields.price);
-    let qtyStr = extractField(row, rule.fields.qty);
-    if (qtyStr != null && !/[0-9]/.test(qtyStr)) qtyStr = null;
-    let qty = qtyStr != null ? cleanInt(qtyStr) : null;
-    const price = priceStr != null ? cleanInt(priceStr) : null;
-    const option = extractField(row, rule.fields.option) || '';
+    const rowPriceStr = extractField(row, rule.fields.price);
+    let rowQtyStr = extractField(row, rule.fields.qty);
+    if (rowQtyStr != null && !/[0-9]/.test(rowQtyStr)) rowQtyStr = null;
+    const rowPrice = rowPriceStr != null ? cleanInt(rowPriceStr) : null;
+    const rowQty = rowQtyStr != null ? cleanInt(rowQtyStr) : null;
+    const rowOption = extractField(row, rule.fields.option) || '';
 
     if (rowMode && name && name.includes(rowMatch)) {
-      const fee = price;
+      const fee = rowPrice;
       if (fee != null) {
         shippingFee = (shippingFee || 0) + fee;
       }
       return;
     }
-    // 수량이 DOM 속성에 없는 몰(다이소 등 Vue 카트): 합계금액 ÷ 단가로 수량 계산
-    if (qty == null && price != null && rule.qtyFromUnit) {
-      const unitStr = extractField(row, { sel: rule.qtyFromUnit });
-      const unit = unitStr != null ? cleanInt(unitStr) : null;
-      if (unit != null && unit > 0) qty = Math.max(1, Math.round(price / unit));
-    }
-    if (!name || price == null) return;
-    const effQty = qty || 1;
-    let unitPrice = price;
-    if (rule.priceIs === 'lineTotal' && effQty > 1) {
-      unitPrice = Math.round(price / effQty);
-    }
-    // 뷰어 표시용: 수량 input에 value 속성이 없는 몰(다이소몰 Vue 카트)은 mhtml 뷰에서
-    // 수량이 빈칸으로 보인다 — 계산된 수량을 value 속성으로 주입해 뷰에도 반영한다
-    if (rule.qtyInputSel && effQty) {
-      const qtyBox = row.find(rule.qtyInputSel).first();
-      if (qtyBox.length) qtyBox.attr('value', String(effQty));
-    }
-    // 장바구니 V체크 필터: 행의 체크박스 상태(null=상태 알 수 없음)
+
+    // 복수 유닛 행(G마켓 등: 한 상품 안에 옵션 라인이 여러 개 — 각 라인이 독립 품목):
+    // rule.units.sel 이 있으면 유닛별 수량·금액·옵션을 다시 읽어 유닛마다 품목을 만들고,
+    // 유닛이 없는 구조는 기존처럼 행 레벨 값 하나로 품목을 만든다.
+    const unitEls = (rule.units && rule.units.sel) ? row.find(rule.units.sel).toArray() : [];
+    const units = unitEls.length
+      ? unitEls.map(u => {
+          const scope = $(u);
+          const pStr = extractField(scope, rule.fields.price);
+          let qStr = extractField(scope, rule.fields.qty);
+          if (qStr != null && !/[0-9]/.test(qStr)) qStr = null;
+          return {
+            price: pStr != null ? cleanInt(pStr) : rowPrice,
+            qty: qStr != null ? cleanInt(qStr) : rowQty,
+            option: extractField(scope, rule.fields.option) || rowOption
+          };
+        })
+      : [{ price: rowPrice, qty: rowQty, option: rowOption }];
+
+    // 장바구니 V체크 필터: 행의 체크박스 상태(null=상태 알 수 없음) — 유닛들은 행 상태를 따른다
     let state = null;
     if (checkedSpec) {
       const box = row.find(checkedSpec.sel).first();
@@ -103,7 +104,30 @@ function extractItems(html, rule) {
         if (state === true || state === false) hasDefinitive = true;
       }
     }
-    pending.push({ name, qty: effQty, unitPrice, option, state, row });
+
+    for (const unit of units) {
+      let qty = unit.qty;
+      const price = unit.price;
+      // 수량이 DOM 속성에 없는 몰(다이소 등 Vue 카트): 합계금액 ÷ 단가로 수량 계산
+      if (qty == null && price != null && rule.qtyFromUnit) {
+        const unitStr = extractField(row, { sel: rule.qtyFromUnit });
+        const unitFee = unitStr != null ? cleanInt(unitStr) : null;
+        if (unitFee != null && unitFee > 0) qty = Math.max(1, Math.round(price / unitFee));
+      }
+      if (!name || price == null) continue;
+      const effQty = qty || 1;
+      let unitPrice = price;
+      if (rule.priceIs === 'lineTotal' && effQty > 1) {
+        unitPrice = Math.round(price / effQty);
+      }
+      // 뷰어 표시용: 수량 input에 value 속성이 없는 몰(다이소몰 Vue 카트)은 mhtml 뷰에서
+      // 수량이 빈칸으로 보인다 — 계산된 수량을 value 속성으로 주입해 뷰에도 반영한다
+      if (rule.qtyInputSel && effQty) {
+        const qtyBox = row.find(rule.qtyInputSel).first();
+        if (qtyBox.length) qtyBox.attr('value', String(effQty));
+      }
+      pending.push({ name, qty: effQty, unitPrice, option: unit.option, state, row });
+    }
   });
 
   // 체크 상태를 하나라도 읽었으면 체크된 행만 남긴다. 전혀 읽지 못한 문서
@@ -163,7 +187,8 @@ function extractItems(html, rule) {
       };
     })();
     const collect = (sel, regex) => {
-      let sum = 0, found = false;
+      const fees = [];
+      let found = false;
       $(sel).each((_, el) => {
         if (!scopeOk(el)) return;
         let val = $(el).text().trim();
@@ -174,16 +199,23 @@ function extractItems(html, rule) {
         }
         if (/무료|free/i.test(val)) { found = true; return rule.shipping.first ? false : undefined; }
         const fee = cleanInt(val);
-        if (fee != null) { sum += fee; found = true; if (rule.shipping.first) return false; }
+        if (fee != null) { fees.push(fee); found = true; if (rule.shipping.first) return false; }
       });
-      return found ? sum : null;
+      return found ? fees : null;
     };
-    const fee = collect(rule.shipping.sel, rule.shipping.regex);
-    if (fee != null) {
-      shippingFee = fee;
-      if (rule.shipping.discountSel) {
-        const disc = collect(rule.shipping.discountSel, rule.shipping.discountRegex || rule.shipping.regex);
-        if (disc != null) shippingFee -= disc;
+    const fees = collect(rule.shipping.sel, rule.shipping.regex);
+    if (fees != null) {
+      if (rule.shipping.perFee) {
+        // 그룹별 배송비를 각각 별도 행으로 추출(합산 금지) — 엑셀 저장 시 금액별로 묶임
+        for (const f of fees) {
+          if (f > 0) items.push({ name: '배송비', qty: 1, unitPrice: f, option: '', isShipping: true });
+        }
+      } else {
+        shippingFee = fees.reduce((s, f) => s + f, 0);
+        if (rule.shipping.discountSel) {
+          const disc = collect(rule.shipping.discountSel, rule.shipping.discountRegex || rule.shipping.regex);
+          if (disc != null) shippingFee -= disc.reduce((s, f) => s + f, 0);
+        }
       }
     }
   }
@@ -196,7 +228,23 @@ function extractItems(html, rule) {
     if (!shippingFee) shippingFee = null;
   }
 
-  return { items, shippingFee, checkedFallback, html: rule.qtyInputSel ? $.html() : undefined };
+  // 페이지가 알려주는 총 상품 수(선택 상품 수)와 실제 추출 수 대조.
+  // Chrome 저장 스냅샷에서 체크된 일부 행이 누락되는 실측(네이버 6→4, G마켓 7→4) 방어 —
+  // 카운터 > 추출 수면 부분 저장으로 판정해 경고 근거를 돌려준다.
+  // 카운터는 카드(행) 수 기준이므로 유닛 분리(추가상품 라인) 시 품목 수와 어긋나지 않게
+  // 행 수로 비교한다.
+  const keptRowCount = new Set(kept.map(p => p.row)).size;
+  const actualCount = Math.min(items.length, keptRowCount);
+  let countMismatch = null;
+  if (rule.verifyCount && rule.verifyCount.sel && items.length > 0) {
+    const txt = extractField($.root(), { sel: rule.verifyCount.sel, regex: rule.verifyCount.regex || '(\\d+)' });
+    const expected = txt != null ? cleanInt(txt) : null;
+    if (expected != null && expected > actualCount) {
+      countMismatch = { expected, actual: actualCount };
+    }
+  }
+
+  return { items, shippingFee, checkedFallback, countMismatch, html: rule.qtyInputSel ? $.html() : undefined };
 }
 
 function roundUpToTen(n) {

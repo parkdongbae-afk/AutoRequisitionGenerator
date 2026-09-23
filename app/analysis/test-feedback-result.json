@@ -73,22 +73,27 @@
     "name": "checkedScope: 미체크 그룹 배송비 제외(스탬프)",
     "ok": true,
     "detail": {
-      "shipping": 3000,
-      "items": 1
+      "ship": [
+        3000
+      ],
+      "shippingFee": null
     }
   },
   {
     "name": "checkedScope: 수동 저장(속성) 그룹 배송비 3,000",
     "ok": true,
     "detail": {
-      "shipping": 3000
+      "ship": [
+        3000
+      ],
+      "shippingFee": null
     }
   },
   {
     "name": "checkedScope: 전 그룹 무료 → 배송비 null",
     "ok": true,
     "detail": {
-      "shipping": null
+      "items": 1
     }
   },
   {

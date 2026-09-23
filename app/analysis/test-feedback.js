@@ -71,12 +71,14 @@ try {
   const rule = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'lib', 'rules', 'gmarket-cart.json'), 'utf-8'));
   const stampedHtml = `<html><body>${g(true, 3000, 'true')}${g(false, 4000, 'false')}</body></html>`;
   const r1 = extractItems(stampedHtml, rule);
-  check('checkedScope: 미체크 그룹 배송비 제외(스탬프)', r1.shippingFee === 3000, { shipping: r1.shippingFee, items: r1.items.length });
+  const r1ship = r1.items.filter(i => i.isShipping).map(i => i.unitPrice);
+  check('checkedScope: 미체크 그룹 배송비 제외(스탬프)', r1.items.filter(i => i.isShipping).length === 1 && r1ship[0] === 3000 && !r1.shippingFee, { ship: r1ship, shippingFee: r1.shippingFee });
   const manualHtml = `<html><body>${g(true, 3000, null)}${g(false, 0, null)}</body></html>`;
   const r2 = extractItems(manualHtml, rule);
-  check('checkedScope: 수동 저장(속성) 그룹 배송비 3,000', r2.shippingFee === 3000, { shipping: r2.shippingFee });
+  const r2ship = r2.items.filter(i => i.isShipping).map(i => i.unitPrice);
+  check('checkedScope: 수동 저장(속성) 그룹 배송비 3,000', r2.items.filter(i => i.isShipping).length === 1 && r2ship[0] === 3000 && !r2.shippingFee, { ship: r2ship, shippingFee: r2.shippingFee });
   const allFree = extractItems(`<html><body>${g(true, 0, 'true')}</body></html>`, rule);
-  check('checkedScope: 전 그룹 무료 → 배송비 null', !allFree.shippingFee, { shipping: allFree.shippingFee });
+  check('checkedScope: 전 그룹 무료 → 배송비 null', !allFree.shippingFee && allFree.items.filter(i => i.isShipping).length === 0, { items: allFree.items.length });
 } catch (e) { check('checkedScope 단위', false, String(e.message)); }
 
 // 5. 드림디포 카트 회귀: 기존 카트 파일은 여전히 dreamdepot(카트) 규칙

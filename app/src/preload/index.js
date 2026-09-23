@@ -33,6 +33,7 @@ const api = {
   startupRegister: () => ipcRenderer.invoke('startup-register'),
   startupRemove: () => ipcRenderer.invoke('startup-remove'),
   openManual: () => ipcRenderer.invoke('open-manual'),
+  runExtensionV2: () => ipcRenderer.invoke('run-extension-v2'),
   revealFile: (p) => ipcRenderer.invoke('reveal-file', p),
   onMhtmlReceived: (cb) => {
     const handler = (_e, doc) => cb(doc)

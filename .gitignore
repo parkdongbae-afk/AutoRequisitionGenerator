@@ -19,3 +19,6 @@ test_OK/
 
 # ì„ì‹œ íŒŒì¼
 .git-commit-msg.txt
+
+# Playwright MCP »êÃâ¹°
+.playwright-mcp/

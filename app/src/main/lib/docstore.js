@@ -125,6 +125,7 @@ export function loadDocument(filePath, { preferRuleId = null, sourceUrl = null }
   let items = []
   let shippingFee = null
   let checkedFallback = false
+  let countMismatch = null
   let error = null
   let appliedRuleId = null
   let mallName = null
@@ -135,6 +136,7 @@ export function loadDocument(filePath, { preferRuleId = null, sourceUrl = null }
       items = res.items
       shippingFee = res.shippingFee
       checkedFallback = !!res.checkedFallback
+      countMismatch = res.countMismatch || null
       injectedHtml = res.html || null
       appliedRuleId = rule.id
       mallName = rule.name
@@ -167,6 +169,9 @@ export function loadDocument(filePath, { preferRuleId = null, sourceUrl = null }
   }
 
   const rewritten = reflectCheckStates(rewriteUrls(stripScripts(injectedHtml || rawHtml), id, parts))
+  // 캡처 채널 표식: 확장(background.js)·북마크릿(bookmarklet.js)이 삽입한 meta —
+  // 네이버 장바구니처럼 채널별 지원 범위가 다른 몰 구분에 사용
+  const channelMatch = /<meta[^>]+name="arge-channel"[^>]+content="([^"]+)"/i.exec(rawHtml)
 
   const doc = {
     id,
@@ -175,9 +180,11 @@ export function loadDocument(filePath, { preferRuleId = null, sourceUrl = null }
     sourceUrl: effectiveUrl,
     mallName: mallName || '미지원 쇼핑몰',
     ruleId: appliedRuleId,
+    captureChannel: channelMatch ? channelMatch[1] : null,
     itemCount: items.length,
     shippingFee,
     checkedFallback,
+    countMismatch,
     rows,
     error,
     rawHtml,
@@ -199,6 +206,7 @@ export function summarize(doc) {
     itemCount: doc.itemCount,
     shippingFee: doc.shippingFee,
     checkedFallback: !!doc.checkedFallback,
+    countMismatch: doc.countMismatch || null,
     rows: doc.rows,
     error: doc.error,
     size: doc.size
@@ -234,6 +242,7 @@ export function reextract(id, rule) {
   doc.itemCount = res.items.length
   doc.shippingFee = res.shippingFee
   doc.checkedFallback = !!res.checkedFallback
+  doc.countMismatch = res.countMismatch || null
   doc.mallName = rule.name
   doc.ruleId = rule.id
   doc.error = null

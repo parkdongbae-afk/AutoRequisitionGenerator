@@ -34,21 +34,6 @@
     }
   },
   {
-    "id": "cart_03",
-    "mall": "네이버 장바구니 (naver-cart)",
-    "pass": true,
-    "detail": {
-      "items": [
-        "1x249000 에디파이어 M90 EDIFIER 블루투스 멀티미디어 스피커",
-        "2x219000 PreSonus 에리스스피커 3.5 2세대 모니터 화이트 1조"
-      ],
-      "shipping": 0,
-      "ansShipping": 0,
-      "missing": [],
-      "extras": []
-    }
-  },
-  {
     "id": "cart_04",
     "mall": "쿠팡 (coupang)",
     "pass": true,

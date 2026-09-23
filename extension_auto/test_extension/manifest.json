@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "자동 설치 테스트 익스텐션",
+  "version": "1.0.0",
+  "description": "개발자 모드 관리자에서 자동 설치 기능을 확인하기 위한 테스트 익스텐션입니다.",
+  "action": {
+    "default_title": "자동 설치 테스트",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

@@ -16,10 +16,10 @@ if (target.toLowerCase().endsWith('.mhtml')) {
 } else {
   html = file.toString('utf-8');
 }
-const { items, shippingFee } = extractItems(html, rule);
+const { items, shippingFee, countMismatch } = extractItems(html, rule);
 let sum = 0;
 console.log(`규칙: ${rule.id} (${rule.name})`);
-console.log(`추출 항목 ${items.length}개, 배송비: ${shippingFee}`);
+console.log(`추출 항목 ${items.length}개, 배송비: ${shippingFee}${countMismatch ? ` | !! 부분저장 의심: 페이지 카운터 ${countMismatch.expected} vs 추출 ${countMismatch.actual}` : ''}`);
 for (const it of items) {
   const rounded = roundUpToTen(it.unitPrice);
   const total = rounded * it.qty;

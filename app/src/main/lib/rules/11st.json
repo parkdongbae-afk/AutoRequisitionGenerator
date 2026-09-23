@@ -2,7 +2,7 @@
   "id": "11st",
   "name": "11번가",
   "match": ["11st.co.kr"],
-  "rowSelector": "li.group_prd",
+  "rowSelector": "div.c_order_prd_row",
   "priceIs": "lineTotal",
   "fields": {
     "name": { "sel": ".prd_name a" },
@@ -14,5 +14,5 @@
     "sel": "#dlvTotalAmountView",
     "regex": "([\\d,]+)"
   },
-  "notes": "li.group_prd 상품블록. c_order_quantity .number=수량, c_order_prd_price=할인모음가(단가×수량 라인합계 → lineTotal로 단가 환산). 배송비는 결제예정금액 dlvTotalAmountView (도서산간 display:none 제외)"
+  "notes": "주문서(buy.11st.co.kr/pay) 상품 블록 div.c_order_prd_row — 이전 rowSelector(li.group_prd)는 판매자 그룹 단위라 그룹 내 첫 상품만 추출되는 문제 수정(그룹 내 상품 2개 이상 시 나머지 누락). c_order_quantity .number=수량, c_order_prd_price=할인모음가(단가×수량 라인합계 → lineTotal로 단가 환산). 배송비는 결제예정금액 dlvTotalAmountView (도서산간 display:none 제외)"
 }

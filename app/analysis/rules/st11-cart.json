@@ -3,7 +3,7 @@
   "name": "11번가 장바구니",
   "match": ["11st.co.kr/cart"],
   "rowSelector": "li[id^=bunchPrdWrap_]",
-  "checkedOnly": { "sel": "input[name=bcktSeq_B_0]" },
+  "checkedOnly": { "sel": "input[name^=bcktSeq_]" },
   "priceIs": "lineTotal",
   "fields": {
     "name": { "sel": ".prd_name a" },
@@ -16,5 +16,5 @@
     "sel": ".c-order-delivery__price .number",
     "regex": "([\\d,]+)"
   },
-  "notes": "장바구니(buy.11st.co.kr/cart) 화면. V체크된 상품만 추출 — input[name=bcktSeq_B_0]의 checked 속성이 MHTML 저장 시 보존됨. 할인모음가(.total_price)=합계(lineTotal), 수량변경 버튼 텍스트=수량, 상품별 배송비(.c-order-delivery__price)는 '<상품명> 배송비' 행으로 추가."
+  "notes": "장바구니(buy.11st.co.kr/cart) 화면. V체크된 상품만 추출 — 행 체크박스 name은 bcktSeq_B_0/B_1처럼 그룹 내 순번이 붙으므로 prefix(bcktSeq_) 매칭으로 모든 행을 판정한다(그룹당 2개 이상 상품 누락 수정). checked 속성이 MHTML 저장 시 보존됨. 할인모음가(.total_price)=합계(lineTotal), 수량변경 버튼 텍스트=수량, 상품별 배송비(.c-order-delivery__price)는 '<상품명> 배송비' 행으로 추가."
 }
