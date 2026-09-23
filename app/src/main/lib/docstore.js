@@ -81,6 +81,20 @@ function fixLazyImages(html) {
   })
 }
 
+// 캡처 채널이 박제한 data-arge-checked 스탬프를 checked 속성으로 반영해
+// mhtml 뷰에서도 V체크가 화면에 보이게 한다 (추출 결과와 뷰어 상태 일치)
+export function reflectCheckStates(html) {
+  return html.replace(/<input\b[^>]*>/gi, (tag) => {
+    const m = /\sdata-arge-checked="(true|false)"/i.exec(tag)
+    if (!m) return tag
+    const bare = tag.replace(/\sdata-arge-checked="(?:true|false)"/i, '')
+    const checkedAttrRe = /\schecked(?:\s*=\s*("[^"]*"|'[^']*'|[^\s>]+))?(?=[\s/>])/
+    const has = checkedAttrRe.test(bare)
+    if (m[1] === 'true') return has ? tag : bare.replace(/\/?>$/, (gt) => ` checked${gt}`)
+    return has ? bare.replace(checkedAttrRe, '') : tag
+  })
+}
+
 export function loadDocument(filePath, { preferRuleId = null, sourceUrl = null } = {}) {
   const buf = fs.readFileSync(filePath)
   let parts
@@ -114,12 +128,14 @@ export function loadDocument(filePath, { preferRuleId = null, sourceUrl = null }
   let error = null
   let appliedRuleId = null
   let mallName = null
+  let injectedHtml = null
   if (rule) {
     try {
       const res = extractItems(rawHtml, rule)
       items = res.items
       shippingFee = res.shippingFee
       checkedFallback = !!res.checkedFallback
+      injectedHtml = res.html || null
       appliedRuleId = rule.id
       mallName = rule.name
     } catch (e) {
@@ -150,7 +166,7 @@ export function loadDocument(filePath, { preferRuleId = null, sourceUrl = null }
     })
   }
 
-  const rewritten = rewriteUrls(stripScripts(rawHtml), id, parts)
+  const rewritten = reflectCheckStates(rewriteUrls(stripScripts(injectedHtml || rawHtml), id, parts))
 
   const doc = {
     id,
