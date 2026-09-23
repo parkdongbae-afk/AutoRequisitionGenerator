@@ -22,7 +22,7 @@ const RULE_REJECT_MESSAGES = {
 }
 
 // 체크 상태를 읽지 못해 전체 추출로 폴백한 문서에만 표시 (doc.checkedFallback)
-const CART_FALLBACK_NOTICE = '이 쇼핑몰은 캡처에서 V체크 여부를 읽지 못해\n장바구니의 모든 상품이 추가되었습니다.\n선택하지 않은 상품은 표에서 행을 삭제해 주세요.'
+const CART_FALLBACK_NOTICE = '이 쇼핑몰은 수동 저장(MHTML)에서는 V체크 여부를 읽지 못해\n장바구니의 모든 상품이 추가되었습니다. 선택하지 않은 상품은 표에서 행을 삭제해 주세요.\n\n품의캡처(익스텐션·북마크릿)로 다시 담으면 V체크된 상품만 자동 추출됩니다.'
 
 function withKeys(doc) {
   doc.rows = (doc.rows || []).map(r => ({ ...r, key: nextRowKey() }))
