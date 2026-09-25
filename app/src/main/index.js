@@ -13,7 +13,8 @@ import { PICKER_SCRIPT } from './lib/picker.js'
 import { BROWSER_DATA, findBookmarkFiles, addBookmarkToFront, readCaptureBookmarkCount, isCaptureBookmarkAtFront, listBrowserProfiles } from './lib/bookmarks.js'
 import { buildBookmarklet } from './lib/bookmarklet.js'
 import { buildMhtmlFromHtml } from './lib/mhtmlsave.js'
-import { parseMhtml } from './lib/mhtml.js'
+import { parseMhtml, smartDecode } from './lib/mhtml.js'
+import { resolveRepoRoot, runAdminFlow, adminSelfTest, listMalls, deleteMall, readRulesVersion } from './lib/admin.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -410,6 +411,13 @@ async function runE2E() {
   } catch (e) {
     refererCheck = { skip: true, err: String(e.message || e) }
   }
+  // 관리자 모듈(v1.20.0) 자가검증 — 저장소 루트 탐지 + 소스 규칙 조립이 rules.json과 일치하는지
+  let adminCheck = null
+  try {
+    adminCheck = adminSelfTest()
+  } catch (e) {
+    adminCheck = { ok: false, err: String(e.message || e) }
+  }
   const tmpXls = path.join(app.getPath('temp'), 'e2e_품목내역.xls')
   if (fs.existsSync(tmpXls)) fs.unlinkSync(tmpXls)
   createNewWorkbook(tmpXls)
@@ -525,7 +533,7 @@ async function runE2E() {
     setTimeout(() => resolve({ fatal: 'mapping timeout' }), 40000)
   })
 
-  const payload = { results, protocolOk, checkedScriptOk, pickerServed, cssPartCheck, shotInfo, receiverCheck, channelCheck, refererCheck, appendRes, excelOk, shippingAggOk, excelLoadOk, excelReplaceOk, coupangCheckedOk, aggRows: aggBack.rows, readBack: readBack.rows, rendererCheck, mappingCheck }
+  const payload = { results, protocolOk, checkedScriptOk, pickerServed, cssPartCheck, shotInfo, receiverCheck, channelCheck, refererCheck, adminCheck, appendRes, excelOk, shippingAggOk, excelLoadOk, excelReplaceOk, coupangCheckedOk, aggRows: aggBack.rows, readBack: readBack.rows, rendererCheck, mappingCheck }
   const outFile = process.env.E2E_OUT || path.join(app.getAppPath(), 'e2e-result.json')
   fs.writeFileSync(outFile, JSON.stringify(payload, null, 2), 'utf-8')
   console.log('E2E_RESULT ' + JSON.stringify(payload))
@@ -773,20 +781,30 @@ function registerIpc() {
     try { return { ok: true, profiles: listBrowserProfiles() } } catch (e) { return { ok: false, error: String(e.message || e), profiles: [] } }
   })
 
-  // 깃허브에 올린 규칙 JSON(배열)을 내려받아 같은 id의 내장 규칙을 덮어쓴다(사용자 규칙으로
+  // 깃허브에 올린 규칙 JSON을 내려받아 같은 id의 내장 규칙을 덮어쓴다(사용자 규칙으로
   // 저장 — allRules가 builtin 자리에서 교체). 네이버·쿠팡 장바구니 등 모든 규칙 대상.
+  // 형식: {version, generatedAt, count, rules:[...]}(v1.23.0~) 또는 구 규칙 배열(하위호환)
   ipcMain.handle('check-rule-updates', async (_e, url) => {
     const target = String(url || '').trim()
     if (!/^https?:\/\//i.test(target)) return { ok: false, error: '업데이트 주소가 올바르지 않습니다' }
-    let list
+    let parsed
     try {
       const res = await net.fetch(target, { headers: { 'User-Agent': 'auto-requisition-generator' } })
       if (!res.ok) return { ok: false, error: `다운로드 실패 (HTTP ${res.status})` }
-      list = JSON.parse(await res.text())
+      parsed = JSON.parse(await res.text())
     } catch (e) {
       return { ok: false, error: `다운로드 실패: ${e.message}` }
     }
-    if (!Array.isArray(list)) return { ok: false, error: '형식이 올바르지 않습니다 — 규칙 객체의 배열이 필요합니다' }
+    let list
+    let remoteVersion = null
+    if (Array.isArray(parsed)) {
+      list = parsed
+    } else if (parsed && Array.isArray(parsed.rules)) {
+      list = parsed.rules
+      remoteVersion = parsed.version || null
+    } else {
+      return { ok: false, error: '형식이 올바르지 않습니다 — 규칙 배열 또는 {rules:[...]} 문서가 필요합니다' }
+    }
     const stable = (v) => {
       if (Array.isArray(v)) return v.map(stable)
       if (v && typeof v === 'object') {
@@ -810,7 +828,11 @@ function registerIpc() {
       saveUserRule(r)
       results.push({ id: r.id, name: r.name || r.id, status: cur ? 'updated' : 'new' })
     }
-    return { ok: true, results }
+    return { ok: true, results, remoteVersion }
+  })
+
+  ipcMain.handle('rules-version', () => {
+    try { return readRulesVersion() } catch { return null }
   })
 
   ipcMain.handle('add-bookmarklets', async (_e, selection) => {
@@ -1057,6 +1079,56 @@ function registerIpc() {
   })
 
   ipcMain.handle('reveal-file', (_e, p) => shell.showItemInFolder(p))
+
+  ipcMain.handle('admin-pick-file', async (_e, kind) => {
+    const multi = kind === 'sample'
+    const filters = kind === 'excel'
+      ? [{ name: '정답 엑셀', extensions: ['xls', 'xlsx'] }]
+      : [{ name: '캡처 파일', extensions: ['mhtml', 'mht', 'html', 'htm'] }]
+    const r = await dialog.showOpenDialog(mainWindow, {
+      properties: multi ? ['openFile', 'multiSelections'] : ['openFile'],
+      filters
+    })
+    return r.canceled ? [] : r.filePaths
+  })
+
+  ipcMain.handle('admin-list-malls', () => {
+    try {
+      return { ok: true, malls: listMalls() }
+    } catch (e) {
+      return { ok: false, error: String(e.message || e) }
+    }
+  })
+
+  ipcMain.handle('admin-delete-mall', async (_e, payload) => {
+    const wc = mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null
+    const log = (line, level = 'info') => {
+      try { if (wc) wc.send('admin-log', { line, level }) } catch {}
+    }
+    try {
+      const res = await deleteMall(payload || {}, log)
+      return { ok: true, ...res }
+    } catch (e) {
+      const msg = String(e.message || e)
+      log('❌ ' + msg, 'err')
+      return { ok: false, error: msg }
+    }
+  })
+
+  ipcMain.handle('admin-run', async (_e, flow) => {
+    const wc = mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null
+    const log = (line, level = 'info') => {
+      try { if (wc) wc.send('admin-log', { line, level }) } catch {}
+    }
+    try {
+      const res = await runAdminFlow(flow || {}, log)
+      return { ok: true, ...res }
+    } catch (e) {
+      const msg = String(e.message || e)
+      log('❌ ' + msg, 'err')
+      return { ok: false, error: msg }
+    }
+  })
 
   ipcMain.handle('setup-browsers', async () => {
     try {

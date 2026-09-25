@@ -9,6 +9,7 @@ import ExtensionModal from './components/ExtensionModal'
 import BookmarkProfileModal from './components/BookmarkProfileModal'
 import RulesModal from './components/RulesModal'
 import SettingsModal from './components/SettingsModal'
+import AdminModal from './components/AdminModal'
 import BookmarkProgress from './components/BookmarkProgress'
 import Toasts from './components/Toasts'
 
@@ -20,6 +21,7 @@ export default function App() {
 const bookmarkModal = useStore(s => s.bookmarkModal)
   const rulesModal = useStore(s => s.rulesModal)
   const settingsModal = useStore(s => s.settingsModal)
+  const adminModal = useStore(s => s.adminModal)
   const splitRatio = useStore(s => s.splitRatio)
   const setSplitRatio = useStore(s => s.setSplitRatio)
   const containerRef = useRef(null)
@@ -93,6 +95,7 @@ const bookmarkModal = useStore(s => s.bookmarkModal)
       {bookmarkModal && <BookmarkProfileModal />}
       {rulesModal && <RulesModal />}
       {settingsModal && <SettingsModal />}
+      {adminModal && <AdminModal />}
       <BookmarkProgress />
       <Toasts />
     </div>

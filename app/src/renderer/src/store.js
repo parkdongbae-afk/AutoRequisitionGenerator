@@ -52,6 +52,7 @@ export const useStore = create((set, get) => ({
   bookmarkModal: false,
   rulesModal: false,
   settingsModal: false,
+  adminModal: false,
   showRuleAdd: false,
   zoomSensitivity: 1.7,
   gridFontScale: 1.5,
@@ -63,6 +64,12 @@ export const useStore = create((set, get) => ({
   inboxRetentionDays: 5,
   rulesUpdateUrl: 'https://raw.githubusercontent.com/parkdongbae-afk/AutoRequisitionGenerator/main/rules.json',
   ruleUpdateStatus: null,
+  rulesVersion: null,
+
+  async loadRulesVersion() {
+    try { set({ rulesVersion: await window.api.rulesVersion() }) } catch { set({ rulesVersion: null }) }
+    return get().rulesVersion
+  },
 
   setInboxRetentionDays(v) {
     const n = Math.max(0, Math.min(365, Math.round(Number(v) || 0)))
@@ -79,6 +86,7 @@ export const useStore = create((set, get) => ({
   setBookmarkModal(v) { set({ bookmarkModal: v }) },
   setRulesModal(v) { set({ rulesModal: v }) },
   setSettingsModal(v) { set({ settingsModal: v }) },
+  setAdminModal(v) { set({ adminModal: v }) },
   setShowRuleAdd(v) {
     set({ showRuleAdd: !!v })
     window.api.setSetting('showRuleAdd', !!v)
@@ -300,7 +308,8 @@ export const useStore = create((set, get) => ({
       updated: updated.map(r => r.name),
       created: created.map(r => r.name),
       same,
-      invalid
+      invalid,
+      remoteVersion: res.remoteVersion || null
     }
     set({ ruleUpdateStatus: status })
     window.api.setSetting('ruleUpdateLastCheck', status)

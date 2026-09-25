@@ -1,1016 +1,1021 @@
-[
-  {
-    "id": "gmarket-cart",
-    "name": "G마켓 장바구니",
-    "match": [
-      "cart.gmarket.co.kr"
-    ],
-    "rowSelector": "div.item",
-    "units": {
-      "sel": "dl.unit--item"
-    },
-    "checkedOnly": {
-      "sel": "input.input__checkbox"
-    },
-    "priceIs": "lineTotal",
-    "specFromOption": true,
-    "fields": {
-      "name": {
-        "sel": "span.item_name"
+{
+  "version": "1.0.1",
+  "generatedAt": "2026-09-25T15:07:23.803Z",
+  "count": 34,
+  "rules": [
+    {
+      "id": "gmarket-cart",
+      "name": "G마켓 장바구니",
+      "match": [
+        "cart.gmarket.co.kr"
+      ],
+      "rowSelector": "div.item",
+      "units": {
+        "sel": "dl.unit--item"
       },
-      "qty": {
-        "sel": "input.item_qty_count",
-        "attr": "value"
+      "checkedOnly": {
+        "sel": "input.input__checkbox"
       },
-      "price": {
-        "sel": "div.item_price strong.text__value",
+      "priceIs": "lineTotal",
+      "specFromOption": true,
+      "fields": {
+        "name": {
+          "sel": "span.item_name"
+        },
+        "qty": {
+          "sel": "input.item_qty_count",
+          "attr": "value"
+        },
+        "price": {
+          "sel": "div.item_price strong.text__value",
+          "regex": "([\\d,]+)",
+          "match": "last"
+        },
+        "option": {
+          "sel": ".option_value",
+          "regex": "^\\s*(.*?)(?:\\s*\\([+-][^()]*원\\))?\\s*$"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "div.shipping--info div.delivery strong.text__value",
         "regex": "([\\d,]+)",
-        "match": "last"
+        "checkedScope": true,
+        "perFee": true
       },
-      "option": {
-        "sel": ".option_value",
-        "regex": "^\\s*(.*?)(?:\\s*\\([+-][^()]*원\\))?\\s*$"
-      }
+      "notes": "장바구니(cart.gmarket.co.kr) 화면. V체크된 상품만 추출 — 상품 체크박스(input.input__checkbox, 숫자 id)의 checked 속성이 MHTML 저장 시 보존됨(판매자 그룹 체크박스는 div.item 밖). 2026-09-23 사용자 교정: 한 상품 행 안에 옵션 라인이 여러 개면(dl.unit--item 복수 — 예 '플라스틱 정리함' 행에 멀티바스켓 1호·2호 각 5개) 각 라인이 독립 품목이므로 units 스키마로 유닛별 수량(item_qty_count)·금액(item_price)·옵션(option_value)을 분리 추출한다. 유닛이 없는 행은 행 레벨 값 하나로 추출. price match:last — 할인 행은 item_price에 strong 2개(원가 취소선 role=deletion + box__sale-amount 할인가, 예 60,000→55,200), 쿠폰 안내 패널이 있는 행은 item_price 2개(3,990 패널 + 우측 실제 1,990)라 마지막 값이 실제 금액(정답 xlsx 바구니 5,520·멀티바스켓 1,660 일치). option regex는 '(-1,700원)' 같은 가격 접미사를 제거해 규격으로 사용. **specFromOption(2026-09-25)**: 규격은 패턴 추출(45cm 등 일부) 대신 옵션 원문 전체를 그대로 사용 — 유닛마다 옵션이 다른데 패턴이 빈칸/일부만 나오면 같은 카드의 유닛들이 중복 품목처럼 보였다. 배송비는 판매자 그룹 footer(div.shipping--info div.delivery strong.text__value)의 표시값 합산(무료배송/0원 제외), checkedScope로 미체크 그룹 제외. 2026-09-24 사용자 확인: 하단 계산기 '상품수 N개'는 추가상품 라인 등으로 체크/추출 수와 어긋날 수 있어 verifyCount 감지를 제거 — 경고 미발생."
     },
-    "shipping": {
-      "mode": "selector",
-      "sel": "div.shipping--info div.delivery strong.text__value",
-      "regex": "([\\d,]+)",
-      "checkedScope": true,
-      "perFee": true
-    },
-    "notes": "장바구니(cart.gmarket.co.kr) 화면. V체크된 상품만 추출 — 상품 체크박스(input.input__checkbox, 숫자 id)의 checked 속성이 MHTML 저장 시 보존됨(판매자 그룹 체크박스는 div.item 밖). 2026-09-23 사용자 교정: 한 상품 행 안에 옵션 라인이 여러 개면(dl.unit--item 복수 — 예 '플라스틱 정리함' 행에 멀티바스켓 1호·2호 각 5개) 각 라인이 독립 품목이므로 units 스키마로 유닛별 수량(item_qty_count)·금액(item_price)·옵션(option_value)을 분리 추출한다. 유닛이 없는 행은 행 레벨 값 하나로 추출. price match:last — 할인 행은 item_price에 strong 2개(원가 취소선 role=deletion + box__sale-amount 할인가, 예 60,000→55,200), 쿠폰 안내 패널이 있는 행은 item_price 2개(3,990 패널 + 우측 실제 1,990)라 마지막 값이 실제 금액(정답 xlsx 바구니 5,520·멀티바스켓 1,660 일치). option regex는 '(-1,700원)' 같은 가격 접미사를 제거해 규격으로 사용. **specFromOption(2026-09-25)**: 규격은 패턴 추출(45cm 등 일부) 대신 옵션 원문 전체를 그대로 사용 — 유닛마다 옵션이 다른데 패턴이 빈칸/일부만 나오면 같은 카드의 유닛들이 중복 품목처럼 보였다. 배송비는 판매자 그룹 footer(div.shipping--info div.delivery strong.text__value)의 표시값 합산(무료배송/0원 제외), checkedScope로 미체크 그룹 제외. 2026-09-24 사용자 확인: 하단 계산기 '상품수 N개'는 추가상품 라인 등으로 체크/추출 수와 어긋날 수 있어 verifyCount 감지를 제거 — 경고 미발생."
-  },
-  {
-    "id": "kyobo-cart",
-    "name": "교보문고 장바구니",
-    "match": [
-      "order.kyobobook.co.kr/cart"
-    ],
-    "rowSelector": "tr:has(input[name=chkList])",
-    "checkedOnly": {
-      "sel": "input[name=chkList]"
-    },
-    "fields": {
-      "name": {
-        "sel": "span.prod_name"
+    {
+      "id": "kyobo-cart",
+      "name": "교보문고 장바구니",
+      "match": [
+        "order.kyobobook.co.kr/cart"
+      ],
+      "rowSelector": "tr:has(input[name=chkList])",
+      "checkedOnly": {
+        "sel": "input[name=chkList]"
       },
-      "qty": {
-        "sel": "input.form_spinner",
-        "attr": "value"
+      "fields": {
+        "name": {
+          "sel": "span.prod_name"
+        },
+        "qty": {
+          "sel": "input.form_spinner",
+          "attr": "value"
+        },
+        "price": {
+          "sel": ".prod_price span.price .val",
+          "regex": "([\\d,]+)"
+        }
       },
-      "price": {
-        "sel": ".prod_price span.price .val",
-        "regex": "([\\d,]+)"
-      }
+      "shipping": {
+        "mode": "none"
+      },
+      "notes": "장바구니(order.kyobobook.co.kr/cart) 화면. V체크된 상품만 추출 — 체크박스 input[name=chkList]의 checked 속성이 MHTML 저장 시 보존됨. prod_price의 판매가=단가, 수량은 spinner input의 value 속성."
     },
-    "shipping": {
-      "mode": "none"
+    {
+      "id": "aladin-order",
+      "name": "알라딘 주문서",
+      "match": [
+        "aladin.co.kr/order/worder"
+      ],
+      "rowSelector": "tr:has(a[href*='wproduct.aspx'])",
+      "fields": {
+        "name": {
+          "sel": "td:nth-of-type(2) a[href*='wproduct.aspx']"
+        },
+        "qty": {
+          "sel": "td:nth-of-type(4)"
+        },
+        "price": {
+          "sel": "td:nth-of-type(3)",
+          "regex": "([1-9][\\d,]*)원"
+        }
+      },
+      "shipping": {
+        "mode": "none"
+      },
+      "notes": "주문서(order/worder_step1.aspx) 화면 — 장바구니(wbasket)와 분리. 상품명 td의 첫 wproduct.aspx 링크=제목, 3번째 td '17,100원 / 950원'의 첫 값=단가, 4번째 td=수량. 사은품/마일리지 프로모션 행(가격 0원)은 price 정규식([1-9] 시작)으로 제외. 배송비는 이 단계에 표시되지 않아 추출 없음(다음 단계에서 반영된다는 안내 문구)."
     },
-    "notes": "장바구니(order.kyobobook.co.kr/cart) 화면. V체크된 상품만 추출 — 체크박스 input[name=chkList]의 checked 속성이 MHTML 저장 시 보존됨. prod_price의 판매가=단가, 수량은 spinner input의 value 속성."
-  },
-  {
-    "id": "aladin-order",
-    "name": "알라딘 주문서",
-    "match": [
-      "aladin.co.kr/order/worder"
-    ],
-    "rowSelector": "tr:has(a[href*='wproduct.aspx'])",
-    "fields": {
-      "name": {
-        "sel": "td:nth-of-type(2) a[href*='wproduct.aspx']"
+    {
+      "id": "aladin",
+      "name": "알라딘",
+      "match": [
+        "aladin.co.kr"
+      ],
+      "rowSelector": "tr[id^=CartTr_]",
+      "checkedOnly": {
+        "sel": "input.ShopCode_Basket_Check"
       },
-      "qty": {
-        "sel": "td:nth-of-type(4)"
+      "fields": {
+        "name": {
+          "sel": "span.basket_tit"
+        },
+        "qty": {
+          "sel": "input.input1",
+          "attr": "value"
+        },
+        "price": {
+          "sel": "span.p1",
+          "regex": "([\\d,]+)"
+        }
       },
-      "price": {
-        "sel": "td:nth-of-type(3)",
-        "regex": "([1-9][\\d,]*)원"
-      }
+      "shipping": {
+        "mode": "none"
+      },
+      "notes": "장바구니(wbasket.aspx) 화면. V체크된 상품만 추출 — input[name^=chkCart]의 checked 속성이 MHTML 저장 시 보존됨. span.basket_tit=상품명(부제 포함), span.p1=판매가(단가), input.input1 value=수량."
     },
-    "shipping": {
-      "mode": "none"
-    },
-    "notes": "주문서(order/worder_step1.aspx) 화면 — 장바구니(wbasket)와 분리. 상품명 td의 첫 wproduct.aspx 링크=제목, 3번째 td '17,100원 / 950원'의 첫 값=단가, 4번째 td=수량. 사은품/마일리지 프로모션 행(가격 0원)은 price 정규식([1-9] 시작)으로 제외. 배송비는 이 단계에 표시되지 않아 추출 없음(다음 단계에서 반영된다는 안내 문구)."
-  },
-  {
-    "id": "aladin",
-    "name": "알라딘",
-    "match": [
-      "aladin.co.kr"
-    ],
-    "rowSelector": "tr[id^=CartTr_]",
-    "checkedOnly": {
-      "sel": "input.ShopCode_Basket_Check"
-    },
-    "fields": {
-      "name": {
-        "sel": "span.basket_tit"
+    {
+      "id": "gmarket",
+      "name": "G마켓",
+      "match": [
+        "gmarket.co.kr"
+      ],
+      "rowSelector": "div.box__goods-info.product__list",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": ".text__item-name"
+        },
+        "qty": {
+          "sel": ".box__sum .text__sum--number",
+          "regex": "(\\d+)개"
+        },
+        "price": {
+          "sel": ".box__couponwrap strong.text__value",
+          "match": "last"
+        },
+        "option": {
+          "sel": ".box__option"
+        }
       },
-      "qty": {
-        "sel": "input.input1",
-        "attr": "value"
-      },
-      "price": {
-        "sel": "span.p1",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "none"
-    },
-    "notes": "장바구니(wbasket.aspx) 화면. V체크된 상품만 추출 — input[name^=chkCart]의 checked 속성이 MHTML 저장 시 보존됨. span.basket_tit=상품명(부제 포함), span.p1=판매가(단가), input.input1 value=수량."
-  },
-  {
-    "id": "gmarket",
-    "name": "G마켓",
-    "match": [
-      "gmarket.co.kr"
-    ],
-    "rowSelector": "div.box__goods-info.product__list",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": ".text__item-name"
-      },
-      "qty": {
-        "sel": ".box__sum .text__sum--number",
-        "regex": "(\\d+)개"
-      },
-      "price": {
-        "sel": ".box__couponwrap strong.text__value",
-        "match": "last"
-      },
-      "option": {
-        "sel": ".box__option"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "li.benefit_item:contains('배송비')",
-      "regex": "([\\d,]+)원"
-    },
-    "notes": "판매자 그룹 li 안에 상품이 여러 개 담기는 구조 - 상품 컨테이너 div.box__goods-info 기준으로 추출(2026-09-13 수정). 상품금액은 box__couponwrap strong 첫 번째 값"
-  },
-  {
-    "id": "kyobo",
-    "name": "교보문고",
-    "match": [
-      "kyobobook.co.kr"
-    ],
-    "rowSelector": "table.tbl_prod tbody tr",
-    "fields": {
-      "name": {
-        "sel": "span.prod_name"
-      },
-      "qty": {
-        "sel": "span.prd_num",
-        "regex": "(\\d+)개"
-      },
-      "price": {
-        "sel": "span.price > .val",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "li.payments_info_item:contains('배송비')",
-      "regex": "([\\d,]+)\\s*원"
-    },
-    "notes": "주문상품 테이블 tbl_prod, 결제가 span.price > .val (정가 price_normal 제외)"
-  },
-  {
-    "id": "naver",
-    "name": "네이버쇼핑",
-    "match": [
-      "pay.naver.com",
-      "smartstore.naver.com",
-      "order.naver.com",
-      "cart.naver.com"
-    ],
-    "rowSelector": "[class*=ProductItem_article]",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "[class*=ProductDetail_name]",
-        "regex": "상품명\\s*(.+)"
-      },
-      "qty": {
-        "sel": "[class*=ProductOption_amount-option]",
-        "regex": "(\\d+)개"
-      },
-      "price": {
-        "sel": "[class*=ProductOption_price-final]",
+      "shipping": {
+        "mode": "selector",
+        "sel": "li.benefit_item:contains('배송비')",
         "regex": "([\\d,]+)원"
       },
-      "option": {
-        "sel": "[class*=ProductOption_name]"
-      }
+      "notes": "판매자 그룹 li 안에 상품이 여러 개 담기는 구조 - 상품 컨테이너 div.box__goods-info 기준으로 추출(2026-09-13 수정). 상품금액은 box__couponwrap strong 첫 번째 값"
     },
-    "shipping": {
-      "mode": "selector",
-      "sel": "[class*=ProductStore_delivery]",
-      "regex": "([\\d,]+)원"
-    },
-    "notes": "CSS모듈 해시클래스 - prefix 매칭. ProductStore_delivery는 판매자그룹별 배송비"
-  },
-  {
-    "id": "naver-cart",
-    "name": "네이버 장바구니",
-    "match": [
-      "shopping.naver.com/cart"
-    ],
-    "rowSelector": "div[class^=product--]:has(button[role=checkbox][aria-checked=true])",
-    "units": {
-      "sel": "div[class^=product_item--]"
-    },
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "[class*=title--]",
-        "match": "last",
-        "regex": "^(?:네이버플러스멤버십)?(.+)$"
+    {
+      "id": "kyobo",
+      "name": "교보문고",
+      "match": [
+        "kyobobook.co.kr"
+      ],
+      "rowSelector": "table.tbl_prod tbody tr",
+      "fields": {
+        "name": {
+          "sel": "span.prod_name"
+        },
+        "qty": {
+          "sel": "span.prd_num",
+          "regex": "(\\d+)개"
+        },
+        "price": {
+          "sel": "span.price > .val",
+          "regex": "([\\d,]+)"
+        }
       },
-      "qty": {
-        "sel": "input[class^=number--]",
-        "attr": "value"
+      "shipping": {
+        "mode": "selector",
+        "sel": "li.payments_info_item:contains('배송비')",
+        "regex": "([\\d,]+)\\s*원"
       },
-      "price": {
-        "sel": "em[class^=price--]",
+      "notes": "주문상품 테이블 tbl_prod, 결제가 span.price > .val (정가 price_normal 제외)"
+    },
+    {
+      "id": "naver",
+      "name": "네이버쇼핑",
+      "match": [
+        "pay.naver.com",
+        "smartstore.naver.com",
+        "order.naver.com",
+        "cart.naver.com"
+      ],
+      "rowSelector": "[class*=ProductItem_article]",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "[class*=ProductDetail_name]",
+          "regex": "상품명\\s*(.+)"
+        },
+        "qty": {
+          "sel": "[class*=ProductOption_amount-option]",
+          "regex": "(\\d+)개"
+        },
+        "price": {
+          "sel": "[class*=ProductOption_price-final]",
+          "regex": "([\\d,]+)원"
+        },
+        "option": {
+          "sel": "[class*=ProductOption_name]"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "[class*=ProductStore_delivery]",
         "regex": "([\\d,]+)원"
       },
-      "option": {
-        "sel": "[class^=option--]",
-        "regex": "^\\s*(?:추가상품\\s*:\\s*)?(.*)$"
-      }
+      "notes": "CSS모듈 해시클래스 - prefix 매칭. ProductStore_delivery는 판매자그룹별 배송비"
     },
-    "shipping": {
-      "mode": "selector",
-      "sel": "div[class^='price_area--']",
-      "regex": "총\\s*배송비(?:\\s*도움말)?\\s*([\\d,]+)\\s*원",
-      "perFee": true
-    },
-    "verifyCount": {
-      "sel": "span[class^=count_goods--]",
-      "regex": "(\\d+)"
-    },
-    "notes": "네이버쇼핑 장바구니(shopping.naver.com/cart) — **확장·북마크릿 모두 지원**(2026-09-25 사용자 요구로 채널 제한 폐지 — 북마크릿이 네이버 전용 25% 축소 캡처를 수행; 수동 저장은 행 누락 시 countMismatch 경고). CSS모듈 해시클래스 prefix 매칭. V체크된 상품만 추출(button role=checkbox의 aria-checked=true). 2026-09-24 실측: 한 상품 카드 안에 '추가상품' 라인이 여러 개면(div[class^=product_item--] 복수 — 본품+추가상품 각각 옵션/수량/라인가격 보유) units 스키마로 라인별 독립 품목 추출(예: 남성 특대형 고무장갑 = 마미손질긴 L 1@23,900 + 추가상품 블랙 290mm 1@45,000). option regex로 '추가상품 : ' 접두사 제거. title-- match:last(배지 제외), '네이버플러스멤버십' 접두어 제거. em.price--=라인합계(lineTotal→단가 환산), input number-- value=수량. 배송비는 **판매자 그룹별 '총 배송비 N원'(2026-09-25 사용자 교정 — 하단 예상금액 패널 '총 배송비 +N원' 전체 합산을 잡아 1식으로 합쳐지던 것 수정: 2,500+3,000이 5,500 1행으로 나옴)을 perFee로 각각 별도 행**으로 추출 — '도움말' 낀 표시 허용, 무료 그룹 제외, 하단 패널은 '+' 문자가 정규식을 차단해 자연 배제. verifyCount=플로팅 패널 'N개의 상품'(카드 수) — 부분저장 감지는 행 수 기준 비교."
-  },
-  {
-    "id": "dreamdepot-order",
-    "name": "드림디포 주문서",
-    "match": [
-      "dreamdepot.co.kr/shop/order"
-    ],
-    "rowSelector": "tr:has(input.pm_number)",
-    "fields": {
-      "name": {
-        "sel": "td.left a"
+    {
+      "id": "naver-cart",
+      "name": "네이버 장바구니",
+      "match": [
+        "shopping.naver.com/cart"
+      ],
+      "rowSelector": "div[class^=product--]:has(button[role=checkbox][aria-checked=true])",
+      "units": {
+        "sel": "div[class^=product_item--]"
       },
-      "qty": {
-        "sel": "input.pm_number",
-        "attr": "value"
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "[class*=title--]",
+          "match": "last",
+          "regex": "^(?:네이버플러스멤버십)?(.+)$"
+        },
+        "qty": {
+          "sel": "input[class^=number--]",
+          "attr": "value"
+        },
+        "price": {
+          "sel": "em[class^=price--]",
+          "regex": "([\\d,]+)원"
+        },
+        "option": {
+          "sel": "[class^=option--]",
+          "regex": "^\\s*(?:추가상품\\s*:\\s*)?(.*)$"
+        }
       },
-      "price": {
-        "sel": "td:nth-of-type(4)",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "span.total_delivery_price",
-      "regex": "([\\d,]+)"
-    },
-    "notes": "주문서(shop/order.php) 화면 — 장바구니(dreamdepot 규칙)와 표 구조가 달라 분리. td.left a=상품명(상품코드 제외), td 4번째=단가(6번째는 합계), input.pm_number value=수량. 배송비는 [배송비 합계 : N 원](span.total_delivery_price) 표시값."
-  },
-  {
-    "id": "dreamdepot",
-    "name": "드림디포",
-    "match": [
-      "dreamdepot.co.kr"
-    ],
-    "rowSelector": "tr:has(input.pm_number)",
-    "checkedOnly": {
-      "sel": "input[name='ps_cartuid[]']"
-    },
-    "fields": {
-      "name": {
-        "sel": "p.goods_list_name"
+      "shipping": {
+        "mode": "selector",
+        "sel": "div[class^='price_area--']",
+        "regex": "총\\s*배송비(?:\\s*도움말)?\\s*([\\d,]+)\\s*원",
+        "perFee": true
       },
-      "qty": {
-        "sel": "input.pm_number",
-        "attr": "value"
-      },
-      "price": {
-        "sel": "p.goods_list_sale_price",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "span:contains('기본배송비')",
-      "regex": "([\\d,]+)"
-    },
-    "notes": "장바구니 테이블. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). 배송비는 페이지의 '기본배송비 : N 원' 표시를 사용(5만원 이상 무료 정책은 선택 항목 기준이라 조건식 대신 페이지 표시값)"
-  },
-  {
-    "id": "icecream-cart",
-    "name": "아이스크림몰 장바구니",
-    "match": [
-      "i-screammall.co.kr/order/cart",
-      "screammall.co.kr/order/cart"
-    ],
-    "rowSelector": "div.flex.items-start:has(input[value=option-one])",
-    "checkedOnly": {
-      "sel": "input[value=option-one]"
-    },
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "p.body3"
-      },
-      "qty": {
-        "sel": "div.label1 span",
-        "regex": "(\\d+)개"
-      },
-      "price": {
-        "sel": "p.body2",
-        "regex": "([\\d,]+)"
-      },
-      "option": {
-        "sel": "div.label1 span"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "span.text-gray3",
-      "regex": "배송비\\s*([\\d,]+)원"
-    },
-    "notes": "장바구니(i-screammall.co.kr/order/cart) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). p.body2=상품합계(lineTotal→단가=합계÷수량), 옵션 span '별 / 4개'에서 수량 추출, 묶음그룹별 '배송비 N원'(span.text-gray3) 합산. lazy-load 상품명은 '로딩 중'으로 추출되어 수동 수정 필요."
-  },
-  {
-    "id": "icecreammall",
-    "name": "아이스크림몰",
-    "match": [
-      "i-screammall.co.kr",
-      "screammall.co.kr"
-    ],
-    "rowSelector": "div.relative.flex.items-start.border-b:has(p.body3)",
-    "fields": {
-      "name": {
-        "sel": "p.body3"
-      },
-      "qty": {
-        "sel": "span:contains('단일상품')",
-        "regex": "(\\d+)개"
-      },
-      "price": {
-        "sel": "p.body2",
-        "regex": "([\\d,]+)원"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "div.sub-head2:contains('배송비'):not(:contains('할인'))",
-      "regex": "([\\d,]+)",
-      "discountSel": "div.sub-head2:contains('배송비 할인')",
-      "discountRegex": "([\\d,]+)"
-    },
-    "notes": "Tailwind 클래스 구조. lazy-load 상품명은 '로딩 중'으로 추출되어 수동 수정 필요"
-  },
-  {
-    "id": "alphamall-cart",
-    "name": "알파몰 장바구니",
-    "match": [
-      "alpha.co.kr/order/cart"
-    ],
-    "rowSelector": "table.list-product-a tbody tr:has(input.chk-row)",
-    "checkedOnly": {
-      "sel": "input.chk-row"
-    },
-    "fields": {
-      "name": {
-        "sel": "p.name"
-      },
-      "qty": {
-        "sel": "input[name=CP_CNTs]",
-        "attr": "value"
-      },
-      "price": {
-        "sel": "p.price-after strong",
-        "regex": "([\\d,]+)원"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "td div.labels p strong",
-      "regex": "([\\d,]+)원",
-      "first": true
-    },
-    "notes": "장바구니(alpha.co.kr/order/cart) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). price-after=판매가(단가), input CP_CNTs value=수량. 배송비는 행별 'N원 (5만원이상 무료)' 정책 표시라 첫 행 값만 사용(first)."
-  },
-  {
-    "id": "alphamall",
-    "name": "알파몰",
-    "match": [
-      "alpha.co.kr"
-    ],
-    "rowSelector": "table.list-product-a tbody tr",
-    "fields": {
-      "name": {
-        "sel": "p.name"
-      },
-      "qty": {
-        "sel": "td.mount",
-        "regex": "(\\d+)개"
-      },
-      "price": {
-        "sel": "p.price-after",
-        "regex": "([\\d,]+)원"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "tr.total-price div.price",
-      "regex": "배송비\\s*([\\d,]+)\\s*원"
-    },
-    "notes": "배송지선택 단계 페이지. 판매가 p.price-after, 구매금액 strong.warning과 구분. 배송비는 tfoot tr.total-price의 '주문금액 N원 과 배송비 M원' 실측 표시값 사용(판매자 그룹별 합산, 무료면 행 없음) — 5만원 무료 조건식은 그룹별 기준이라 계산식 대신 페이지 표시값"
-  },
-  {
-    "id": "st11-cart",
-    "name": "11번가 장바구니",
-    "match": [
-      "11st.co.kr/cart"
-    ],
-    "rowSelector": "li[id^=bunchPrdWrap_]",
-    "checkedOnly": {
-      "sel": "input[name^=bcktSeq_]"
-    },
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": ".prd_name a"
-      },
-      "qty": {
-        "sel": "button[title=수량변경]",
+      "verifyCount": {
+        "sel": "span[class^=count_goods--]",
         "regex": "(\\d+)"
       },
-      "price": {
-        "sel": ".total_price .number",
+      "notes": "네이버쇼핑 장바구니(shopping.naver.com/cart) — **확장·북마크릿 모두 지원**(2026-09-25 사용자 요구로 채널 제한 폐지 — 북마크릿이 네이버 전용 25% 축소 캡처를 수행; 수동 저장은 행 누락 시 countMismatch 경고). CSS모듈 해시클래스 prefix 매칭. V체크된 상품만 추출(button role=checkbox의 aria-checked=true). 2026-09-24 실측: 한 상품 카드 안에 '추가상품' 라인이 여러 개면(div[class^=product_item--] 복수 — 본품+추가상품 각각 옵션/수량/라인가격 보유) units 스키마로 라인별 독립 품목 추출(예: 남성 특대형 고무장갑 = 마미손질긴 L 1@23,900 + 추가상품 블랙 290mm 1@45,000). option regex로 '추가상품 : ' 접두사 제거. title-- match:last(배지 제외), '네이버플러스멤버십' 접두어 제거. em.price--=라인합계(lineTotal→단가 환산), input number-- value=수량. 배송비는 **판매자 그룹별 '총 배송비 N원'(2026-09-25 사용자 교정 — 하단 예상금액 패널 '총 배송비 +N원' 전체 합산을 잡아 1식으로 합쳐지던 것 수정: 2,500+3,000이 5,500 1행으로 나옴)을 perFee로 각각 별도 행**으로 추출 — '도움말' 낀 표시 허용, 무료 그룹 제외, 하단 패널은 '+' 문자가 정규식을 차단해 자연 배제. verifyCount=플로팅 패널 'N개의 상품'(카드 수) — 부분저장 감지는 행 수 기준 비교."
+    },
+    {
+      "id": "dreamdepot-order",
+      "name": "드림디포 주문서",
+      "match": [
+        "dreamdepot.co.kr/shop/order"
+      ],
+      "rowSelector": "tr:has(input.pm_number)",
+      "fields": {
+        "name": {
+          "sel": "td.left a"
+        },
+        "qty": {
+          "sel": "input.pm_number",
+          "attr": "value"
+        },
+        "price": {
+          "sel": "td:nth-of-type(4)",
+          "regex": "([\\d,]+)"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "span.total_delivery_price",
         "regex": "([\\d,]+)"
       },
-      "option": {
-        "sel": "li.option"
-      }
+      "notes": "주문서(shop/order.php) 화면 — 장바구니(dreamdepot 규칙)와 표 구조가 달라 분리. td.left a=상품명(상품코드 제외), td 4번째=단가(6번째는 합계), input.pm_number value=수량. 배송비는 [배송비 합계 : N 원](span.total_delivery_price) 표시값."
     },
-    "shipping": {
-      "mode": "perItem",
-      "sel": ".c-order-delivery__price .number",
-      "regex": "([\\d,]+)"
+    {
+      "id": "dreamdepot",
+      "name": "드림디포",
+      "match": [
+        "dreamdepot.co.kr"
+      ],
+      "rowSelector": "tr:has(input.pm_number)",
+      "checkedOnly": {
+        "sel": "input[name='ps_cartuid[]']"
+      },
+      "fields": {
+        "name": {
+          "sel": "p.goods_list_name"
+        },
+        "qty": {
+          "sel": "input.pm_number",
+          "attr": "value"
+        },
+        "price": {
+          "sel": "p.goods_list_sale_price",
+          "regex": "([\\d,]+)"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "span:contains('기본배송비')",
+        "regex": "([\\d,]+)"
+      },
+      "notes": "장바구니 테이블. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). 배송비는 페이지의 '기본배송비 : N 원' 표시를 사용(5만원 이상 무료 정책은 선택 항목 기준이라 조건식 대신 페이지 표시값)"
     },
-    "notes": "장바구니(buy.11st.co.kr/cart) 화면. V체크된 상품만 추출 — 행 체크박스 name은 bcktSeq_B_0/B_1처럼 그룹 내 순번이 붙으므로 prefix(bcktSeq_) 매칭으로 모든 행을 판정한다(그룹당 2개 이상 상품 누락 수정). checked 속성이 MHTML 저장 시 보존됨. 할인모음가(.total_price)=합계(lineTotal), 수량변경 버튼 텍스트=수량, 상품별 배송비(.c-order-delivery__price)는 '<상품명> 배송비' 행으로 추가."
-  },
-  {
-    "id": "11st",
-    "name": "11번가",
-    "match": [
-      "11st.co.kr"
-    ],
-    "rowSelector": "div.c_order_prd_row",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": ".prd_name a"
+    {
+      "id": "icecream-cart",
+      "name": "아이스크림몰 장바구니",
+      "match": [
+        "i-screammall.co.kr/order/cart",
+        "screammall.co.kr/order/cart"
+      ],
+      "rowSelector": "div.flex.items-start:has(input[value=option-one])",
+      "checkedOnly": {
+        "sel": "input[value=option-one]"
       },
-      "qty": {
-        "sel": ".c_order_quantity .number"
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "p.body3"
+        },
+        "qty": {
+          "sel": "div.label1 span",
+          "regex": "(\\d+)개"
+        },
+        "price": {
+          "sel": "p.body2",
+          "regex": "([\\d,]+)"
+        },
+        "option": {
+          "sel": "div.label1 span"
+        }
       },
-      "price": {
-        "sel": ".c_order_prd_price",
+      "shipping": {
+        "mode": "selector",
+        "sel": "span.text-gray3",
+        "regex": "배송비\\s*([\\d,]+)원"
+      },
+      "notes": "장바구니(i-screammall.co.kr/order/cart) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). p.body2=상품합계(lineTotal→단가=합계÷수량), 옵션 span '별 / 4개'에서 수량 추출, 묶음그룹별 '배송비 N원'(span.text-gray3) 합산. lazy-load 상품명은 '로딩 중'으로 추출되어 수동 수정 필요."
+    },
+    {
+      "id": "icecreammall",
+      "name": "아이스크림몰",
+      "match": [
+        "i-screammall.co.kr",
+        "screammall.co.kr"
+      ],
+      "rowSelector": "div.relative.flex.items-start.border-b:has(p.body3)",
+      "fields": {
+        "name": {
+          "sel": "p.body3"
+        },
+        "qty": {
+          "sel": "span:contains('단일상품')",
+          "regex": "(\\d+)개"
+        },
+        "price": {
+          "sel": "p.body2",
+          "regex": "([\\d,]+)원"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "div.sub-head2:contains('배송비'):not(:contains('할인'))",
+        "regex": "([\\d,]+)",
+        "discountSel": "div.sub-head2:contains('배송비 할인')",
+        "discountRegex": "([\\d,]+)"
+      },
+      "notes": "Tailwind 클래스 구조. lazy-load 상품명은 '로딩 중'으로 추출되어 수동 수정 필요"
+    },
+    {
+      "id": "alphamall-cart",
+      "name": "알파몰 장바구니",
+      "match": [
+        "alpha.co.kr/order/cart"
+      ],
+      "rowSelector": "table.list-product-a tbody tr:has(input.chk-row)",
+      "checkedOnly": {
+        "sel": "input.chk-row"
+      },
+      "fields": {
+        "name": {
+          "sel": "p.name"
+        },
+        "qty": {
+          "sel": "input[name=CP_CNTs]",
+          "attr": "value"
+        },
+        "price": {
+          "sel": "p.price-after strong",
+          "regex": "([\\d,]+)원"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "td div.labels p strong",
+        "regex": "([\\d,]+)원",
+        "first": true
+      },
+      "notes": "장바구니(alpha.co.kr/order/cart) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). price-after=판매가(단가), input CP_CNTs value=수량. 배송비는 행별 'N원 (5만원이상 무료)' 정책 표시라 첫 행 값만 사용(first)."
+    },
+    {
+      "id": "alphamall",
+      "name": "알파몰",
+      "match": [
+        "alpha.co.kr"
+      ],
+      "rowSelector": "table.list-product-a tbody tr",
+      "fields": {
+        "name": {
+          "sel": "p.name"
+        },
+        "qty": {
+          "sel": "td.mount",
+          "regex": "(\\d+)개"
+        },
+        "price": {
+          "sel": "p.price-after",
+          "regex": "([\\d,]+)원"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "tr.total-price div.price",
+        "regex": "배송비\\s*([\\d,]+)\\s*원"
+      },
+      "notes": "배송지선택 단계 페이지. 판매가 p.price-after, 구매금액 strong.warning과 구분. 배송비는 tfoot tr.total-price의 '주문금액 N원 과 배송비 M원' 실측 표시값 사용(판매자 그룹별 합산, 무료면 행 없음) — 5만원 무료 조건식은 그룹별 기준이라 계산식 대신 페이지 표시값"
+    },
+    {
+      "id": "st11-cart",
+      "name": "11번가 장바구니",
+      "match": [
+        "11st.co.kr/cart"
+      ],
+      "rowSelector": "li[id^=bunchPrdWrap_]",
+      "checkedOnly": {
+        "sel": "input[name^=bcktSeq_]"
+      },
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": ".prd_name a"
+        },
+        "qty": {
+          "sel": "button[title=수량변경]",
+          "regex": "(\\d+)"
+        },
+        "price": {
+          "sel": ".total_price .number",
+          "regex": "([\\d,]+)"
+        },
+        "option": {
+          "sel": "li.option"
+        }
+      },
+      "shipping": {
+        "mode": "perItem",
+        "sel": ".c-order-delivery__price .number",
+        "regex": "([\\d,]+)"
+      },
+      "notes": "장바구니(buy.11st.co.kr/cart) 화면. V체크된 상품만 추출 — 행 체크박스 name은 bcktSeq_B_0/B_1처럼 그룹 내 순번이 붙으므로 prefix(bcktSeq_) 매칭으로 모든 행을 판정한다(그룹당 2개 이상 상품 누락 수정). checked 속성이 MHTML 저장 시 보존됨. 할인모음가(.total_price)=합계(lineTotal), 수량변경 버튼 텍스트=수량, 상품별 배송비(.c-order-delivery__price)는 '<상품명> 배송비' 행으로 추가."
+    },
+    {
+      "id": "11st",
+      "name": "11번가",
+      "match": [
+        "11st.co.kr"
+      ],
+      "rowSelector": "div.c_order_prd_row",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": ".prd_name a"
+        },
+        "qty": {
+          "sel": ".c_order_quantity .number"
+        },
+        "price": {
+          "sel": ".c_order_prd_price",
+          "regex": "([\\d,]+)원"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "#dlvTotalAmountView",
+        "regex": "([\\d,]+)"
+      },
+      "notes": "주문서(buy.11st.co.kr/pay) 상품 블록 div.c_order_prd_row — 이전 rowSelector(li.group_prd)는 판매자 그룹 단위라 그룹 내 첫 상품만 추출되는 문제 수정(그룹 내 상품 2개 이상 시 나머지 누락). c_order_quantity .number=수량, c_order_prd_price=할인모음가(단가×수량 라인합계 → lineTotal로 단가 환산). 배송비는 결제예정금액 dlvTotalAmountView (도서산간 display:none 제외)"
+    },
+    {
+      "id": "yes24-cart",
+      "name": "예스24 장바구니",
+      "match": [
+        "yes24.com/dMyCart/CartMain"
+      ],
+      "rowSelector": "tbody tr:has(input[name=chkCartGoodsYes24])",
+      "checkedOnly": {
+        "sel": "input[name=chkCartGoodsYes24]"
+      },
+      "fields": {
+        "name": {
+          "sel": "div.goods_name a.pd_a"
+        },
+        "price": {
+          "sel": "strong.price_txt",
+          "regex": "([\\d,]+)원"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "tfoot span:contains('배송비') + strong.cost",
         "regex": "([\\d,]+)원"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "#dlvTotalAmountView",
-      "regex": "([\\d,]+)"
-    },
-    "notes": "주문서(buy.11st.co.kr/pay) 상품 블록 div.c_order_prd_row — 이전 rowSelector(li.group_prd)는 판매자 그룹 단위라 그룹 내 첫 상품만 추출되는 문제 수정(그룹 내 상품 2개 이상 시 나머지 누락). c_order_quantity .number=수량, c_order_prd_price=할인모음가(단가×수량 라인합계 → lineTotal로 단가 환산). 배송비는 결제예정금액 dlvTotalAmountView (도서산간 display:none 제외)"
-  },
-  {
-    "id": "yes24-cart",
-    "name": "예스24 장바구니",
-    "match": [
-      "yes24.com/dMyCart/CartMain"
-    ],
-    "rowSelector": "tbody tr:has(input[name=chkCartGoodsYes24])",
-    "checkedOnly": {
-      "sel": "input[name=chkCartGoodsYes24]"
-    },
-    "fields": {
-      "name": {
-        "sel": "div.goods_name a.pd_a"
       },
-      "price": {
-        "sel": "strong.price_txt",
+      "notes": "카트(yes24.com/dMyCart/CartMain) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). '나중에 주문 리스트'(chkAfterOrderGoods)는 제외. price_txt=할인단가(수량 속성이 DOM에 없어 기본 1), tfoot의 '( + 배송비 ) N원'을 배송비로 사용(0원=무료)."
+    },
+    {
+      "id": "yes24",
+      "name": "예스24",
+      "match": [
+        "yes24.com"
+      ],
+      "rowSelector": "table.tbl_l tbody tr:has(td)",
+      "fields": {
+        "name": {
+          "sel": "a.pd_a"
+        },
+        "qty": {
+          "sel": "td:nth-child(4)",
+          "regex": "(\\d+)"
+        },
+        "price": {
+          "sel": "td:nth-child(5)",
+          "regex": "([\\d,]+)원"
+        }
+      },
+      "shipping": {
+        "mode": "conditional",
+        "fee": 2500,
+        "freeOver": 15000
+      },
+      "notes": "상품테이블 5번째 td = 할인적용 단가(실결제가). 배송비: 도서 1.5만원 이상 무료/미만 2,500원"
+    },
+    {
+      "id": "teachermall-cart",
+      "name": "티처몰 장바구니",
+      "match": [
+        "teacherville.co.kr/order/cart"
+      ],
+      "rowSelector": "tr:has(input.chk01)",
+      "checkedOnly": {
+        "sel": "input.chk01"
+      },
+      "fields": {
+        "name": {
+          "sel": "a.order_name"
+        },
+        "qty": {
+          "sel": "input[id^=cart_cnt]",
+          "attr": "value"
+        },
+        "price": {
+          "sel": ".cost_info p.flexbox",
+          "regex": "([\\d,]+)원"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "em.fc_blue1",
+        "regex": "배송비\\s*([\\d,]+)원",
+        "checkedScope": true
+      },
+      "notes": "장바구니(order/cart) 화면. 행=체크박스 input.chk01을 포함한 tr. 수량 input[id^=cart_cnt]의 value 속성, 단가는 cost_info '개당 N원'(합계 아님). 판매자 그룹 배송비는 tr.shop_info의 em.fc_blue1('배송비 N원') — 그룹이 형제 행으로 나열되므로 checkedScope(문서 순서 그룹 판정)로 체크 상품 없는 그룹의 배송비 제외. 익스텐션/북마크릿 캡처는 data-arge-checked 스탬프로 V체크 필터, 수동 저장은 checked 속성."
+    },
+    {
+      "id": "teachermall",
+      "name": "티처몰",
+      "match": [
+        "teacherville.co.kr"
+      ],
+      "rowSelector": "tr[class*=goods_][class*=_delivery]",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "a.order_name"
+        },
+        "qty": {
+          "sel": "td:nth-child(2)",
+          "regex": "(\\d+)"
+        },
+        "price": {
+          "sel": "td:nth-child(3)",
+          "regex": "([\\d,]+)원"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": ".std_delivery_price",
+        "regex": "([\\d,]+)"
+      },
+      "notes": "주문/결제(settle) 페이지. 기본배송비 std_delivery_price(선결제). 페이지 상품금액과 3,000원 차이 가능(즉시할인)"
+    },
+    {
+      "id": "auction-cart",
+      "name": "옥션 장바구니",
+      "match": [
+        "cart.auction.co.kr"
+      ],
+      "rowSelector": "li.list-item__item",
+      "checkedOnly": {
+        "sel": "input.form__checkbox"
+      },
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "span.text__item-name"
+        },
+        "qty": {
+          "sel": "input.form__quantity",
+          "attr": "value"
+        },
+        "price": {
+          "sel": "div.box__item-price strong.text__value",
+          "regex": "([\\d,]+)"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "div.box__group-seller-summary",
+        "regex": "배송비\\s*([\\d,]+)원"
+      },
+      "notes": "장바구니(cart.auction.co.kr) SPA 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). box__item-price(할인적용금액)=**합계**라 priceIs:lineTotal로 단가=합계÷수량 환산(2026-09-25 사용자 정답 수정으로 확인 — 마이크로비트 점퍼홀더 3개 6,780=2,260×3), form__quantity value=수량, 배송비는 판매자 소계(box__group-seller-summary)의 '배송비 N원 포함' 합산 — 그룹 배송비 정책 문구(box__group-shipping-summary)가 아니라 선택 항목 기준 실제 금액."
+    },
+    {
+      "id": "auction",
+      "name": "옥션",
+      "match": [
+        "auction.co.kr"
+      ],
+      "rowSelector": "tr.box__goods",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "span.text__goods-title"
+        },
+        "qty": {
+          "sel": "span.text__count",
+          "regex": "(\\d+)개"
+        },
+        "price": {
+          "sel": "td.list__cut-price",
+          "regex": "([\\d,]+)"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "li.benefit_item:contains('배송비')",
         "regex": "([\\d,]+)원"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "tfoot span:contains('배송비') + strong.cost",
-      "regex": "([\\d,]+)원"
-    },
-    "notes": "카트(yes24.com/dMyCart/CartMain) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). '나중에 주문 리스트'(chkAfterOrderGoods)는 제외. price_txt=할인단가(수량 속성이 DOM에 없어 기본 1), tfoot의 '( + 배송비 ) N원'을 배송비로 사용(0원=무료)."
-  },
-  {
-    "id": "yes24",
-    "name": "예스24",
-    "match": [
-      "yes24.com"
-    ],
-    "rowSelector": "table.tbl_l tbody tr:has(td)",
-    "fields": {
-      "name": {
-        "sel": "a.pd_a"
       },
-      "qty": {
-        "sel": "td:nth-child(4)",
-        "regex": "(\\d+)"
+      "notes": "주문서(checkout) 화면. 쿠폰 적용가 td.list__cut-price 기준(쿠폰 없으면 원가). 배송비 benefit_item 첫 금액"
+    },
+    {
+      "id": "coupang",
+      "name": "쿠팡",
+      "match": [
+        "coupang.com"
+      ],
+      "rowSelector": "div[id^=item_][data-selected=true]",
+      "checkedOnly": {
+        "sel": "input[type=checkbox]"
       },
-      "price": {
-        "sel": "td:nth-child(5)",
-        "regex": "([\\d,]+)원"
-      }
-    },
-    "shipping": {
-      "mode": "conditional",
-      "fee": 2500,
-      "freeOver": 15000
-    },
-    "notes": "상품테이블 5번째 td = 할인적용 단가(실결제가). 배송비: 도서 1.5만원 이상 무료/미만 2,500원"
-  },
-  {
-    "id": "teachermall-cart",
-    "name": "티처몰 장바구니",
-    "match": [
-      "teacherville.co.kr/order/cart"
-    ],
-    "rowSelector": "tr:has(input.chk01)",
-    "checkedOnly": {
-      "sel": "input.chk01"
-    },
-    "fields": {
-      "name": {
-        "sel": "a.order_name"
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "div#name span.twc-break-all"
+        },
+        "qty": {
+          "sel": "input.cart-quantity-input",
+          "attr": "value",
+          "regex": "(\\d+)"
+        },
+        "price": {
+          "sel": "div[data-component-id=price-area] span.twc-text-\\[20px\\]\\/\\[27px\\]"
+        },
+        "option": {
+          "sel": "div#name span.twc-line-clamp-2"
+        }
       },
-      "qty": {
-        "sel": "input[id^=cart_cnt]",
-        "attr": "value"
+      "shipping": {
+        "mode": "selector",
+        "sel": "span[data-component-id=vendor-delivery-charge]",
+        "regex": "배송비\\s*([\\d,]+)원"
       },
-      "price": {
-        "sel": ".cost_info p.flexbox",
-        "regex": "([\\d,]+)원"
-      }
+      "notes": "장바구니(cartView) 화면. 체크(V)된 상품만 추출 — data-selected=true(익스텐션 캡처)와 input[checked](수동 MHTML 저장)의 교집합으로 두 캡처 경로 모두 정확히 필터링. 상품별 합계금액(할인가)을 수량으로 나눠 단가 환산. 판매자별 배송비(vendor-delivery-charge) 합산, 무료는 제외. 추천상품(recommendation-widget)은 미포함"
     },
-    "shipping": {
-      "mode": "selector",
-      "sel": "em.fc_blue1",
-      "regex": "배송비\\s*([\\d,]+)원",
-      "checkedScope": true
-    },
-    "notes": "장바구니(order/cart) 화면. 행=체크박스 input.chk01을 포함한 tr. 수량 input[id^=cart_cnt]의 value 속성, 단가는 cost_info '개당 N원'(합계 아님). 판매자 그룹 배송비는 tr.shop_info의 em.fc_blue1('배송비 N원') — 그룹이 형제 행으로 나열되므로 checkedScope(문서 순서 그룹 판정)로 체크 상품 없는 그룹의 배송비 제외. 익스텐션/북마크릿 캡처는 data-arge-checked 스탬프로 V체크 필터, 수동 저장은 checked 속성."
-  },
-  {
-    "id": "teachermall",
-    "name": "티처몰",
-    "match": [
-      "teacherville.co.kr"
-    ],
-    "rowSelector": "tr[class*=goods_][class*=_delivery]",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "a.order_name"
+    {
+      "id": "emartmall-cart",
+      "name": "e마트몰 장바구니",
+      "match": [
+        "pay.ssg.com/cart",
+        "ssg.com/cart"
+      ],
+      "rowSelector": "div.__arge_never_match__",
+      "shipping": {
+        "mode": "none"
       },
-      "qty": {
-        "sel": "td:nth-child(2)",
-        "regex": "(\\d+)"
+      "notes": "거부 전용 규칙 — e마트몰은 주문서(pay.ssg.com/order)에서만 추출을 지원한다(2026-09-24 사용자 지정). 장바구니 화면에서 품의캡처를 누르면 0건으로 거부되며 store RULE_REJECT_MESSAGES의 '주문서 상태에서 눌러 주세요.' 안내가 표시된다."
+    },
+    {
+      "id": "emartmall",
+      "name": "e마트몰",
+      "match": [
+        "pay.ssg.com/order",
+        "ssg.com/order"
+      ],
+      "rowSelector": "tr.codr_unit_area",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": ".codr_unit_name",
+          "regex": "^\\s*(?:\\[[^\\]]*\\]\\s*)?(.*)$"
+        },
+        "qty": {
+          "sel": ".codr_unit_count em.num"
+        },
+        "price": {
+          "sel": ".codr_unit_newprice em.ssg_price",
+          "regex": "([\\d,]+)"
+        }
       },
-      "price": {
-        "sel": "td:nth-child(3)",
-        "regex": "([\\d,]+)원"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": ".std_delivery_price",
-      "regex": "([\\d,]+)"
-    },
-    "notes": "주문/결제(settle) 페이지. 기본배송비 std_delivery_price(선결제). 페이지 상품금액과 3,000원 차이 가능(즉시할인)"
-  },
-  {
-    "id": "auction-cart",
-    "name": "옥션 장바구니",
-    "match": [
-      "cart.auction.co.kr"
-    ],
-    "rowSelector": "li.list-item__item",
-    "checkedOnly": {
-      "sel": "input.form__checkbox"
-    },
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "span.text__item-name"
+      "shipping": {
+        "mode": "selector",
+        "sel": "em.paySummaryOrdCstAmt",
+        "regex": "([\\d,]+)",
+        "first": true
       },
-      "qty": {
-        "sel": "input.form__quantity",
-        "attr": "value"
+      "notes": "SSG.COM(e마트몰) 주문서(pay.ssg.com/order/ordPage.ssg) — 상품 행 tr.codr_unit_area(배송유형 그룹 itemUnit_N 안에 상품별 1행). codr_unit_name=상품명([쿠폰 다운로드] 접두사 regex로 제거), codr_unit_newprice em.ssg_price=라인합계(lineTotal→단가 환산), codr_unit_count em.num=수량. 배송비는 결제 요약 em.paySummaryOrdShppCst 표시값."
+    },
+    {
+      "id": "eleparts",
+      "name": "엘레파츠",
+      "match": [
+        "eleparts.co.kr"
+      ],
+      "rowSelector": "div.cart_list table tbody tr",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "ul.goodsList li.title a"
+        },
+        "qty": {
+          "sel": "td.sendDate",
+          "regex": "(\\d+)"
+        },
+        "price": {
+          "sel": "span.price",
+          "regex": "([\\d,]+)"
+        }
       },
-      "price": {
-        "sel": "div.box__item-price strong.text__value",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "div.box__group-seller-summary",
-      "regex": "배송비\\s*([\\d,]+)원"
-    },
-    "notes": "장바구니(cart.auction.co.kr) SPA 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). box__item-price(할인적용금액)=**합계**라 priceIs:lineTotal로 단가=합계÷수량 환산(2026-09-25 사용자 정답 수정으로 확인 — 마이크로비트 점퍼홀더 3개 6,780=2,260×3), form__quantity value=수량, 배송비는 판매자 소계(box__group-seller-summary)의 '배송비 N원 포함' 합산 — 그룹 배송비 정책 문구(box__group-shipping-summary)가 아니라 선택 항목 기준 실제 금액."
-  },
-  {
-    "id": "auction",
-    "name": "옥션",
-    "match": [
-      "auction.co.kr"
-    ],
-    "rowSelector": "tr.box__goods",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "span.text__goods-title"
-      },
-      "qty": {
-        "sel": "span.text__count",
-        "regex": "(\\d+)개"
-      },
-      "price": {
-        "sel": "td.list__cut-price",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "li.benefit_item:contains('배송비')",
-      "regex": "([\\d,]+)원"
-    },
-    "notes": "주문서(checkout) 화면. 쿠폰 적용가 td.list__cut-price 기준(쿠폰 없으면 원가). 배송비 benefit_item 첫 금액"
-  },
-  {
-    "id": "coupang",
-    "name": "쿠팡",
-    "match": [
-      "coupang.com"
-    ],
-    "rowSelector": "div[id^=item_][data-selected=true]",
-    "checkedOnly": {
-      "sel": "input[type=checkbox]"
-    },
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "div#name span.twc-break-all"
-      },
-      "qty": {
-        "sel": "input.cart-quantity-input",
-        "attr": "value",
-        "regex": "(\\d+)"
-      },
-      "price": {
-        "sel": "div[data-component-id=price-area] span.twc-text-\\[20px\\]\\/\\[27px\\]"
-      },
-      "option": {
-        "sel": "div#name span.twc-line-clamp-2"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "span[data-component-id=vendor-delivery-charge]",
-      "regex": "배송비\\s*([\\d,]+)원"
-    },
-    "notes": "장바구니(cartView) 화면. 체크(V)된 상품만 추출 — data-selected=true(익스텐션 캡처)와 input[checked](수동 MHTML 저장)의 교집합으로 두 캡처 경로 모두 정확히 필터링. 상품별 합계금액(할인가)을 수량으로 나눠 단가 환산. 판매자별 배송비(vendor-delivery-charge) 합산, 무료는 제외. 추천상품(recommendation-widget)은 미포함"
-  },
-  {
-    "id": "emartmall-cart",
-    "name": "e마트몰 장바구니",
-    "match": [
-      "pay.ssg.com/cart",
-      "ssg.com/cart"
-    ],
-    "rowSelector": "div.__arge_never_match__",
-    "shipping": {
-      "mode": "none"
-    },
-    "notes": "거부 전용 규칙 — e마트몰은 주문서(pay.ssg.com/order)에서만 추출을 지원한다(2026-09-24 사용자 지정). 장바구니 화면에서 품의캡처를 누르면 0건으로 거부되며 store RULE_REJECT_MESSAGES의 '주문서 상태에서 눌러 주세요.' 안내가 표시된다."
-  },
-  {
-    "id": "emartmall",
-    "name": "e마트몰",
-    "match": [
-      "pay.ssg.com/order",
-      "ssg.com/order"
-    ],
-    "rowSelector": "tr.codr_unit_area",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": ".codr_unit_name",
-        "regex": "^\\s*(?:\\[[^\\]]*\\]\\s*)?(.*)$"
-      },
-      "qty": {
-        "sel": ".codr_unit_count em.num"
-      },
-      "price": {
-        "sel": ".codr_unit_newprice em.ssg_price",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "em.paySummaryOrdCstAmt",
-      "regex": "([\\d,]+)",
-      "first": true
-    },
-    "notes": "SSG.COM(e마트몰) 주문서(pay.ssg.com/order/ordPage.ssg) — 상품 행 tr.codr_unit_area(배송유형 그룹 itemUnit_N 안에 상품별 1행). codr_unit_name=상품명([쿠폰 다운로드] 접두사 regex로 제거), codr_unit_newprice em.ssg_price=라인합계(lineTotal→단가 환산), codr_unit_count em.num=수량. 배송비는 결제 요약 em.paySummaryOrdShppCst 표시값."
-  },
-  {
-    "id": "eleparts",
-    "name": "엘레파츠",
-    "match": [
-      "eleparts.co.kr"
-    ],
-    "rowSelector": "div.cart_list table tbody tr",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "ul.goodsList li.title a"
-      },
-      "qty": {
-        "sel": "td.sendDate",
-        "regex": "(\\d+)"
-      },
-      "price": {
-        "sel": "span.price",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "div[id^=price_delivery]",
-      "regex": "([\\d,]+)"
-    },
-    "notes": "결제(settle) 화면. 주문금액(VAT포함)을 수량으로 나눠 단가 환산. 배송그룹별 price_delivery 합산"
-  },
-  {
-    "id": "ic114",
-    "name": "IC114",
-    "match": [
-      "ic114.com"
-    ],
-    "rowSelector": "div.product",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": ".product-meta .name h3 a"
-      },
-      "qty": {
-        "sel": "input.quantity-input",
-        "attr": "value",
-        "regex": "(\\d+)"
-      },
-      "price": {
-        "sel": "div.price span.t-price",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "conditional",
-      "fee": 3000
-    },
-    "notes": "장바구니(MY/00L0.aspx) 화면. 합계금액(t-price, 할인가 기준)을 수량으로 나눠 단가 환산. 배송비는 페이지에 표시되지 않아 3,000원 고정 입력(주문하기 화면에서 확인 필요). 주문서 화면은 항목이 DOM에 없어 캡처 거부 팝업으로 안내"
-  },
-  {
-    "id": "lottemart",
-    "name": "롯데마트 제타",
-    "match": [
-      "lottemartzetta.com"
-    ],
-    "rowSelector": "div[class*=product-card-container]",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "[data-test=fop-product-link]"
-      },
-      "qty": {
-        "sel": "input[class*=_counter__input]",
-        "attr": "value"
-      },
-      "price": {
-        "sel": "[class*=_display]",
-        "regex": "([\\d,]+)원"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "[data-test=summary-cost-delivery-charge]",
-      "regex": "([\\d,]+)"
-    },
-    "notes": "롯데마트 제타 온라인(lottemartzetta.com/basket) — salt 디자인시스템. data-test 속성 기반(안정): fop-product-link=상품명, summary-cost-delivery-charge=배송비. 수량은 input._counter__input의 value. 가격 span _display_ 는 할인가(합계, lineTotal→단가=합계÷수량), _text_--strikethrough는 원가이므로 매칭 제외. CSSOM 스타일은 캡처에서 누락되므로 확장/북마크릿이 adopted 스타일을 박제(v1.6.12)."
-  },
-  {
-    "id": "officedepot-order",
-    "name": "오피스디포 주문서",
-    "match": [
-      "officedepot.co.kr/order"
-    ],
-    "rowSelector": "tr:has(td.qt)",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "td.info",
-        "regex": "^\\(\\d+\\)\\s*(.*)$"
-      },
-      "qty": {
-        "sel": "td.qt"
-      },
-      "price": {
-        "sel": "td.bm",
-        "match": "last",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "li.pay_ship",
-      "regex": "배송비\\s*([\\d,]+)\\s*원"
-    },
-    "notes": "주문서(order/orderList.do) 화면 — 장바구니(myCart.do)와 분리. td.info '(품목코드)상품명'에서 코드 제거, td.qt=수량, 마지막 td.bm=합계금액(lineTotal→단가=합계÷수량, '정가 할인가'가 함께 있는 첫 td.bm 대신). 배송비는 ul.lastAmount의 pay_ship '배송비 N원'(업체별도배송 0원 → 행 없음)."
-  },
-  {
-    "id": "officedepot",
-    "name": "오피스디포",
-    "match": [
-      "officedepot.co.kr"
-    ],
-    "rowSelector": "tr:has(input.itemId)",
-    "checkedOnly": {
-      "sel": "input.itemId"
-    },
-    "fields": {
-      "name": {
-        "sel": "p.name a"
-      },
-      "qty": {
-        "sel": "input.itemCount",
-        "attr": "value"
-      },
-      "price": {
-        "sel": "span.price:not(.rowPrice)",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "none"
-    },
-    "notes": "장바구니(officedepot.co.kr/cart/myCart.do) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). 첫 span.price=판매가(단가), input.itemCount value=수량. 업체별도배송 상품이라 배송비 추출 없음."
-  },
-  {
-    "id": "daisomall-order",
-    "name": "다이소몰 주문서",
-    "match": [
-      "daisomall.co.kr/or/ora"
-    ],
-    "rowSelector": "div.goods-unit.order",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "div.tit"
-      },
-      "qty": {
-        "sel": "div.goods-num",
-        "regex": "(\\d+)개"
-      },
-      "price": {
-        "sel": "div.goods-price span.value",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "div.total-pay li:contains('총 배송비') > div.val",
-      "regex": "([\\d,]+)"
-    },
-    "notes": "주문서(/or/ora/SCR_ORA_0001) 화면 — 장바구니(daisomall 규칙)와 달리 주문서엔 체크박스가 없어 분리. div.tit=상품명(빈 이미지 링크 a가 먼저 있어 텍스트로 추출), div.goods-price=상품합계금액(lineTotal→단가=합계÷수량), div.goods-num 'N개'=수량. 배송비는 결제창 '총 배송비' div.val 표시값(중첩된 '기본 배송비'는 직계 자손 아니므로 제외)."
-  },
-  {
-    "id": "daisomall",
-    "name": "다이소몰",
-    "match": [
-      "daisomall.co.kr"
-    ],
-    "rowSelector": "div.goods-unit",
-    "checkedOnly": {
-      "sel": "input.el-checkbox__original",
-      "legacySel": "label.el-checkbox.is-checked"
-    },
-    "priceIs": "lineTotal",
-    "qtyFromUnit": "div.goods-inner.price span.value",
-    "qtyInputSel": "div.goods-inner.count input.el-input__inner",
-    "fields": {
-      "name": {
-        "sel": "a.ellipsis1"
-      },
-      "price": {
-        "sel": "div.goods-inner.total span.value",
-        "regex": "([\\d,]+)"
-      }
-    },
-    "shipping": {
-      "mode": "selector",
-      "sel": "li:contains('배송비')",
-      "regex": "배송비:\\s*([\\d,]+)원"
-    },
-    "notes": "장바구니(daisomall.co.kr/or/orc) 화면. V체크된 상품만 추출 — Vue 카트라 input에 checked 속성이 없지만 label.el-checkbox의 is-checked 클래스가 MHTML 저장 시 보존됨. 수량 input에 value 속성이 없어 qtyFromUnit(합계금액÷단가)으로 계산. 합계(span.value)=lineTotal, '배송비: N원 (3만원 이상 무료)' 안내 문구에서 배송비 추출."
-  },
-  {
-    "id": "aliexpress-cart",
-    "name": "aliexpress 장바구니",
-    "match": [
-      "aliexpress.com"
-    ],
-    "rowSelector": "div.cart-product-wrap-group-new:has(input.comet-v2-checkbox-input[checked])",
-    "checkedOnly": {
-      "sel": "input.comet-v2-checkbox-input",
-      "legacySel": "label.comet-v2-checkbox-checked"
-    },
-    "priceIs": "lineTotal",
-    "specFromOption": true,
-    "fields": {
-      "name": {
-        "sel": "a.cart-product-name-title",
-        "attr": "title"
-      },
-      "qty": {
-        "sel": "input.comet-v2-input-number-input",
-        "attr": "value"
-      },
-      "price": {
-        "sel": "div.cart-product-price-activity",
+      "shipping": {
+        "mode": "selector",
+        "sel": "div[id^=price_delivery]",
         "regex": "([\\d,]+)"
       },
-      "option": {
-        "sel": "div.skuStr",
-        "attr": "title"
-      }
+      "notes": "결제(settle) 화면. 주문금액(VAT포함)을 수량으로 나눠 단가 환산. 배송그룹별 price_delivery 합산"
     },
-    "shipping": {
-      "mode": "perItem",
-      "sel": "div.cart-product-ship-freight",
-      "regex": "([\\d,]+)"
+    {
+      "id": "ic114",
+      "name": "IC114",
+      "match": [
+        "ic114.com"
+      ],
+      "rowSelector": "div.product",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": ".product-meta .name h3 a"
+        },
+        "qty": {
+          "sel": "input.quantity-input",
+          "attr": "value",
+          "regex": "(\\d+)"
+        },
+        "price": {
+          "sel": "div.price span.t-price",
+          "regex": "([\\d,]+)"
+        }
+      },
+      "shipping": {
+        "mode": "conditional",
+        "fee": 3000
+      },
+      "notes": "장바구니(MY/00L0.aspx) 화면. 합계금액(t-price, 할인가 기준)을 수량으로 나눠 단가 환산. 배송비는 페이지에 표시되지 않아 3,000원 고정 입력(주문하기 화면에서 확인 필요). 주문서 화면은 항목이 DOM에 없어 캡처 거부 팝업으로 안내"
     },
-    "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25)"
-  },
-  {
-    "id": "aliexpress",
-    "name": "aliexpress",
-    "match": [
-      "aliexpress.com"
-    ],
-    "rowSelector": ".pl-product, .group-product--s-product--2GsgTja",
-    "priceIs": "lineTotal",
-    "fields": {
-      "name": {
-        "sel": "[data-pl='pl-product-title'], .group-product--s-product-img--j4ADxvF + span + div + div + div"
+    {
+      "id": "lottemart",
+      "name": "롯데마트 제타",
+      "match": [
+        "lottemartzetta.com"
+      ],
+      "rowSelector": "div[class*=product-card-container]",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "[data-test=fop-product-link]"
+        },
+        "qty": {
+          "sel": "input[class*=_counter__input]",
+          "attr": "value"
+        },
+        "price": {
+          "sel": "[class*=_display]",
+          "regex": "([\\d,]+)원"
+        }
       },
-      "qty": {
-        "sel": ".comet-input-number-input",
-        "attr": "value"
-      },
-      "price": {
-        "sel": "[data-pl='pl-product-price'], .group-product--s-product-price--1r6QhlU",
+      "shipping": {
+        "mode": "selector",
+        "sel": "[data-test=summary-cost-delivery-charge]",
         "regex": "([\\d,]+)"
       },
-      "option": {
-        "sel": "[data-pl='pl-product-sku']"
-      }
+      "notes": "롯데마트 제타 온라인(lottemartzetta.com/basket) — salt 디자인시스템. data-test 속성 기반(안정): fop-product-link=상품명, summary-cost-delivery-charge=배송비. 수량은 input._counter__input의 value. 가격 span _display_ 는 할인가(합계, lineTotal→단가=합계÷수량), _text_--strikethrough는 원가이므로 매칭 제외. CSSOM 스타일은 캡처에서 누락되므로 확장/북마크릿이 adopted 스타일을 박제(v1.6.12)."
     },
-    "shipping": {
-      "mode": "selector",
-      "sel": "[data-pl='pl-shipping-fee'], .group-ship-options--cost-label--2nUGmAX",
-      "regex": "([\\d,]+)"
+    {
+      "id": "officedepot-order",
+      "name": "오피스디포 주문서",
+      "match": [
+        "officedepot.co.kr/order"
+      ],
+      "rowSelector": "tr:has(td.qt)",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "td.info",
+          "regex": "^\\(\\d+\\)\\s*(.*)$"
+        },
+        "qty": {
+          "sel": "td.qt"
+        },
+        "price": {
+          "sel": "td.bm",
+          "match": "last",
+          "regex": "([\\d,]+)"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "li.pay_ship",
+        "regex": "배송비\\s*([\\d,]+)\\s*원"
+      },
+      "notes": "주문서(order/orderList.do) 화면 — 장바구니(myCart.do)와 분리. td.info '(품목코드)상품명'에서 코드 제거, td.qt=수량, 마지막 td.bm=합계금액(lineTotal→단가=합계÷수량, '정가 할인가'가 함께 있는 첫 td.bm 대신). 배송비는 ul.lastAmount의 pay_ship '배송비 N원'(업체별도배송 0원 → 행 없음)."
     },
-    "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25)"
-  }
-]
+    {
+      "id": "officedepot",
+      "name": "오피스디포",
+      "match": [
+        "officedepot.co.kr"
+      ],
+      "rowSelector": "tr:has(input.itemId)",
+      "checkedOnly": {
+        "sel": "input.itemId"
+      },
+      "fields": {
+        "name": {
+          "sel": "p.name a"
+        },
+        "qty": {
+          "sel": "input.itemCount",
+          "attr": "value"
+        },
+        "price": {
+          "sel": "span.price:not(.rowPrice)",
+          "regex": "([\\d,]+)"
+        }
+      },
+      "shipping": {
+        "mode": "none"
+      },
+      "notes": "장바구니(officedepot.co.kr/cart/myCart.do) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). 첫 span.price=판매가(단가), input.itemCount value=수량. 업체별도배송 상품이라 배송비 추출 없음."
+    },
+    {
+      "id": "daisomall-order",
+      "name": "다이소몰 주문서",
+      "match": [
+        "daisomall.co.kr/or/ora"
+      ],
+      "rowSelector": "div.goods-unit.order",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "div.tit"
+        },
+        "qty": {
+          "sel": "div.goods-num",
+          "regex": "(\\d+)개"
+        },
+        "price": {
+          "sel": "div.goods-price span.value",
+          "regex": "([\\d,]+)"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "div.total-pay li:contains('총 배송비') > div.val",
+        "regex": "([\\d,]+)"
+      },
+      "notes": "주문서(/or/ora/SCR_ORA_0001) 화면 — 장바구니(daisomall 규칙)와 달리 주문서엔 체크박스가 없어 분리. div.tit=상품명(빈 이미지 링크 a가 먼저 있어 텍스트로 추출), div.goods-price=상품합계금액(lineTotal→단가=합계÷수량), div.goods-num 'N개'=수량. 배송비는 결제창 '총 배송비' div.val 표시값(중첩된 '기본 배송비'는 직계 자손 아니므로 제외)."
+    },
+    {
+      "id": "daisomall",
+      "name": "다이소몰",
+      "match": [
+        "daisomall.co.kr"
+      ],
+      "rowSelector": "div.goods-unit",
+      "checkedOnly": {
+        "sel": "input.el-checkbox__original",
+        "legacySel": "label.el-checkbox.is-checked"
+      },
+      "priceIs": "lineTotal",
+      "qtyFromUnit": "div.goods-inner.price span.value",
+      "qtyInputSel": "div.goods-inner.count input.el-input__inner",
+      "fields": {
+        "name": {
+          "sel": "a.ellipsis1"
+        },
+        "price": {
+          "sel": "div.goods-inner.total span.value",
+          "regex": "([\\d,]+)"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "li:contains('배송비')",
+        "regex": "배송비:\\s*([\\d,]+)원"
+      },
+      "notes": "장바구니(daisomall.co.kr/or/orc) 화면. V체크된 상품만 추출 — Vue 카트라 input에 checked 속성이 없지만 label.el-checkbox의 is-checked 클래스가 MHTML 저장 시 보존됨. 수량 input에 value 속성이 없어 qtyFromUnit(합계금액÷단가)으로 계산. 합계(span.value)=lineTotal, '배송비: N원 (3만원 이상 무료)' 안내 문구에서 배송비 추출."
+    },
+    {
+      "id": "aliexpress-cart",
+      "name": "aliexpress 장바구니",
+      "match": [
+        "aliexpress.com"
+      ],
+      "rowSelector": "div.cart-product-wrap-group-new:has(input.comet-v2-checkbox-input[checked])",
+      "checkedOnly": {
+        "sel": "input.comet-v2-checkbox-input",
+        "legacySel": "label.comet-v2-checkbox-checked"
+      },
+      "priceIs": "lineTotal",
+      "specFromOption": true,
+      "fields": {
+        "name": {
+          "sel": "a.cart-product-name-title",
+          "attr": "title"
+        },
+        "qty": {
+          "sel": "input.comet-v2-input-number-input",
+          "attr": "value"
+        },
+        "price": {
+          "sel": "div.cart-product-price-activity",
+          "regex": "([\\d,]+)"
+        },
+        "option": {
+          "sel": "div.skuStr",
+          "attr": "title"
+        }
+      },
+      "shipping": {
+        "mode": "perItem",
+        "sel": "div.cart-product-ship-freight",
+        "regex": "([\\d,]+)"
+      },
+      "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25)"
+    },
+    {
+      "id": "aliexpress",
+      "name": "aliexpress",
+      "match": [
+        "aliexpress.com"
+      ],
+      "rowSelector": ".pl-product, .group-product--s-product--2GsgTja",
+      "priceIs": "lineTotal",
+      "fields": {
+        "name": {
+          "sel": "[data-pl='pl-product-title'], .group-product--s-product-img--j4ADxvF + span + div + div + div"
+        },
+        "qty": {
+          "sel": ".comet-input-number-input",
+          "attr": "value"
+        },
+        "price": {
+          "sel": "[data-pl='pl-product-price'], .group-product--s-product-price--1r6QhlU",
+          "regex": "([\\d,]+)"
+        },
+        "option": {
+          "sel": "[data-pl='pl-product-sku']"
+        }
+      },
+      "shipping": {
+        "mode": "selector",
+        "sel": "[data-pl='pl-shipping-fee'], .group-ship-options--cost-label--2nUGmAX",
+        "regex": "([\\d,]+)"
+      },
+      "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25)"
+    }
+  ]
+}

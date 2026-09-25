@@ -37,6 +37,16 @@ const api = {
   openManual: () => ipcRenderer.invoke('open-manual'),
   runExtensionV2: () => ipcRenderer.invoke('run-extension-v2'),
   revealFile: (p) => ipcRenderer.invoke('reveal-file', p),
+  adminPickFile: (kind) => ipcRenderer.invoke('admin-pick-file', kind),
+  adminRun: (flow) => ipcRenderer.invoke('admin-run', flow),
+  adminListMalls: () => ipcRenderer.invoke('admin-list-malls'),
+  adminDeleteMall: (payload) => ipcRenderer.invoke('admin-delete-mall', payload),
+  rulesVersion: () => ipcRenderer.invoke('rules-version'),
+  onAdminLog: (cb) => {
+    const handler = (_e, p) => cb(p)
+    ipcRenderer.on('admin-log', handler)
+    return () => ipcRenderer.removeListener('admin-log', handler)
+  },
   onMhtmlReceived: (cb) => {
     const handler = (_e, doc) => cb(doc)
     ipcRenderer.on('mhtml-received', handler)

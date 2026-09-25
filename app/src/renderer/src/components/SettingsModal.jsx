@@ -19,6 +19,13 @@ export default function SettingsModal() {
   const setRulesUpdateUrl = useStore(s => s.setRulesUpdateUrl)
   const checkRuleUpdates = useStore(s => s.checkRuleUpdates)
   const ruleUpdateStatus = useStore(s => s.ruleUpdateStatus)
+  const setAdminModal = useStore(s => s.setAdminModal)
+  const rulesVersion = useStore(s => s.rulesVersion)
+  const loadRulesVersion = useStore(s => s.loadRulesVersion)
+
+  useEffect(() => {
+    loadRulesVersion()
+  }, [])
 
   useEffect(() => {
     // 설정을 열면 저장된 주소로 최신 상태를 자동 확인해 표시한다(조용히 — 결과만 띄움)
@@ -27,6 +34,18 @@ export default function SettingsModal() {
 
   useEffect(() => {
     checkStartupStatus()
+  }, [])
+
+  useEffect(() => {
+    // 관리자 전용 진입(ADMIN.md) — 설정 화면이 열려 있는 동안 F9로 규칙 자동 생성 도구를 연다
+    const onKey = (e) => {
+      if (e.key === 'F9') {
+        e.preventDefault()
+        setAdminModal(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [])
 
   return (
@@ -38,6 +57,25 @@ export default function SettingsModal() {
         </div>
 
         <div className="space-y-3 px-4 py-4">
+          <div className="rounded-xl border-2 border-[#DDD9FC] bg-[#EEEDFE] px-4 py-3 text-center">
+            <div className="text-[11.5px] font-semibold text-[#64748B]">📦 쇼핑몰 규칙 버전</div>
+            <div className="mt-0.5 text-[26px] font-black leading-tight text-[#5B4DFB]">
+              {rulesVersion && rulesVersion.version ? `v${rulesVersion.version}` : (rulesVersion ? '구 형식 (버전 없음)' : '버전 정보 없음')}
+            </div>
+            {rulesVersion && rulesVersion.generatedAt && (
+              <div className="mt-0.5 text-[11.5px] text-[#4C3DE6]">
+                생성: {new Date(rulesVersion.generatedAt).toLocaleString('ko-KR', { hour12: false })}
+                {rulesVersion.count ? ` · 규칙 ${rulesVersion.count}종` : ''}
+              </div>
+            )}
+            {(!rulesVersion || !rulesVersion.version) && (
+              <div className="mt-0.5 text-[11px] text-[#94A3B8]">관리자 도구에서 규칙을 배포하거나 analysis\make-rules-json.js를 실행하면 버전이 만들어집니다</div>
+            )}
+            {ruleUpdateStatus && ruleUpdateStatus.remoteVersion && (
+              <div className="mt-1 text-[11px] text-[#64748B]">서버 최신 버전: v{ruleUpdateStatus.remoteVersion}</div>
+            )}
+          </div>
+
           <div className="rounded-lg border border-[#E2E8F0] px-4 py-3">
             <div className="flex items-center justify-between gap-3">
               <span className="text-[13.5px] text-[#1E293B]">
@@ -199,6 +237,10 @@ export default function SettingsModal() {
             >
               📄 매뉴얼 보기
             </button>
+          </div>
+
+          <div className="text-right text-[10.5px] text-[#CBD5E1]" title="관리자 전용: F9를 누르면 새 쇼핑몰 규칙 자동 생성 도구가 열립니다">
+            관리자: 이 화면에서 F9
           </div>
         </div>
       </div>
