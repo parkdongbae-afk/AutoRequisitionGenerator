@@ -1,6 +1,6 @@
 {
-  "version": "1.0.1",
-  "generatedAt": "2026-09-25T15:07:23.803Z",
+  "version": "1.0.2",
+  "generatedAt": "2026-09-25T15:46:07.828Z",
   "count": 34,
   "rules": [
     {
@@ -944,9 +944,10 @@
       "shipping": {
         "mode": "selector",
         "sel": "li:contains('배송비')",
-        "regex": "배송비:\\s*([\\d,]+)원"
+        "regex": "배송비:\\s*([\\d,]+)원",
+        "freeOver": 30000
       },
-      "notes": "장바구니(daisomall.co.kr/or/orc) 화면. V체크된 상품만 추출 — Vue 카트라 input에 checked 속성이 없지만 label.el-checkbox의 is-checked 클래스가 MHTML 저장 시 보존됨. 수량 input에 value 속성이 없어 qtyFromUnit(합계금액÷단가)으로 계산. 합계(span.value)=lineTotal, '배송비: N원 (3만원 이상 무료)' 안내 문구에서 배송비 추출."
+      "notes": "장바구니(daisomall.co.kr/or/orc) 화면. V체크된 상품만 추출 — Vue 카트라 input에 checked 속성이 없지만 label.el-checkbox의 is-checked 클래스가 MHTML 저장 시 보존됨. 수량 input에 value 속성이 없어 qtyFromUnit(합계금액÷단가)으로 계산. 합계(span.value)=lineTotal, '배송비: N원 (30,000원 이상 무료)' 안내 문구에서 배송비 추출 — 이 문구는 정책 표시라 실제 무료배송 여부와 무관하게 항상 표시되므로 freeOver 30000으로 상품 합계 3만원 이상이면 배송비 행을 만들지 않음(2026-09-26 사용자 보고 수정)."
     },
     {
       "id": "aliexpress-cart",

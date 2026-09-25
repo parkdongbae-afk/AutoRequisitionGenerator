@@ -278,6 +278,13 @@ function extractItems(html, rule) {
     }
   }
 
+  // selector 모드의 조건부 무료(예: 다이소몰 '30,000원 이상 무료') — 상품 합계가 기준 이상이면
+  // 안내 문구의 배송비를 무시하고 배송비 행을 만들지 않는다(conditional 모드는 자체 처리)
+  if (shippingFee != null && rule.shipping && rule.shipping.freeOver != null && rule.shipping.mode !== 'conditional') {
+    const sub = items.reduce((s, it) => s + it.unitPrice * it.qty, 0)
+    if (sub >= rule.shipping.freeOver) shippingFee = null
+  }
+
   if (rule.shipping && rule.shipping.mode === 'conditional') {
     const sub = items.reduce((s, it) => s + it.unitPrice * it.qty, 0);
     const fee = rule.shipping.fee || 0;
