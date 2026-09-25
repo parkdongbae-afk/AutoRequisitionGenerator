@@ -6,6 +6,7 @@ import Grid from './components/Grid'
 import StatusBar from './components/StatusBar'
 import MappingModal from './components/MappingModal'
 import ExtensionModal from './components/ExtensionModal'
+import BookmarkProfileModal from './components/BookmarkProfileModal'
 import RulesModal from './components/RulesModal'
 import SettingsModal from './components/SettingsModal'
 import BookmarkProgress from './components/BookmarkProgress'
@@ -16,6 +17,7 @@ export default function App() {
   const receivePick = useStore(s => s.receivePick)
   const mapping = useStore(s => s.mapping)
   const extensionModal = useStore(s => s.extensionModal)
+const bookmarkModal = useStore(s => s.bookmarkModal)
   const rulesModal = useStore(s => s.rulesModal)
   const settingsModal = useStore(s => s.settingsModal)
   const splitRatio = useStore(s => s.splitRatio)
@@ -88,6 +90,7 @@ export default function App() {
       <StatusBar />
       {mapping && <MappingModal />}
       {extensionModal && <ExtensionModal />}
+      {bookmarkModal && <BookmarkProfileModal />}
       {rulesModal && <RulesModal />}
       {settingsModal && <SettingsModal />}
       <BookmarkProgress />

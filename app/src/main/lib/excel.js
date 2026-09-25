@@ -48,6 +48,10 @@ function aggregateShipping(rows) {
   return [...items, ...feeRows]
 }
 
+// 사용자 환경에 따라 서식 파일이 .xlsx로 저장되어 있을 수 있다 — 확장자에 맞는 형식으로 쓴다
+// (.xlsx 경로에 biff8을 쓰면 Excel이 "확장자가 잘못됨"으로 열지 못한다)
+const bookTypeOf = (filePath) => (/\.xlsx$/i.test(filePath) ? 'xlsx' : 'biff8')
+
 export function appendRows(filePath, newRows, { backup = true } = {}) {
   const wb = XLSX.readFile(filePath)
   const name = wb.SheetNames.includes(DEFAULT_SHEET) ? DEFAULT_SHEET : wb.SheetNames[0]
@@ -64,7 +68,7 @@ export function appendRows(filePath, newRows, { backup = true } = {}) {
   if (backup && fs.existsSync(filePath)) {
     fs.copyFileSync(filePath, filePath + '.bak')
   }
-  XLSX.writeFile(wb, filePath, { bookType: 'biff8' })
+  XLSX.writeFile(wb, filePath, { bookType: bookTypeOf(filePath) })
   const after = readExcelRows(filePath)
   return { appended: aoa.length, totalRows: after.rows.length, sheetName: name }
 }
@@ -73,7 +77,7 @@ export function createNewWorkbook(filePath) {
   const wb = XLSX.utils.book_new()
   const ws = XLSX.utils.aoa_to_sheet([['내용', '규격', '단위', '수량', '예상단가']])
   XLSX.utils.book_append_sheet(wb, ws, DEFAULT_SHEET)
-  XLSX.writeFile(wb, filePath, { bookType: 'biff8' })
+  XLSX.writeFile(wb, filePath, { bookType: bookTypeOf(filePath) })
   return filePath
 }
 

@@ -42,6 +42,16 @@ export function findPartIndex(parts, absUrl) {
   return -1
 }
 
+// 품목 대표 이미지 URL 해석 — MHTML 파트에 있으면 app-mhtml:// 로(오프라인/웹 변경 무관),
+// 없으면 절대 https URL을 그대로 뷰어 <img>에 사용한다
+export function resolveImageUrl(parts, docId, baseUrl, url) {
+  if (!url) return null
+  let abs = url
+  try { abs = new URL(url, baseUrl || undefined).href } catch { if (!/^https?:/i.test(url)) return null }
+  const idx = findPartIndex(parts, abs)
+  return idx >= 0 ? `app-mhtml://${docId}/${idx}` : (/^https?:/i.test(abs) ? abs : null)
+}
+
 export function rewriteCssUrls(css, docId, parts, cssBase) {
   const resolve = (ref) => {
     if (!ref || /^(data:|about:|#|app-mhtml:)/i.test(ref)) return null
@@ -148,7 +158,8 @@ export function loadDocument(filePath, { preferRuleId = null, sourceUrl = null }
   const rows = items.map(it => ({
     docId: id,
     name: it.name,
-    spec: it.isShipping ? '' : deriveSpec(it.name, it.option),
+    spec: it.isShipping ? '' : (it.spec != null ? it.spec : deriveSpec(it.name, it.option)),
+    image: it.isShipping ? null : resolveImageUrl(parts, id, effectiveUrl, it.image),
     unit: it.isShipping ? '식' : '개',
     qty: it.qty,
     unitPrice: it.unitPrice,
@@ -168,7 +179,10 @@ export function loadDocument(filePath, { preferRuleId = null, sourceUrl = null }
     })
   }
 
-  const rewritten = reflectCheckStates(rewriteUrls(stripScripts(injectedHtml || rawHtml), id, parts))
+  let rewritten = reflectCheckStates(rewriteUrls(stripScripts(injectedHtml || rawHtml), id, parts))
+  // 확장 폴백 경로(라이브 캡처)가 남긴 25% 축소 스타일 태그는 뷰어에서 화면이 공백처럼
+  // 보이는 원인이 된다 — 원본 보기에선 제거해 화면을 보이게 한다(추출 rawHtml은 무영향)
+  rewritten = rewritten.replace(/<style[^>]*data-arge-zoom[^>]*>[\s\S]*?<\/style>/i, '')
   // 캡처 채널 표식: 확장(background.js)·북마크릿(bookmarklet.js)이 삽입한 meta —
   // 네이버 장바구니처럼 채널별 지원 범위가 다른 몰 구분에 사용
   const channelMatch = /<meta[^>]+name="arge-channel"[^>]+content="([^"]+)"/i.exec(rawHtml)
@@ -203,6 +217,9 @@ export function summarize(doc) {
     sourceUrl: doc.sourceUrl,
     mallName: doc.mallName,
     ruleId: doc.ruleId,
+    // captureChannel 누락 사고(2026-09-25): 요약에 이 필드가 없으면 렌더러 store의 채널
+    // 검사가 확장 캡처까지 전부 거부한다 — 네이버 장바구니 전면 거부의 원인이었음
+    captureChannel: doc.captureChannel || null,
     itemCount: doc.itemCount,
     shippingFee: doc.shippingFee,
     checkedFallback: !!doc.checkedFallback,
@@ -220,7 +237,8 @@ export function reextract(id, rule) {
   doc.rows = res.items.map(it => ({
     docId: id,
     name: it.name,
-    spec: it.isShipping ? '' : deriveSpec(it.name, it.option),
+    spec: it.isShipping ? '' : (it.spec != null ? it.spec : deriveSpec(it.name, it.option)),
+    image: it.isShipping ? null : resolveImageUrl(doc.parts, doc.id, doc.sourceUrl, it.image),
     unit: it.isShipping ? '식' : '개',
     qty: it.qty,
     unitPrice: it.unitPrice,

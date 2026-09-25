@@ -12,6 +12,12 @@
     "xls": "장바구니 _ 알라딘_품목내역(통합).xls"
   },
   {
+    "id": "cart_03",
+    "folder": "v_check_ok",
+    "mhtml": "장바구니_네이버.mhtml",
+    "xls": "장바구니_네이버_품목내역(통합).xls"
+  },
+  {
     "id": "cart_04",
     "folder": "v_check_ok",
     "mhtml": "쿠팡! _ 장바구니.mhtml",

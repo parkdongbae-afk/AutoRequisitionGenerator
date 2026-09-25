@@ -2,6 +2,64 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import ExcelView from './ExcelView'
 
+// 카드 뷰 적용 몰 — 원본 MHTML 렌더링이 깨지는 가상화/스크립트 기반 장바구니만
+// 추출 데이터 기반 커스텀 카드로 표시한다(2026-09-25 사용자 지정). 다른 몰은 원본 그대로.
+const CARD_MALLS = new Set(['naver-cart', 'coupang'])
+
+function Thumb({ src, name }) {
+  const [err, setErr] = useState(false)
+  useEffect(() => { setErr(false) }, [src])
+  if (!src || err) {
+    return (
+      <div className="flex h-[88px] w-[88px] shrink-0 items-center justify-center rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] text-[24px]">🛒</div>
+    )
+  }
+  return (
+    <img
+      src={src}
+      alt={name}
+      referrerPolicy="no-referrer"
+      onError={() => setErr(true)}
+      className="h-[88px] w-[88px] shrink-0 rounded-lg border border-[#E2E8F0] bg-white object-cover"
+    />
+  )
+}
+
+function CartCards({ doc }) {
+  const rows = doc.rows || []
+  if (!rows.length) {
+    return (
+      <div className="mx-auto w-full max-w-[620px] px-3 py-6 text-center text-[13px] text-[#64748B]">
+        추출된 품목이 없습니다. 상단 [원본] 탭에서 원문을 확인해 주세요.
+      </div>
+    )
+  }
+  return (
+    <div className="mx-auto w-full max-w-[620px] bg-[#F8FAFC] px-3 py-3">
+      {rows.map(r => r.isShipping ? (
+        <div key={r.key} className="mb-2 flex items-center justify-end gap-2 rounded-lg border border-dashed border-[#CBD5E1] bg-white/80 px-3 py-1.5 text-[12.5px] text-[#475569]">
+          <span>🚚</span>
+          <span className="font-medium">배송비</span>
+          <span className="font-bold text-[#1E293B]">{Number(r.roundedPrice ?? r.unitPrice).toLocaleString()}원</span>
+          <span className="text-[11px] text-[#94A3B8]">{r.qty}식</span>
+        </div>
+      ) : (
+        <div key={r.key} className="mb-2 flex gap-3 rounded-xl border border-[#E2E8F0] bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <Thumb src={r.image} name={r.name} />
+          <div className="min-w-0 flex-1">
+            <div className="line-clamp-2 text-[13.5px] font-semibold leading-snug text-[#1E293B]">{r.name}</div>
+            {r.spec ? <div className="mt-0.5 truncate text-[12px] text-[#64748B]" title={r.spec}>{r.spec}</div> : null}
+            <div className="mt-1.5">
+              <span className="rounded bg-[#F1F5F9] px-1.5 py-0.5 text-[11.5px] text-[#475569]">수량 {r.qty}개</span>
+            </div>
+            <div className="mt-1 text-right text-[15px] font-bold text-[#1E293B]">{Number(r.roundedPrice ?? r.unitPrice).toLocaleString()}원</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function WaitingPanel() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#F8FAFC] px-8 text-center">
@@ -35,7 +93,9 @@ export default function Viewer() {
   const mapping = useStore(s => s.mapping)
   const [docUrl, setDocUrl] = useState(null)
   const [docSize, setDocSize] = useState(null)
+  const [cardMode, setCardMode] = useState(true)
   const iframeRef = useRef(null)
+  const fitFitRef = useRef(null)
   const scrollRef = useRef(null)
   const zoomRef = useRef(zoom)
   const panRef = useRef(null)
@@ -116,6 +176,18 @@ export default function Viewer() {
           h: Math.ceil(e.data.height),
           w: Math.ceil(Math.max(e.data.width || 0, 1))
         })
+        // 원본이 컨테이너보다 훨씬 넓으면(예: 25% 축소 상태에서 캡처한 문서) 초기 화면이
+        // 전부 빈 여백으로 보인다 — 문서 폭에 맞춰 한 번만 자동 축소한다(2026-09-25)
+        const fitDoc = useStore.getState().docs.find(d => d.id === useStore.getState().selectedDocId)
+        if (fitDoc && fitFitRef.current !== fitDoc.id) {
+          const el = scrollRef.current
+          const w = Math.max(e.data.width || 0, 1)
+          if (el && w > el.clientWidth * 1.15) {
+            fitFitRef.current = fitDoc.id
+            const fit = Math.max(0.08, Math.min(1, (el.clientWidth - 24) / w))
+            useStore.getState().setZoom(Number(fit.toFixed(3)))
+          }
+        }
       }
       if (e.data && e.data.type === 'pan-start') startPan(null, null)
       else if (e.data && e.data.type === 'pan-move') {
@@ -179,7 +251,11 @@ export default function Viewer() {
   const selected = docs.find(d => d.id === selectedDocId)
   const renderW = docSize ? Math.max(docSize.w, pickerActive ? 1280 : 0) : null
 
-  const docViewActive = !!(docUrl && !waiting && !(selected && selected.excel))
+  const hasCards = !!(selected && !selected.excel && CARD_MALLS.has(selected.ruleId) && selected.rows && selected.rows.some(r => !r.isShipping))
+  // 매핑 피커는 원본 iframe 안에서 클릭해야 하므로 카드 모드를 강제 해제한다
+  const useCards = cardMode && hasCards && !pickerActive && !waiting
+
+  const docViewActive = !!(docUrl && !waiting && !useCards && !(selected && selected.excel))
   useEffect(() => {
     if (!docViewActive) return
     const el = scrollRef.current
@@ -235,10 +311,26 @@ export default function Viewer() {
 
       {!waiting && (
         <div className="flex items-center gap-2 border-b border-[#E2E8F0] bg-[#F8FAFC] px-2 py-1">
-          <button className="rounded-md border border-[#E2E8F0] bg-white px-2 py-0.5 text-[12px] text-[#334155] transition-colors duration-150 hover:bg-[#F1F5F9]" onClick={() => setZoom(zoom + 0.1)}>＋ 확대</button>
-          <button className="rounded-md border border-[#E2E8F0] bg-white px-2 py-0.5 text-[12px] text-[#334155] transition-colors duration-150 hover:bg-[#F1F5F9]" onClick={() => setZoom(zoom - 0.1)}>－ 축소</button>
-          <button className="rounded-md border border-[#E2E8F0] bg-white px-2 py-0.5 text-[12px] text-[#334155] transition-colors duration-150 hover:bg-[#F1F5F9]" onClick={() => setZoom(1)}>100%</button>
-          <span className="text-[11px] text-[#64748B]">{Math.round(zoom * 100)}%</span>
+          {hasCards && (
+            <div className="flex overflow-hidden rounded-md border border-[#E2E8F0]">
+              <button
+                className={`px-2 py-0.5 text-[12px] transition-colors duration-150 ${useCards ? 'bg-[#5B4DFB] font-semibold text-white' : 'bg-white text-[#334155] hover:bg-[#F1F5F9]'}`}
+                onClick={() => setCardMode(true)}
+              >카드</button>
+              <button
+                className={`px-2 py-0.5 text-[12px] transition-colors duration-150 ${!useCards ? 'bg-[#5B4DFB] font-semibold text-white' : 'bg-white text-[#334155] hover:bg-[#F1F5F9]'}`}
+                onClick={() => setCardMode(false)}
+              >원본</button>
+            </div>
+          )}
+          {!useCards && (
+            <>
+              <button className="rounded-md border border-[#E2E8F0] bg-white px-2 py-0.5 text-[12px] text-[#334155] transition-colors duration-150 hover:bg-[#F1F5F9]" onClick={() => setZoom(zoom + 0.1)}>＋ 확대</button>
+              <button className="rounded-md border border-[#E2E8F0] bg-white px-2 py-0.5 text-[12px] text-[#334155] transition-colors duration-150 hover:bg-[#F1F5F9]" onClick={() => setZoom(zoom - 0.1)}>－ 축소</button>
+              <button className="rounded-md border border-[#E2E8F0] bg-white px-2 py-0.5 text-[12px] text-[#334155] transition-colors duration-150 hover:bg-[#F1F5F9]" onClick={() => setZoom(1)}>100%</button>
+              <span className="text-[11px] text-[#64748B]">{Math.round(zoom * 100)}%</span>
+            </>
+          )}
           <div className="ml-auto flex items-center gap-1 text-[11px] text-[#64748B]">
             {selected && (
               <>
@@ -281,6 +373,8 @@ export default function Viewer() {
           <WaitingPanel />
         ) : selected && selected.excel ? (
           <ExcelView doc={selected} />
+        ) : useCards ? (
+          <CartCards doc={selected} />
         ) : docUrl ? (
           <div
             style={{

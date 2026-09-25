@@ -19,6 +19,31 @@ export function findBookmarkFiles(userDataDir) {
   return out
 }
 
+// 설치된 브라우저별 프로필 목록 — 북마크바 추가 대상을 사용자가 고를 수 있게 한다.
+// Local State의 profile.info_cache에서 표시 이름을 읽고, Bookmarks 파일이 있는
+// 프로필(실제 사용 중인 프로필)만 대상으로 한다.
+export function listBrowserProfiles() {
+  const out = []
+  for (const b of BROWSER_DATA) {
+    if (!fs.existsSync(b.userDataDir)) continue
+    let infos = {}
+    try {
+      const ls = JSON.parse(fs.readFileSync(path.join(b.userDataDir, 'Local State'), 'utf-8'))
+      infos = (ls.profile && ls.profile.info_cache) || {}
+    } catch {}
+    for (const entry of fs.readdirSync(b.userDataDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      const dir = entry.name
+      if (/^(System Profile|Guest Profile|Crashpad|ShaderCache|GrShaderCache|GraphiteDawnCache)$/i.test(dir)) continue
+      if (!fs.existsSync(path.join(b.userDataDir, dir, 'Bookmarks'))) continue
+      const info = infos[dir] || {}
+      const name = info.name || info.user_name || (dir === 'Default' ? '기본 프로필' : dir)
+      out.push({ browser: b.key, browserLabel: b.label, dir, name })
+    }
+  }
+  return out
+}
+
 function chromeEpochNow() {
   return String((BigInt(Date.now()) + 11644473600000n) * 1000n)
 }

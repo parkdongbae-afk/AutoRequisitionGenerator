@@ -1,4 +1,4 @@
-const PORTS = [57330, 57331, 57332, 57333, 57334, 57335]
+﻿const PORTS = [57330, 57331, 57332, 57333, 57334, 57335]
 const ext = globalThis.chrome ?? globalThis.whale ?? globalThis.browser
 
 async function fetchBookmarkInfo() {
@@ -128,6 +128,12 @@ function materializeAdoptedStyles() {
 // ② data-arge-checked 스탬프(앱 규칙 엔진의 checkedOnly가 읽음)로 동기화해 박제한다
 function syncCheckStates() {
   try {
+    // 채널 표식 — captureLiveHtml보다 먼저 실행되므로 여기에 심으면 executeScript 전체가
+    // 실패해 saveAsMHTML 폴백으로 저장될 때도 문서에 남는다
+    try {
+      document.querySelectorAll('meta[name="arge-channel"],meta[name="arge-ext-version"]').forEach(e => e.remove())
+      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.2">')
+    } catch (e) {}
     document.querySelectorAll('input[type=checkbox]').forEach(el => {
       el.setAttribute('data-arge-checked', el.checked ? 'true' : 'false')
       if (el.checked) el.setAttribute('checked', 'checked')
@@ -142,13 +148,10 @@ function syncCheckStates() {
   } catch (e) {}
 }
 
-// 장바구니는 목록을 창(window) 단위로만 DOM에 유지하고 노드까지 재활용하는 가상화 몰이 있다
-// — 네이버 실측(2026-09-23, 실제 장바구니 라이브 검증): 뷰포트에 ~2행만 존재하고 스크롤 시
-// 같은 노드에 다른 상품을 그려 넣으며 조상 컨테이너 노드까지 매번 재생성된다.
-// 대책: 캡처 전 스크롤 구간마다 "체크박스 앵커"로 행(가격 요소를 포함하는 최소 조상)을
-// 수집하고, 캡처 직전 현재 DOM에 없는 행을 문서 끝 숨김 컨테이너(data-arge-rows)에
-// 추가한 뒤 스탬프를 다시 찍어 outerHTML을 뜬다 — 앱 엔진은 문서 전체에서 rowSelector를
-// 찾으므로 숨김 컨테이너의 행도 그대로 추출된다(cheerio 파싱, CSS 무관).
+// 네이버 장바구니(창 가상화+노드 재활용)는 캡처 전 화면을 순간 25% 축소하면 뷰포트 안에
+// 모든 행이 렌더된다 — 축소로 해결한다. 과거 병행하던 "자동 스크롤 + 체크박스 앵커 행 수집·
+// 스티치(data-arge-rows)"는 사용자 요구(2026-09-25)로 전 몰에서 제거했다 — 장바구니 화면이
+// 스스로 아래로 내려가는 것이 사용자에게 보였고, 축소만으로 행 누락이 없어 불필요해졌다.
 async function captureLiveHtml() {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms))
   const adopt = () => {
@@ -171,37 +174,6 @@ async function captureLiveHtml() {
       }
     } catch (e) {}
   }
-  const rowKeyOf = (row) => {
-    try {
-      const a = row.querySelector('a[href]')
-      if (a) { const h = a.getAttribute('href'); if (h) return h }
-    } catch (e) {}
-    return (row.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120)
-  }
-  // 체크박스 앵커 수집 — 행은 항상 체크 컨트롤을 포함하므로 체크박스에서 위로 올라가
-  // "텍스트 40자 이상 + 가격 요소 포함" 조건을 만족하는 가장 가까운 조상을 행으로 삼는다.
-  // 노드 재활용(같은 노드에 다른 상품 렌더)은 텍스트 키로 서로 다른 행으로 수집된다.
-  const collectFrom = (store) => {
-    try {
-      const boxes = document.querySelectorAll('input[type=checkbox], [role=checkbox]')
-      for (const box of boxes) {
-        let node = box.parentElement
-        for (let depth = 0; node && depth < 8; depth++) {
-          const text = (node.textContent || '').replace(/\s+/g, ' ').trim()
-          if (text.length >= 40 && node.querySelector('[class*=price], [class*=amount], [class*=cost]')) {
-            const cls = typeof node.className === 'string' ? node.className.trim().split(/\s+/)[0] : ''
-            const sig = node.tagName + '|' + cls
-            let m = store.get(sig)
-            if (!m) { m = new Map(); store.set(sig, m) }
-            if (m.size > 400) continue
-            m.set(rowKeyOf(node), node.outerHTML)
-            break
-          }
-          node = node.parentElement
-        }
-      }
-    } catch (e) {}
-  }
   const stampAll = () => {
     try {
       document.querySelectorAll('input[type=checkbox]').forEach(el => {
@@ -216,18 +188,32 @@ async function captureLiveHtml() {
     } catch (e) {}
   }
   try { adopt() } catch (e) {}
-  // 화면을 순간적으로 25%로 축소하면 가상화 목록(창 단위 렌더)이 뷰포트 안에 모든 행을 렌더한다 —
-  // !important 스타일 태그로 적용(인라인보다 확실)하고 1000ms 대기 후 수집하며,
-  // outerHTML까지 축소 상태에서 찍은 뒤 사용자의 원래 화면 비율로 즉시 되돌린다.
+  // 채널 표식은 가장 먼저 심는다 — 저장 중 예외로 폴백·saveAsMHTML 경로로 저장돼도
+  // 앱이 확장 캡처임을 알게 한다(2026-09-25 네이버 장바구니 오탐 거부 사고 대응).
+  // 버전 번호는 manifest.json과 함께 갱신한다.
+  const channelMeta = () => {
+    try {
+      document.querySelectorAll('meta[name="arge-channel"],meta[name="arge-ext-version"]').forEach(e => e.remove())
+      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.2">')
+    } catch (e) {}
+  }
+  channelMeta()
+  // 25% 축소는 네이버 장바구니(shopping.naver.com/cart) 전용 — 다른 몰·주문서는 원래 배율 유지.
+  // !important 스타일 태그로 적용하고 1000ms 대기(가상화 목록 전체 렌더 대기) 후
+  // 축소 상태 그대로 outerHTML을 찍은 뒤 사용자의 원래 화면 비율로 즉시 되돌린다.
+  const naverCart = (() => {
+    try { return /(^|\.)shopping\.naver\.com$/i.test(location.hostname) && /^\/cart\b/.test(location.pathname) } catch (e) { return false }
+  })()
   let zoomTag = null
-  try {
-    zoomTag = document.createElement('style')
-    zoomTag.setAttribute('data-arge-zoom', '1')
-    zoomTag.textContent = 'html{zoom:0.25!important}'
-    ;(document.head || document.documentElement).appendChild(zoomTag)
-  } catch (e) {}
-  await sleep(1000)
-  const store = new Map()
+  if (naverCart) {
+    try {
+      zoomTag = document.createElement('style')
+      zoomTag.setAttribute('data-arge-zoom', '1')
+      zoomTag.textContent = 'html{zoom:0.25!important}'
+      ;(document.head || document.documentElement).appendChild(zoomTag)
+    } catch (e) {}
+    await sleep(1000)
+  }
   let capturedHtml = null
   try {
     // lazy 이미지가 미로딩 상태면 뷰어에서 문서 하단이 잘려 보인다 — src를 실제 값으로 교체
@@ -237,64 +223,22 @@ async function captureLiveHtml() {
         if (ds && (im.naturalWidth === 0 || !im.src || im.src.indexOf('data:') === 0 || /blank|dummy|placeholder|loading|spinner|transparent|no_img/i.test(im.src))) im.src = ds
       }
     } catch (e) {}
-    collectFrom(store)
-    const de = document.documentElement
-    const step = Math.max(300, Math.round(window.innerHeight * 0.9))
-    let lastY = -1
-    for (let i = 0; i < 80; i++) {
-      window.scrollBy(0, step)
-      await sleep(120)
-      collectFrom(store)
-      const y = window.scrollY
-      if (y === lastY && y + window.innerHeight >= de.scrollHeight - 2) break
-      lastY = y
-    }
-    // 저장이 너무 빠르면 늦게 렌더링된 행이 수집을 빠져나간다 — 마지막 수집 후 500ms
-    // 안정화하고 다시 수집한 뒤 스티치·스탬프한다
-    await sleep(500)
-    collectFrom(store)
-    // 그룹 간 중첩 제거: 어떤 그룹의 행이 더 짧은 다른 그룹의 행에 포함되면(래퍼/컨테이너) 버리고
-    // 가장 안쪽(카드) 그룹만 남긴다 — 같은 상품이 여러 레벨로 중복 수집되는 것을 막는다
-    const groups = [...store.entries()].map(([sig, keyMap]) => ({ sig, keyMap, sample: [...keyMap.values()][0] || '' }))
-    const innermost = groups.filter(b => !groups.some(a => a !== b && a.sample.length < b.sample.length && b.sample.includes(a.sample.slice(0, 300))))
-    document.querySelectorAll('[data-arge-rows]').forEach(e => e.remove())
-    const container = document.createElement('div')
-    container.setAttribute('data-arge-rows', '1')
-    container.style.display = 'none'
-    let appended = 0
-    for (const g of innermost) {
-      const sep = g.sig.indexOf('|')
-      const tag = g.sig.slice(0, sep)
-      const cls = g.sig.slice(sep + 1)
-      let liveKeys = new Set()
-      try {
-        const sel = cls ? tag + '.' + cls : tag
-        liveKeys = new Set([...document.querySelectorAll(sel)].map(rowKeyOf))
-      } catch (e) {}
-      for (const [key, html] of g.keyMap) {
-        if (!liveKeys.has(key)) {
-          container.insertAdjacentHTML('beforeend', html)
-          appended++
-        }
-      }
-    }
-    if (appended) document.body.appendChild(container)
-    // 최상단에서 캡처하면 일부 몰에서 문서 꼬리(lazy 콘텐츠)가 잘려 보인다 —
-    // 사용자가 알아차리지 못할 정도로 살짝 내린 상태에서 캡처한다
-    try { window.scrollBy(0, Math.max(100, Math.round(window.innerHeight * 0.15))) } catch (e) {}
-    await sleep(150)
     stampAll()
-    // 채널 표식 — 앱이 확장 캡처(지원 채널)임을 구분하는 데 사용 (예: 네이버 장바구니)
-    try { (document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension">') } catch (e) {}
+    // 축소 리렌더로 head가 교체됐을 수 있으므로 저장 직전에 표식을 다시 심는다
+    channelMeta()
     // 축소 상태에서 저장 (사용자 요구: 축소 후 1000ms — 축소 상태로 mhtml 저장)
-    capturedHtml = de.outerHTML
-  } catch (e) {}
-  // 사용자 화면을 즉시 원래 배율로 복원 — 직후 복원이므로 축소 과정은 보이지 않는다
+    capturedHtml = document.documentElement.outerHTML
+  } catch (e) {
+    try { stampAll() } catch (e2) {}
+    channelMeta()
+  }
+  // 사용자 화면을 즉시 원래 배율로 복원
   try { if (zoomTag) zoomTag.remove() } catch (e) {}
   try { document.documentElement.style.zoom = '' } catch (e) {}
-  let html = capturedHtml || document.documentElement.outerHTML
-  // 캡처 본문에서 축소 흔적(줌 스타일 태그) 제거 — 뷰어는 원래 크기로 표시
-  html = html.replace(/<style[^>]*data-arge-zoom[^>]*>[\s\S]*?<\/style>/i, '')
+  // 캡처 본문에는 축소 스타일 태그를 그대로 남긴다(사용자 실측 2026-09-25) — 네이버 장바구니는
+  // 태그를 제거하면 뷰어에서 레이아웃이 무너지고, 축소 상태 그대로 저장하면 뷰어(휠 줌)에서
+  // 정확히 보인다. 줌 태그는 네이버 장바구니 캡처에만 존재하므로 다른 몰에 영향 없다.
+  const html = capturedHtml || document.documentElement.outerHTML
   return {
     html,
     href: location.href,
@@ -336,6 +280,41 @@ async function sendCurrentTab(tab) {
     } catch (e) {
       try { await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: syncCheckStates }) } catch (e2) {}
     }
+    const title = (tab.title || 'capture').replace(/\.mhtml?$/i, '')
+    // 네이버 장바구니는 사용자가 검증한 플로우(브라우저 확대/축소 25% → Chrome MHTML 저장)를 그대로
+    // 따른다(2026-09-25) — setZoom으로 가상화 목록 전체를 렌더시킨 뒤 saveAsMHTML로 저장하면
+    // 뷰어에서도 행 누락·레이아웃 붕괴 없이 표시된다. 쿠팡은 CSS를 Referer 검사 없이 포함하는
+    // Chrome MHTML이 뷰어 렌더링에 검증됐다(사용자 지정 2026-09-25).
+    const url = tab.url || ''
+    const isNaverCart = (() => { try { return /(^|\.)shopping\.naver\.com$/i.test(new URL(url).hostname) && /^\/cart\b/.test(new URL(url).pathname) } catch (e) { return false } })()
+    const isCoupang = (() => { try { return /(^|\.)coupang\.com$/i.test(new URL(url).hostname) } catch (e) { return false } })()
+    if (isNaverCart || isCoupang) {
+      let prevZoom = null
+      try {
+        if (isNaverCart) {
+          prevZoom = await chrome.tabs.getZoom(tab.id)
+          await chrome.tabs.setZoom(tab.id, 0.25)
+          await new Promise(r => setTimeout(r, 1000))
+        }
+        // saveAsMHTML이 간헐적으로 실패(빈 blob/예외)한다 — 2026-09-25 실측으로 재시도 추가
+        let blob = null
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try { blob = await chrome.pageCapture.saveAsMHTML({ tabId: tab.id }) } catch (e) {}
+          if (blob && blob.size > 0) break
+          await new Promise(r => setTimeout(r, 500))
+        }
+        if (blob && blob.size > 0) {
+          const ok = await postMhtml(blob, `${title}.mhtml`)
+          if (ok) {
+            badge('전송', '#16a34a')
+            return
+          }
+        }
+      } catch (e) {} finally {
+        if (prevZoom != null) { try { await chrome.tabs.setZoom(tab.id, prevZoom) } catch (e) {} }
+      }
+      // saveAsMHTML 실패 시 아래 기존 라이브 캡처 경로로 계속 진행한다
+    }
     // 1순위: 살아있는 DOM outerHTML — 행 누락 없음, checked 속성 동기화 포함
     try {
       const [live] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: captureLiveHtml })
@@ -352,7 +331,6 @@ async function sendCurrentTab(tab) {
     // 폴백: saveAsMHTML (executeScript 불가 페이지 등)
     const blob = await chrome.pageCapture.saveAsMHTML({ tabId: tab.id })
     if (!blob || blob.size === 0) throw new Error('빈 페이지')
-    const title = (tab.title || 'capture').replace(/\.mhtml?$/i, '')
     const ok = await postMhtml(blob, `${title}.mhtml`)
     if (ok) {
       badge('전송', '#16a34a')

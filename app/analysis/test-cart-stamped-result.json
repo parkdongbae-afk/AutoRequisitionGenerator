@@ -79,20 +79,9 @@
   {
     "id": "cart_05",
     "mall": "G마켓 장바구니",
-    "pass": true,
+    "pass": false,
     "detail": {
-      "stampedBoxes": 3,
-      "extracted": [
-        "2x21900",
-        "2x36350"
-      ],
-      "expected": [
-        "2x21900",
-        "2x36350"
-      ],
-      "shipping": 0,
-      "ansShipping": 0,
-      "checkedFallback": false
+      "error": "ENOENT: no such file or directory, open 'C:\\Users\\Park\\Desktop\\Automatic_generation_of_approval_requests_html (1)\\Automatic_generation_of_approval_requests_html\\장바구니_html\\v_check_not_ok\\G마켓 - 장바구니_품목내역(통합).xls'"
     }
   },
   {
@@ -159,20 +148,9 @@
   {
     "id": "cart_09",
     "mall": "옥션 장바구니",
-    "pass": true,
+    "pass": false,
     "detail": {
-      "stampedBoxes": 4,
-      "extracted": [
-        "1x63600",
-        "3x6780"
-      ],
-      "expected": [
-        "1x63600",
-        "3x6780"
-      ],
-      "shipping": 2700,
-      "ansShipping": 2700,
-      "checkedFallback": false
+      "error": "ENOENT: no such file or directory, open 'C:\\Users\\Park\\Desktop\\Automatic_generation_of_approval_requests_html (1)\\Automatic_generation_of_approval_requests_html\\장바구니_html\\v_check_not_ok\\옥션 - 장바구니_품목내역(통합).xls'"
     }
   },
   {

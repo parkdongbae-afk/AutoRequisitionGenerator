@@ -41,14 +41,14 @@ except ImportError:
 APP_NAME = "확장 프로그램 개발자 모드 및 자동 설치"
 APP_VERSION = "18.1.0"
 
-BG = "#F3F6FA"
+BG = "#F4F6F8"
 CARD = "#FFFFFF"
 NAVY = "#0F172A"
 TEXT = "#1E293B"
 MUTED = "#64748B"
-BORDER = "#DCE3EC"
-BLUE = "#2563EB"
-BLUE_HOVER = "#1D4ED8"
+BORDER = "#E2E8F0"
+BLUE = "#5B4DFB"
+BLUE_HOVER = "#4C3DE6"
 GREEN = "#059669"
 RED = "#DC2626"
 
@@ -1530,7 +1530,7 @@ class RoundedButton(tk.Canvas):
         width: int = 120,
         height: int = 38,
         radius: int = 12,
-        background: str = "#4F46E5",
+        background: str = "#5B4DFB",
         foreground: str = "#FFFFFF",
         hover_background: str | None = None,
         border_color: str | None = None,
@@ -1733,7 +1733,7 @@ class App(tk.Tk):
     ) -> tk.Button:
         colors = {
             "normal": ("#FFFFFF", "#344054", "#EAECF0", "#F9FAFB"),
-            "primary": ("#4F46E5", "#FFFFFF", "#4F46E5", "#4338CA"),
+            "primary": ("#5B4DFB", "#FFFFFF", "#5B4DFB", "#4C3DE6"),
             "dark": ("#101828", "#FFFFFF", "#101828", "#1D2939"),
             "success": ("#ECFDF3", "#027A48", "#ABEFC6", "#D1FADF"),
             "danger": ("#FEF3F2", "#B42318", "#FECDCA", "#FEE4E2"),
@@ -1769,15 +1769,15 @@ class App(tk.Tk):
             text=APP_NAME,
             font=self.title_font,
             bg="#FFFFFF",
-            fg="#101828",
+            fg="#5B4DFB",
         ).pack(side="left", padx=22, pady=18)
 
         tk.Label(
             header,
             text=f"버전 {APP_VERSION}",
             font=self.bold_font,
-            bg="#EEF2FF",
-            fg="#4338CA",
+            bg="#EEEDFE",
+            fg="#4C3DE6",
             padx=13,
             pady=7,
         ).pack(side="right", padx=22)
@@ -1870,10 +1870,10 @@ class App(tk.Tk):
             width=98,
             height=36,
             radius=12,
-            background="#EEF2FF",
-            foreground="#4338CA",
-            hover_background="#E0E7FF",
-            border_color="#C7D2FE",
+            background="#EEEDFE",
+            foreground="#4C3DE6",
+            hover_background="#DDD9FC",
+            border_color="#C9C3FC",
             font=self.small_font,
         )
         select_all_button.pack(side="right", padx=(0, 8))
@@ -1993,7 +1993,7 @@ class App(tk.Tk):
             relief="flat",
             highlightthickness=1,
             highlightbackground="#D0D5DD",
-            highlightcolor="#4F46E5",
+            highlightcolor="#5B4DFB",
         )
         self.extension_entry.pack(
             side="left",
@@ -2078,8 +2078,8 @@ class App(tk.Tk):
             self,
             textvariable=self.status_text,
             font=self.default_font,
-            bg="#EEF2FF",
-            fg="#3730A3",
+            bg="#EEEDFE",
+            fg="#4C3DE6",
             anchor="w",
             padx=13,
             pady=8,
@@ -2341,8 +2341,8 @@ class App(tk.Tk):
                 bg=row_bg,
                 activebackground=row_bg,
                 selectcolor="#FFFFFF",
-                fg="#4F46E5",
-                activeforeground="#4F46E5",
+                fg="#5B4DFB",
+                activeforeground="#5B4DFB",
                 highlightthickness=0,
                 borderwidth=0,
                 font=(self.font_family, 13),
@@ -2384,7 +2384,7 @@ class App(tk.Tk):
                 text="최근" if profile.is_last_used else "—",
                 font=self.bold_font if profile.is_last_used else self.default_font,
                 bg=row_bg,
-                fg="#4338CA" if profile.is_last_used else "#98A2B3",
+                fg="#4C3DE6" if profile.is_last_used else "#98A2B3",
             ).grid(row=0, column=4, sticky="nsew", padx=5)
 
             if profile.actual_state is True:
@@ -2801,9 +2801,9 @@ class App(tk.Tk):
             text="확인",
             command=popup.destroy,
             font=(self.font_family, 12, "bold"),
-            bg="#4F46E5",
+            bg="#5B4DFB",
             fg="#FFFFFF",
-            activebackground="#4338CA",
+            activebackground="#4C3DE6",
             activeforeground="#FFFFFF",
             relief="flat",
             borderwidth=0,

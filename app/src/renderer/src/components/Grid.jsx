@@ -69,10 +69,12 @@ export default function Grid() {
   }
 
   const allRows = docs.flatMap(d => d.rows.map(r => ({ ...r, docId: d.id, mallName: d.mallName })))
-  // 중복 감지: 같은 쇼핑몰 + 같은 품목명/규격/수량/단가(배송비 포함) — 같은 장바구니를
-  // 2번 추출하면 행 전체가 이 그룹에 걸린다. 그룹의 삭제 버튼을 누르면 첫 1세트만 남긴다
+  // 중복 감지: 같은 쇼핑몰 + 같은 품목명/규격/수량/단가 — 같은 장바구니를
+  // 2번 추출하면 행 전체가 이 그룹에 걸린다. 그룹의 삭제 버튼을 누르면 첫 1세트만 남긴다.
+  // 배송비 행은 중복삭제 대상에서 제외한다(2026-09-25 사용자 요구)
   const dupGroupMap = new Map()
   for (const r of allRows) {
+    if (r.isShipping) continue
     const name = (r.name || '').replace(/\s+/g, ' ').trim()
     if (!name) continue
     const k = `${r.mallName}|${name}|${(r.spec || '').trim()}|${r.qty}|${r.roundedPrice}|${!!r.isShipping}`

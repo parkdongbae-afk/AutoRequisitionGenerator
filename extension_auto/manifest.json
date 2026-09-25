@@ -1,7 +1,7 @@
-{
+﻿{
   "manifest_version": 3,
   "name": "품의캡처",
-  "version": "1.5.6",
+  "version": "1.6.2",
   "description": "현재 주문/장바구니 페이지를 캡처하여 '자동 품의 요구 생성기' 데스크톱 앱으로 전송합니다. Chrome·Edge·웨일 호환.",
   "permissions": [
     "pageCapture",

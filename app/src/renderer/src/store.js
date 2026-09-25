@@ -5,11 +5,9 @@ const nextRowKey = () => `r${seq++}`
 
 const RULE_REJECT_MESSAGES = {
   naver: '주문서 상태에서 눌러 주세요.',
-  'naver-cart': '주문서 상태에서 눌러 주세요.',
-  'naver-cart': '주문서 상태에서 품의캡처 눌러 주세요.',
+  'naver-cart': '네이버 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
   coupang: '장바구니 상태에서 품의캡쳐 해주세요.',
   ic114: '장바구니 상태에서 품의캡쳐를 누르세요. 주문하기 화면에서 배송비는 반드시 확인해 보세요.',
-  'naver-cart': '네이버 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
   'emartmall-cart': 'e마트몰은 주문서 상태에서만 추출할 수 있습니다.\n주문서 상태에서 눌러 주세요.',
   'emartmall': 'e마트몰은 주문서 상태에서만 추출할 수 있습니다.\n주문서 상태에서 눌러 주세요.',
   'kyobo-cart': '교보문고 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
@@ -51,6 +49,7 @@ export const useStore = create((set, get) => ({
   mapping: null,
   toasts: [],
   extensionModal: false,
+  bookmarkModal: false,
   rulesModal: false,
   settingsModal: false,
   showRuleAdd: false,
@@ -61,8 +60,23 @@ export const useStore = create((set, get) => ({
   priceMarkup: 0,
   excelHighlight: null,
   splitRatio: 2 / 3,
+  inboxRetentionDays: 5,
+  rulesUpdateUrl: 'https://raw.githubusercontent.com/parkdongbae-afk/AutoRequisitionGenerator/main/rules.json',
+  ruleUpdateStatus: null,
+
+  setInboxRetentionDays(v) {
+    const n = Math.max(0, Math.min(365, Math.round(Number(v) || 0)))
+    set({ inboxRetentionDays: n })
+    window.api.setSetting('inboxRetentionDays', n)
+  },
+  setRulesUpdateUrl(v) {
+    const s = String(v || '')
+    set({ rulesUpdateUrl: s })
+    window.api.setSetting('rulesUpdateUrl', s)
+  },
 
   setExtensionModal(v) { set({ extensionModal: v }) },
+  setBookmarkModal(v) { set({ bookmarkModal: v }) },
   setRulesModal(v) { set({ rulesModal: v }) },
   setSettingsModal(v) { set({ settingsModal: v }) },
   setShowRuleAdd(v) {
@@ -257,6 +271,47 @@ export const useStore = create((set, get) => ({
     }
     set({ excelPath: res.path, excelCount: res.rows.length })
     get().toast(`엑셀 로드: 기존 ${res.rows.length}행 (${res.path})`, 'ok')
+  },
+
+  async checkRuleUpdates(silent) {
+    const url = (useStore.getState().rulesUpdateUrl || '').trim()
+    if (!url) {
+      if (!silent) get().toast('설정에서 업데이트 주소를 먼저 입력해 주세요', 'warn')
+      return
+    }
+    if (!silent) get().toast('규칙 업데이트를 확인하는 중...', 'info')
+    const res = await window.api.checkRuleUpdates(url)
+    const at = new Date().toLocaleString('ko-KR', { hour12: false })
+    if (!res || !res.ok) {
+      const status = { at, ok: false, message: (res && res.error) || '확인 실패' }
+      set({ ruleUpdateStatus: status })
+      window.api.setSetting('ruleUpdateLastCheck', status)
+      if (!silent) get().toast(`규칙 업데이트 실패: ${status.message}`, 'err')
+      return
+    }
+    const updated = res.results.filter(r => r.status === 'updated')
+    const created = res.results.filter(r => r.status === 'new')
+    const same = res.results.filter(r => r.status === 'same').length
+    const invalid = res.results.filter(r => r.status === 'invalid').length
+    const status = {
+      at,
+      ok: true,
+      upToDate: updated.length + created.length === 0,
+      updated: updated.map(r => r.name),
+      created: created.map(r => r.name),
+      same,
+      invalid
+    }
+    set({ ruleUpdateStatus: status })
+    window.api.setSetting('ruleUpdateLastCheck', status)
+    if (updated.length + created.length) await get().refreshRules()
+    if (silent) return
+    if (updated.length + created.length) {
+      get().toast(`규칙 업데이트 완료 — 갱신 ${updated.length}건 · 신규 ${created.length}건 (변경 없음 ${same})`, 'ok')
+      get().toast('이미 열린 캡처에 새 규칙을 적용하려면 상단 규칙 선택으로 다시 선택해 주세요', 'info', 7000)
+    } else {
+      get().toast(`모든 규칙이 최신입니다 (변경 없음 ${same}건${invalid ? `, 형식 오류 ${invalid}건` : ''})`, 'info')
+    }
   },
 
   async refreshRules() {
@@ -621,8 +676,8 @@ export const useStore = create((set, get) => ({
     }))
   },
 
-  async addBookmarklets() {
-    const res = await window.api.addBookmarklets()
+  async addBookmarklets(selection) {
+    const res = await window.api.addBookmarklets(selection)
     if (!res || res.canceled) return
     for (const r of (res.results || [])) {
       if (r.status === 'ok') {
@@ -633,6 +688,14 @@ export const useStore = create((set, get) => ({
         get().toast(`${r.browser}: 설치되지 않음 — 건너뛰기`, 'info')
       }
     }
+  },
+
+  // [익스텐션 추가] 버튼 — 안내 창 없이 version2 설치 도구를 바로 실행한다
+  // (2026-09-25 사용자 지정: 도구 창에서 브라우저·프로필을 고르므로 중간 안내는 불필요)
+  async runExtensionV2Flow() {
+    const res = await window.api.runExtensionV2()
+    if (res && res.error) get().toast(`version2 실행 실패: ${res.error}`, 'err')
+    else get().toast('version2 설치 도구를 실행했습니다 — 창에서 브라우저 프로필을 선택하고 [개발자 모드 켜기 + 익스텐션 설치]를 누르세요', 'ok', 6000)
   },
 
   async checkStartupStatus() {
@@ -702,18 +765,23 @@ export const useStore = create((set, get) => ({
     if (settings && Number(settings.gridFontScale) > 0) {
       set({ gridFontScale: Math.min(3, Math.max(1, Number(settings.gridFontScale))) })
     }
+    if (settings && settings.inboxRetentionDays !== undefined) {
+      set({ inboxRetentionDays: Math.max(0, Math.min(365, Math.round(Number(settings.inboxRetentionDays) || 0))) })
+    }
+    if (settings && typeof settings.rulesUpdateUrl === 'string') {
+      set({ rulesUpdateUrl: settings.rulesUpdateUrl })
+    }
+    if (settings && settings.ruleUpdateLastCheck && typeof settings.ruleUpdateLastCheck === 'object') {
+      set({ ruleUpdateStatus: settings.ruleUpdateLastCheck })
+    }
     window.api.onMhtmlReceived(doc => {
       const m = get().mapping
       if (m && m.waiting) {
         get().beginMappingCapture(doc)
         return
       }
-      // 네이버 장바구니는 확장(품의캡처 아이콘) 캡처만 지원 — 북마크릿/수동 저장은 거부 안내
-      if (doc && doc.ruleId === 'naver-cart' && doc.captureChannel !== 'extension') {
-        if (doc && doc.id) window.api.rejectDoc(doc.id)
-        window.api.alertBox(RULE_REJECT_MESSAGES['naver-cart'])
-        return
-      }
+      // 네이버 장바구니 채널 제한 폐지(2026-09-25 사용자 요구) — 북마크릿도 네이버 전용
+      // 축소 캡처를 수행하므로 확장·북마크릿 모두 추출 가능. 부분 저장은 countMismatch 경고로 처리.
       const itemRows = ((doc && doc.rows) || []).filter(r => !r.isShipping)
       if (!doc || doc.error || itemRows.length === 0) {
         if (doc && doc.id) window.api.rejectDoc(doc.id)

@@ -10,9 +10,10 @@ import { allRules, saveUserRule, deleteUserRule, ruleById, renameRule } from './
 import { readExcelRows, appendRows, createNewWorkbook, loadExcelFull } from './lib/excel.js'
 import { startReceiver } from './lib/receiver.js'
 import { PICKER_SCRIPT } from './lib/picker.js'
-import { BROWSER_DATA, findBookmarkFiles, addBookmarkToFront, readCaptureBookmarkCount, isCaptureBookmarkAtFront } from './lib/bookmarks.js'
+import { BROWSER_DATA, findBookmarkFiles, addBookmarkToFront, readCaptureBookmarkCount, isCaptureBookmarkAtFront, listBrowserProfiles } from './lib/bookmarks.js'
 import { buildBookmarklet } from './lib/bookmarklet.js'
-import { smartDecode } from './lib/mhtml.js'
+import { buildMhtmlFromHtml } from './lib/mhtmlsave.js'
+import { parseMhtml } from './lib/mhtml.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -67,6 +68,28 @@ function manualFile() {
     return path.join(process.resourcesPath, 'resources', 'manual.pdf')
   }
   return path.join(app.getAppPath(), 'resources', 'manual.pdf')
+}
+
+function cleanupInbox() {
+  // inbox 보관기간 경과 캡처 자동 삭제(2026-09-25 사용자 요구) — 기본 5일, 0이면 기능 끔
+  const inbox = globalThis.__inboxDir
+  if (!inbox || !fs.existsSync(inbox)) return
+  const days = Number(getSettings().inboxRetentionDays === undefined ? 5 : getSettings().inboxRetentionDays)
+  if (!Number.isFinite(days) || days <= 0) return
+  const cutoff = Date.now() - days * 86400000
+  let removed = 0
+  for (const f of fs.readdirSync(inbox)) {
+    if (!/\.(mhtml|html|htm)$/i.test(f)) continue
+    const p = path.join(inbox, f)
+    try {
+      if (fs.statSync(p).mtimeMs >= cutoff) continue
+      fs.unlinkSync(p)
+      removed++
+      const side = p.replace(/\.(mhtml|html|htm)$/i, '') + '.url.txt'
+      if (fs.existsSync(side)) fs.unlinkSync(side)
+    } catch {}
+  }
+  if (removed) console.log(`[inbox] 보관기간(${days}일) 경과 캡처 ${removed}개 삭제`)
 }
 
 const RUN_KEY = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'
@@ -353,6 +376,40 @@ async function runE2E() {
       receiverCheck = `ERR: ${e.message}`
     }
   }
+  // 채널 검사 회귀(2026-09-25 네이버 장바구니 전면 거부 사고): summarize가 captureChannel을
+  // 실어 보내야 확장 캡처가 거부되지 않는다 — 메타 유/무 양쪽을 실제 loadDocument로 검증한다
+  let channelCheck = null
+  try {
+    const chDir = fs.mkdtempSync(path.join(app.getPath('temp'), 'arge-ch-'))
+    const chHtml = (withMeta) => `<!DOCTYPE html><html><head>${withMeta ? '<meta name="arge-channel" content="extension">' : ''}<title>장바구니</title></head><body><div class="product--x"><button role="checkbox" aria-checked="true">V</button><span class="title--y">채널테스트상품</span><input class="number--q" value="1"><em class="price--p">10,000원</em></div></body></html>`
+    const withMetaFile = path.join(chDir, 'with-meta.html')
+    const noMetaFile = path.join(chDir, 'no-meta.html')
+    fs.writeFileSync(withMetaFile, chHtml(true), 'utf-8')
+    fs.writeFileSync(noMetaFile, chHtml(false), 'utf-8')
+    const withMetaDoc = loadDocument(withMetaFile, { sourceUrl: 'https://shopping.naver.com/cart?e2e=1' })
+    const noMetaDoc = loadDocument(noMetaFile, { sourceUrl: 'https://shopping.naver.com/cart?e2e=1' })
+    channelCheck = {
+      withMeta: withMetaDoc && withMetaDoc.captureChannel,
+      withoutMeta: noMetaDoc ? (noMetaDoc.captureChannel === null ? 'null' : noMetaDoc.captureChannel) : 'no-doc',
+      naverRule: withMetaDoc && withMetaDoc.ruleId
+    }
+    fs.rmSync(chDir, { recursive: true, force: true })
+  } catch (e) {
+    channelCheck = `ERR: ${e.message}`
+  }
+  // 쿠팡 CDN Referer 회귀(2026-09-25 실측: assets.coupangcdn.com CSS는 Referer 없으면 403) —
+  // buildMhtmlFromHtml이 출처 페이지를 Referer로 보내 CSS 파트를 MHTML에 담는지 검증한다.
+  // 외부 네트워크가 막힌 환경에선 skip으로 기록해 실패로 세지 않는다.
+  let refererCheck = null
+  try {
+    const coupHtml = '<!DOCTYPE html><html><head><link rel="stylesheet" href="https://assets.coupangcdn.com/front/purchase-next/_next/static/css/360793cddbbfbbfa.css"></head><body><p>referer-check</p></body></html>'
+    const coupBuf = await buildMhtmlFromHtml(coupHtml, 'https://cart.coupang.com/')
+    const coupParsed = parseMhtml(coupBuf)
+    const cssParts = coupParsed.parts.filter(p => /text\/css/.test(p.contentType || '')).length
+    refererCheck = { cssParts, ok: cssParts > 0 }
+  } catch (e) {
+    refererCheck = { skip: true, err: String(e.message || e) }
+  }
   const tmpXls = path.join(app.getPath('temp'), 'e2e_품목내역.xls')
   if (fs.existsSync(tmpXls)) fs.unlinkSync(tmpXls)
   createNewWorkbook(tmpXls)
@@ -468,7 +525,7 @@ async function runE2E() {
     setTimeout(() => resolve({ fatal: 'mapping timeout' }), 40000)
   })
 
-  const payload = { results, protocolOk, checkedScriptOk, pickerServed, cssPartCheck, shotInfo, receiverCheck, appendRes, excelOk, shippingAggOk, excelLoadOk, excelReplaceOk, coupangCheckedOk, aggRows: aggBack.rows, readBack: readBack.rows, rendererCheck, mappingCheck }
+  const payload = { results, protocolOk, checkedScriptOk, pickerServed, cssPartCheck, shotInfo, receiverCheck, channelCheck, refererCheck, appendRes, excelOk, shippingAggOk, excelLoadOk, excelReplaceOk, coupangCheckedOk, aggRows: aggBack.rows, readBack: readBack.rows, rendererCheck, mappingCheck }
   const outFile = process.env.E2E_OUT || path.join(app.getAppPath(), 'e2e-result.json')
   fs.writeFileSync(outFile, JSON.stringify(payload, null, 2), 'utf-8')
   console.log('E2E_RESULT ' + JSON.stringify(payload))
@@ -659,11 +716,14 @@ function registerIpc() {
     const r = await dialog.showSaveDialog(mainWindow, {
       title: '품목내역 저장 위치 선택',
       defaultPath: getSettings().excelPath || defaultXlsPath(),
-      filters: [{ name: 'Excel (*.xls)', extensions: ['xls'] }]
+      filters: [
+        { name: 'Excel (*.xls)', extensions: ['xls'] },
+        { name: 'Excel (*.xlsx)', extensions: ['xlsx'] }
+      ]
     })
     if (r.canceled || !r.filePath) return { canceled: true }
     let p = r.filePath
-    if (!/\.xls$/i.test(p)) p += '.xls'
+    if (!/\.(xls|xlsx)$/i.test(p)) p += '.xls'
     try {
       if (fs.existsSync(p)) {
         try { fs.copyFileSync(p, p + '.bak') } catch {}
@@ -709,7 +769,51 @@ function registerIpc() {
     }
   })
 
-  ipcMain.handle('add-bookmarklets', async () => {
+  ipcMain.handle('list-browser-profiles', () => {
+    try { return { ok: true, profiles: listBrowserProfiles() } } catch (e) { return { ok: false, error: String(e.message || e), profiles: [] } }
+  })
+
+  // 깃허브에 올린 규칙 JSON(배열)을 내려받아 같은 id의 내장 규칙을 덮어쓴다(사용자 규칙으로
+  // 저장 — allRules가 builtin 자리에서 교체). 네이버·쿠팡 장바구니 등 모든 규칙 대상.
+  ipcMain.handle('check-rule-updates', async (_e, url) => {
+    const target = String(url || '').trim()
+    if (!/^https?:\/\//i.test(target)) return { ok: false, error: '업데이트 주소가 올바르지 않습니다' }
+    let list
+    try {
+      const res = await net.fetch(target, { headers: { 'User-Agent': 'auto-requisition-generator' } })
+      if (!res.ok) return { ok: false, error: `다운로드 실패 (HTTP ${res.status})` }
+      list = JSON.parse(await res.text())
+    } catch (e) {
+      return { ok: false, error: `다운로드 실패: ${e.message}` }
+    }
+    if (!Array.isArray(list)) return { ok: false, error: '형식이 올바르지 않습니다 — 규칙 객체의 배열이 필요합니다' }
+    const stable = (v) => {
+      if (Array.isArray(v)) return v.map(stable)
+      if (v && typeof v === 'object') {
+        const o = {}
+        for (const k of Object.keys(v).sort()) o[k] = stable(v[k])
+        return o
+      }
+      return v
+    }
+    const results = []
+    for (const r of list) {
+      if (!r || !r.id || !Array.isArray(r.match) || !r.match.length) {
+        results.push({ id: (r && r.id) || '?', name: (r && r.name) || (r && r.id) || '?', status: 'invalid' })
+        continue
+      }
+      const cur = ruleById(r.id)
+      if (cur && stable(cur) === stable(r)) {
+        results.push({ id: r.id, name: r.name || r.id, status: 'same' })
+        continue
+      }
+      saveUserRule(r)
+      results.push({ id: r.id, name: r.name || r.id, status: cur ? 'updated' : 'new' })
+    }
+    return { ok: true, results }
+  })
+
+  ipcMain.handle('add-bookmarklets', async (_e, selection) => {
     const url = buildBookmarklet(57330)
     // 프로필/실행마다 같은 guid를 재사용 — 프로필별 새 guid 생성은 동기화 복제의 원인
     const st = getSettings()
@@ -718,7 +822,10 @@ function registerIpc() {
       stableGuid = crypto.randomUUID()
       setSetting('bookmarkGuid', stableGuid)
     }
-    const targets = BROWSER_DATA.filter(b => fs.existsSync(b.userDataDir))
+    // selection: [{browser, dir}] — 사용자가 고른 프로필에만 추가한다(2026-09-25).
+    // null/미지정이면 기존처럼 설치된 모든 브라우저가 대상.
+    const selSet = Array.isArray(selection) && selection.length ? new Set(selection.map(s => `${s.browser}|${s.dir}`)) : null
+    const targets = BROWSER_DATA.filter(b => fs.existsSync(b.userDataDir) && (!selSet || [...selSet].some(k => k.startsWith(b.key + '|'))))
     const sendProgress = (p) => {
       try { mainWindow && mainWindow.webContents.send('bookmark-progress', p) } catch {}
     }
@@ -792,7 +899,11 @@ function registerIpc() {
     const results = []
     const written = []
     for (const b of targets) {
-      const files = findBookmarkFiles(b.userDataDir)
+      let files = findBookmarkFiles(b.userDataDir)
+      if (selSet) {
+        const dirs = new Set([...selSet].filter(k => k.startsWith(b.key + '|')).map(k => k.split('|')[1]))
+        files = files.filter(f => dirs.has(path.basename(path.dirname(f))))
+      }
       let added = 0
       let already = 0
       const errs = []
@@ -908,6 +1019,15 @@ function registerIpc() {
         const src = path.join(sourceDir, f)
         if (fs.statSync(src).isFile()) fs.copyFileSync(src, path.join(v2Dir, f))
       }
+      // extension_auto 내장 확장 코드는 갱신이 누락되어 구버전이 남아 있던 사고가 있다(2026-09-25
+      // 네이버 장바구니 오탐 거부) — 설치 도구 폴더의 확장 코드는 항상 현재 앱의 최신본으로 덮어쓴다
+      try {
+        const curExt = extensionFolder()
+        for (const f of fs.readdirSync(curExt)) {
+          const src = path.join(curExt, f)
+          if (fs.statSync(src).isFile()) fs.copyFileSync(src, path.join(v2Dir, f))
+        }
+      } catch {}
       // 설치 도구(ExtensionDeveloperModeManager)는 마지막 선택 경로를 config.json에 기억한다 —
       // 캡처 확장 코드가 있는 앱 데이터 폴더(%APPDATA%\자동 품의 요구 생성기\extension)를 미리
       // 지정해 두면 도구 실행 후 버튼만으로 최신 확장이 자동 설치된다
@@ -1139,6 +1259,7 @@ if (gotLock) {
     registerIpc()
     try { extensionFolder() } catch {}
     globalThis.__inboxDir = path.join(app.getPath('userData'), 'inbox')
+    try { cleanupInbox() } catch (e) { console.error('[inbox] 정리 실패:', e) }
     try {
       const { server, port } = await startReceiver({
         onCapture: (file, sourceUrl) => {

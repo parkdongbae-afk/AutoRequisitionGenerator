@@ -13,10 +13,10 @@
   },
   "shipping": {
     "mode": "selector",
-    "sel": "div[class^='price_area--']:has(em)",
-    "regex": "총\\s*배송비\\s*\\+\\s*([\\d,]+)원",
-    "first": true
+    "sel": "div[class^='price_area--']",
+    "regex": "총\\s*배송비(?:\\s*도움말)?\\s*([\\d,]+)\\s*원",
+    "perFee": true
   },
   "verifyCount": { "sel": "span[class^=count_goods--]", "regex": "(\\d+)" },
-  "notes": "네이버쇼핑 장바구니(shopping.naver.com/cart) — **확장(품의캡처 아이콘) 캡처만 지원**(캡처 본문의 meta arge-channel=extension 필요, 북마크릿/수동 저장은 store에서 거부 팝업). CSS모듈 해시클래스 prefix 매칭. V체크된 상품만 추출(button role=checkbox의 aria-checked=true). 2026-09-24 실측: 한 상품 카드 안에 '추가상품' 라인이 여러 개면(div[class^=product_item--] 복수 — 본품+추가상품 각각 옵션/수량/라인가격 보유) units 스키마로 라인별 독립 품목 추출(예: 남성 특대형 고무장갑 = 마미손질긴 L 1@23,900 + 추가상품 블랙 290mm 1@45,000). option regex로 '추가상품 : ' 접두사 제거. title-- match:last(배지 제외), '네이버플러스멤버십' 접두어 제거. em.price--=라인합계(lineTotal→단가 환산), input number-- value=수량. 배송비는 하단 예상금액 패널 '총 배송비 +N원'('+' 필수, first). verifyCount=플로팅 패널 'N개의 상품'(카드 수) — 부분저장 감지는 행 수 기준 비교."
+  "notes": "네이버쇼핑 장바구니(shopping.naver.com/cart) — **확장·북마크릿 모두 지원**(2026-09-25 사용자 요구로 채널 제한 폐지 — 북마크릿이 네이버 전용 25% 축소 캡처를 수행; 수동 저장은 행 누락 시 countMismatch 경고). CSS모듈 해시클래스 prefix 매칭. V체크된 상품만 추출(button role=checkbox의 aria-checked=true). 2026-09-24 실측: 한 상품 카드 안에 '추가상품' 라인이 여러 개면(div[class^=product_item--] 복수 — 본품+추가상품 각각 옵션/수량/라인가격 보유) units 스키마로 라인별 독립 품목 추출(예: 남성 특대형 고무장갑 = 마미손질긴 L 1@23,900 + 추가상품 블랙 290mm 1@45,000). option regex로 '추가상품 : ' 접두사 제거. title-- match:last(배지 제외), '네이버플러스멤버십' 접두어 제거. em.price--=라인합계(lineTotal→단가 환산), input number-- value=수량. 배송비는 **판매자 그룹별 '총 배송비 N원'(2026-09-25 사용자 교정 — 하단 예상금액 패널 '총 배송비 +N원' 전체 합산을 잡아 1식으로 합쳐지던 것 수정: 2,500+3,000이 5,500 1행으로 나옴)을 perFee로 각각 별도 행**으로 추출 — '도움말' 낀 표시 허용, 무료 그룹 제외, 하단 패널은 '+' 문자가 정규식을 차단해 자연 배제. verifyCount=플로팅 패널 'N개의 상품'(카드 수) — 부분저장 감지는 행 수 기준 비교."
 }

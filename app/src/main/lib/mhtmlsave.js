@@ -45,11 +45,43 @@ function collectAndAbsolutize(html, baseUrl) {
   return { outHtml, urls: [...urls].slice(0, MAX_ASSETS) }
 }
 
-async function fetchAsset(url) {
+// 쿠팡 assets.coupangcdn.com 등 CDN은 Referer 없는 CSS 요청을 403으로 거부한다
+// (2026-09-25 실측: 무헤더 403 / Referer: 출처페이지 200) — 출처 페이지를 Referer로 보낸다.
+const CHROME_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+
+function assetHeaders(referer) {
+  const h = { 'User-Agent': CHROME_UA }
+  if (referer) h.Referer = referer
+  return h
+}
+
+// net.fetch가 헤더를 전달하지 못하는 환경 대비 — net.request로 Referer를 강제로 실어 재시도한다
+function fetchViaRequest(url, referer, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const req = net.request({ method: 'GET', url, redirect: 'follow', headers: assetHeaders(referer) })
+    const chunks = []
+    let settled = false
+    const done = (fn, v) => { if (!settled) { settled = true; fn(v) } }
+    const timer = setTimeout(() => { try { req.abort() } catch {} done(reject, new Error('timeout')) }, timeoutMs)
+    req.on('response', res => {
+      res.on('data', c => chunks.push(c))
+      res.on('end', () => {
+        clearTimeout(timer)
+        const buf = Buffer.concat(chunks)
+        const ct = (res.headers['content-type'] || 'application/octet-stream').split(';')[0].trim()
+        done(resolve, { ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, buf, ct })
+      })
+    })
+    req.on('error', e => { clearTimeout(timer); done(reject, e) })
+    req.end()
+  })
+}
+
+async function fetchAsset(url, referer) {
   try {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS)
-    const res = await net.fetch(url, { signal: ctrl.signal, redirect: 'follow' })
+    const res = await net.fetch(url, { signal: ctrl.signal, redirect: 'follow', headers: assetHeaders(referer) })
     clearTimeout(timer)
     if (!res.ok) return null
     const buf = Buffer.from(await res.arrayBuffer())
@@ -61,9 +93,23 @@ async function fetchAsset(url) {
   }
 }
 
+async function fetchAssetWithReferer(url, referer) {
+  const first = await fetchAsset(url, referer)
+  if (first) return first
+  if (!referer) return null
+  try {
+    const r = await fetchViaRequest(url, referer, FETCH_TIMEOUT_MS)
+    if (!r.ok || !r.buf.length || r.buf.length > MAX_ASSET_BYTES) return null
+    return { url, requestedUrl: url, contentType: r.ct, data: r.buf }
+  } catch {
+    return null
+  }
+}
+
 export async function buildMhtmlFromHtml(html, sourceUrl) {
   const { outHtml, urls } = collectAndAbsolutize(html, sourceUrl)
-  const fetched = (await Promise.all(urls.map(fetchAsset))).filter(Boolean)
+  const referer = sourceUrl || undefined
+  const fetched = (await Promise.all(urls.map(u => fetchAssetWithReferer(u, referer)))).filter(Boolean)
   const boundary = '----ArgeCaptureBoundary' + crypto.randomBytes(8).toString('hex')
   const rootLocation = sourceUrl || 'https://capture.invalid/capture.html'
   const chunks = []

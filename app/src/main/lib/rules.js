@@ -103,7 +103,15 @@ export function renameRule(id, name) {
 
 export function allRules() {
   const overrides = ruleNameOverrides()
-  return [...builtin, ...listUserRules()].map(r => (overrides[r.id] ? { ...r, name: overrides[r.id] } : r))
+  const users = listUserRules()
+  const userById = new Map(users.map(r => [r.id, r]))
+  // GitHub 업데이트 규칙 등 '사용자 규칙과 같은 id의 내장 규칙'은 builtin '자리에서' 교체한다 —
+  // 사용자 규칙을 무조건 뒤에 붙이면 naver→naver-cart 같은 매칭 우선순위가 깨진다
+  // (naver 주문서 URL의 backUrl에 /cart 원문이 포함되는 충돌 방지 순서, v1.6.8)
+  const builtinIds = new Set(builtin.map(r => r.id))
+  const merged = builtin.map(r => userById.get(r.id) || r)
+  const extras = users.filter(r => !builtinIds.has(r.id))
+  return [...merged, ...extras].map(r => (overrides[r.id] ? { ...r, name: overrides[r.id] } : r))
 }
 
 export function matchRule(url) {

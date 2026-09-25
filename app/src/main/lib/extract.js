@@ -1,4 +1,4 @@
-import * as cheerio from 'cheerio'
+﻿import * as cheerio from 'cheerio'
 
 function cleanInt(str) {
   if (str == null) return null;
@@ -47,6 +47,32 @@ function extractItems(html, rule) {
   const rowMatch = (rule.shipping && rule.shipping.rowMatch) || '배송비';
   const perItemMode = rule.shipping && rule.shipping.mode === 'perItem';
   const checkedSpec = rule.checkedOnly || null;
+  // perFee(그룹별 배송비) 행을 '그 그룹 마지막 품목 바로 다음'에 배치하려면 품목·배송비 요소의
+  // 문서 상 순서가 필요하다(2026-09-25 사용자 요구 — 배송비만 장바구니 아래 따로 모이는 것 해소)
+  const docOrder = (rule.shipping && rule.shipping.mode === 'selector' && rule.shipping.perFee)
+    ? new Map($('*').toArray().map((e, i) => [e, i]))
+    : null;
+  // 품목 대표 이미지 URL — 규칙에 rule.image {sel, attr} 이 있으면 우선, 없으면 행 안의
+  // 첫 유효 img(src → data-src 순). 로고·아이콘·스피너성 URL은 제외한다.
+  const imgJunkRe = /logo|icon|sprite|spinner|blank|pixel|badge|noti_|tracking|1x1/i;
+  const pickImage = (scope) => {
+    if (rule.image && rule.image.sel) {
+      const v = extractField(scope, rule.image);
+      if (v) return v;
+    }
+    for (const el of scope.find('img').toArray()) {
+      const $el = $(el);
+      for (const a of ['src', 'data-src', 'data-original', 'data-lazy']) {
+        const u = $el.attr(a);
+        if (!u) continue;
+        if (/^data:image\/(png|jpe?g|webp)/i.test(u)) { if (u.length > 500) return u; continue; }
+        if (!/^(https?:)?\/\//i.test(u)) continue;
+        if (imgJunkRe.test(u)) continue;
+        return u;
+      }
+    }
+    return '';
+  };
   // 캡처 채널(익스텐션·북마크릿)은 캡처 직전 체크박스의 checked 프로퍼티를
   // data-arge-checked 속성으로 박제해 보낸다 — 스탬프가 있으면 그 값을 우선 신뢰
   const stampedMode = !!checkedSpec && $('[data-arge-checked]').length > 0;
@@ -62,6 +88,7 @@ function extractItems(html, rule) {
     const rowPrice = rowPriceStr != null ? cleanInt(rowPriceStr) : null;
     const rowQty = rowQtyStr != null ? cleanInt(rowQtyStr) : null;
     const rowOption = extractField(row, rule.fields.option) || '';
+    const rowImage = pickImage(row);
 
     if (rowMode && name && name.includes(rowMatch)) {
       const fee = rowPrice;
@@ -84,10 +111,11 @@ function extractItems(html, rule) {
           return {
             price: pStr != null ? cleanInt(pStr) : rowPrice,
             qty: qStr != null ? cleanInt(qStr) : rowQty,
-            option: extractField(scope, rule.fields.option) || rowOption
+            option: extractField(scope, rule.fields.option) || rowOption,
+            image: rowImage
           };
         })
-      : [{ price: rowPrice, qty: rowQty, option: rowOption }];
+      : [{ price: rowPrice, qty: rowQty, option: rowOption, image: rowImage }];
 
     // 장바구니 V체크 필터: 행의 체크박스 상태(null=상태 알 수 없음) — 유닛들은 행 상태를 따른다
     let state = null;
@@ -126,7 +154,7 @@ function extractItems(html, rule) {
         const qtyBox = row.find(rule.qtyInputSel).first();
         if (qtyBox.length) qtyBox.attr('value', String(effQty));
       }
-      pending.push({ name, qty: effQty, unitPrice, option: unit.option, state, row });
+      pending.push({ name, qty: effQty, unitPrice, option: unit.option, image: unit.image || rowImage, state, row });
     }
   });
 
@@ -136,7 +164,11 @@ function extractItems(html, rule) {
   if (checkedSpec && !hasDefinitive) checkedFallback = true;
   const kept = (checkedSpec && hasDefinitive) ? pending.filter(p => p.state === true) : pending;
   for (const p of kept) {
-    items.push({ name: p.name, qty: p.qty, unitPrice: p.unitPrice, option: p.option });
+    // specFromOption: 규격을 패턴 추출(deriveSpec) 대신 옵션 원문 그대로 쓴다 — 옵션 조합
+    // 전체가 규격인 몰(G마켓 장바구니). 유닛마다 옵션이 다른데 패턴 추출이 빈칸/일부만
+    // 나오면 같은 카드의 유닛들이 중복 품목처럼 보인다(2026-09-25 사용자 보고).
+    const rowPos = (docOrder && p.row && p.row[0]) ? docOrder.get(p.row[0]) : null;
+    items.push({ name: p.name, qty: p.qty, unitPrice: p.unitPrice, option: p.option, image: p.image || '', ...(rule.specFromOption ? { spec: p.option || '' } : {}), ...(rowPos != null ? { _rowPos: rowPos } : {}) });
     // 상품별 배송비(11번가 등): 행 안의 배송비를 '<상품명> 배송비' 행으로 추가
     if (perItemMode && rule.shipping.sel) {
       const feeStr = extractField(p.row, { sel: rule.shipping.sel, regex: rule.shipping.regex });
@@ -206,10 +238,36 @@ function extractItems(html, rule) {
     const fees = collect(rule.shipping.sel, rule.shipping.regex);
     if (fees != null) {
       if (rule.shipping.perFee) {
-        // 그룹별 배송비를 각각 별도 행으로 추출(합산 금지) — 엑셀 저장 시 금액별로 묶임
-        for (const f of fees) {
-          if (f > 0) items.push({ name: '배송비', qty: 1, unitPrice: f, option: '', isShipping: true });
+        // 그룹별 배송비를 각각 별도 행으로 추출(합산 금지)하고, 문서 순서 기준으로
+        // '그 그룹 마지막 품목 바로 다음'에 삽입한다(2026-09-25 사용자 요구)
+        const feeRows = [];
+        $(rule.shipping.sel).each((_, el) => {
+          if (!scopeOk(el)) return;
+          let val = $(el).text().trim();
+          if (rule.shipping.regex) {
+            const m = new RegExp(rule.shipping.regex).exec(val);
+            if (!m) return;
+            val = m[rule.shipping.group != null ? rule.shipping.group : 1] || m[0];
+          }
+          if (/무료|free/i.test(val)) return;
+          const fee = cleanInt(val);
+          const pos = (docOrder && docOrder.get(el)) ?? null;
+          if (fee != null && fee > 0) feeRows.push({ row: { name: '배송비', qty: 1, unitPrice: fee, option: '', isShipping: true }, pos });
+        });
+        feeRows.sort((a, b) => ((a.pos ?? Infinity) - (b.pos ?? Infinity)));
+        const merged = [];
+        let fi = 0;
+        for (const it of items) {
+          while (fi < feeRows.length && feeRows[fi].pos != null && it._rowPos != null && feeRows[fi].pos < it._rowPos) {
+            merged.push(feeRows[fi].row);
+            fi++;
+          }
+          merged.push(it);
         }
+        while (fi < feeRows.length) { merged.push(feeRows[fi].row); fi++; }
+        for (const m of merged) delete m._rowPos;
+        items.length = 0;
+        items.push(...merged);
       } else {
         shippingFee = fees.reduce((s, f) => s + f, 0);
         if (rule.shipping.discountSel) {

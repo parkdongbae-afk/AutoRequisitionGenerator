@@ -50,7 +50,10 @@ for (const c of CASES) {
     entry.mall = rule.name + ' (' + rule.id + ')';
     const res = extractItems(html, rule);
 
-    const wb = XLSX.readFile(path.join(BASE, c.folder, c.xls));
+    // 정답 파일은 사용자 갱신본이 .xlsx로 저장되어 있을 수 있다(xlsx만 저장되는 환경) — 폴백 탐색
+    const ansPath = path.join(BASE, c.folder, c.xls);
+    const ansFile = fs.existsSync(ansPath) ? ansPath : ansPath.replace(/\.xls$/i, '.xlsx');
+    const wb = XLSX.readFile(ansFile);
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' }).slice(1);
     const ansItems = rows.filter(r => !/배송비/.test(String(r[0]))).map(r => ({ name: String(r[0]), qty: Number(r[3]), price: Number(r[4]) }));
     const ansShipTotal = rows.filter(r => /배송비/.test(String(r[0]))).reduce((s, r) => s + Number(r[4]) * Number(r[3]), 0);
