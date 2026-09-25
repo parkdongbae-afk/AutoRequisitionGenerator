@@ -1,0 +1,38 @@
+{
+  "id": "aliexpress-cart",
+  "name": "aliexpress 장바구니",
+  "match": [
+    "aliexpress.com"
+  ],
+  "rowSelector": "div.cart-product-wrap-group-new:has(input.comet-v2-checkbox-input[checked])",
+  "checkedOnly": {
+    "sel": "input.comet-v2-checkbox-input",
+    "legacySel": "label.comet-v2-checkbox-checked"
+  },
+  "priceIs": "lineTotal",
+  "specFromOption": true,
+  "fields": {
+    "name": {
+      "sel": "a.cart-product-name-title",
+      "attr": "title"
+    },
+    "qty": {
+      "sel": "input.comet-v2-input-number-input",
+      "attr": "value"
+    },
+    "price": {
+      "sel": "div.cart-product-price-activity",
+      "regex": "([\\d,]+)"
+    },
+    "option": {
+      "sel": "div.skuStr",
+      "attr": "title"
+    }
+  },
+  "shipping": {
+    "mode": "perItem",
+    "sel": "div.cart-product-ship-freight",
+    "regex": "([\\d,]+)"
+  },
+  "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25)"
+}

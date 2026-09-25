@@ -943,5 +943,74 @@
       "regex": "배송비:\\s*([\\d,]+)원"
     },
     "notes": "장바구니(daisomall.co.kr/or/orc) 화면. V체크된 상품만 추출 — Vue 카트라 input에 checked 속성이 없지만 label.el-checkbox의 is-checked 클래스가 MHTML 저장 시 보존됨. 수량 input에 value 속성이 없어 qtyFromUnit(합계금액÷단가)으로 계산. 합계(span.value)=lineTotal, '배송비: N원 (3만원 이상 무료)' 안내 문구에서 배송비 추출."
+  },
+  {
+    "id": "aliexpress-cart",
+    "name": "aliexpress 장바구니",
+    "match": [
+      "aliexpress.com"
+    ],
+    "rowSelector": "div.cart-product-wrap-group-new:has(input.comet-v2-checkbox-input[checked])",
+    "checkedOnly": {
+      "sel": "input.comet-v2-checkbox-input",
+      "legacySel": "label.comet-v2-checkbox-checked"
+    },
+    "priceIs": "lineTotal",
+    "specFromOption": true,
+    "fields": {
+      "name": {
+        "sel": "a.cart-product-name-title",
+        "attr": "title"
+      },
+      "qty": {
+        "sel": "input.comet-v2-input-number-input",
+        "attr": "value"
+      },
+      "price": {
+        "sel": "div.cart-product-price-activity",
+        "regex": "([\\d,]+)"
+      },
+      "option": {
+        "sel": "div.skuStr",
+        "attr": "title"
+      }
+    },
+    "shipping": {
+      "mode": "perItem",
+      "sel": "div.cart-product-ship-freight",
+      "regex": "([\\d,]+)"
+    },
+    "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25)"
+  },
+  {
+    "id": "aliexpress",
+    "name": "aliexpress",
+    "match": [
+      "aliexpress.com"
+    ],
+    "rowSelector": ".pl-product, .group-product--s-product--2GsgTja",
+    "priceIs": "lineTotal",
+    "fields": {
+      "name": {
+        "sel": "[data-pl='pl-product-title'], .group-product--s-product-img--j4ADxvF + span + div + div + div"
+      },
+      "qty": {
+        "sel": ".comet-input-number-input",
+        "attr": "value"
+      },
+      "price": {
+        "sel": "[data-pl='pl-product-price'], .group-product--s-product-price--1r6QhlU",
+        "regex": "([\\d,]+)"
+      },
+      "option": {
+        "sel": "[data-pl='pl-product-sku']"
+      }
+    },
+    "shipping": {
+      "mode": "selector",
+      "sel": "[data-pl='pl-shipping-fee'], .group-ship-options--cost-label--2nUGmAX",
+      "regex": "([\\d,]+)"
+    },
+    "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25)"
   }
 ]
