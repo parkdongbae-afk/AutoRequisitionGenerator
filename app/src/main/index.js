@@ -10,7 +10,7 @@ import { allRules, saveUserRule, deleteUserRule, ruleById, renameRule } from './
 import { readExcelRows, appendRows, createNewWorkbook, loadExcelFull } from './lib/excel.js'
 import { startReceiver } from './lib/receiver.js'
 import { PICKER_SCRIPT } from './lib/picker.js'
-import { BROWSER_DATA, findBookmarkFiles, addBookmarkToFront, readCaptureBookmarkCount, isCaptureBookmarkAtFront, listBrowserProfiles } from './lib/bookmarks.js'
+import { BROWSER_DATA, findBookmarkFiles, addBookmarkToFront, readCaptureBookmarkCount, isCaptureBookmarkAtFront, listBrowserProfiles, ensureBookmarksFile } from './lib/bookmarks.js'
 import { buildBookmarklet } from './lib/bookmarklet.js'
 import { buildMhtmlFromHtml } from './lib/mhtmlsave.js'
 import { parseMhtml, smartDecode } from './lib/mhtml.js'
@@ -69,6 +69,19 @@ function manualFile() {
     return path.join(process.resourcesPath, 'resources', 'manual.pdf')
   }
   return path.join(app.getAppPath(), 'resources', 'manual.pdf')
+}
+
+function adminManualFile() {
+  if (app.isPackaged) {
+    const dst = path.join(app.getPath('userData'), 'admin-manual.pdf')
+    try {
+      const src = path.join(process.resourcesPath, 'resources', 'admin-manual.pdf')
+      if (fs.existsSync(src)) fs.copyFileSync(src, dst)
+      if (fs.existsSync(dst)) return dst
+    } catch {}
+    return path.join(process.resourcesPath, 'resources', 'admin-manual.pdf')
+  }
+  return path.join(app.getAppPath(), 'resources', 'admin-manual.pdf')
 }
 
 function cleanupInbox() {
@@ -925,6 +938,11 @@ function registerIpc() {
       if (selSet) {
         const dirs = new Set([...selSet].filter(k => k.startsWith(b.key + '|')).map(k => k.split('|')[1]))
         files = files.filter(f => dirs.has(path.basename(path.dirname(f))))
+        // Guest/System 등 Bookmarks 파일이 없는 특수 프로필은 골격을 만들어 추가 대상에 넣는다
+        for (const d of dirs) {
+          const created = ensureBookmarksFile(b.userDataDir, d)
+          if (created && !files.includes(created)) files.push(created)
+        }
       }
       let added = 0
       let already = 0
@@ -1022,6 +1040,7 @@ function registerIpc() {
   })
 
   ipcMain.handle('open-manual', () => shell.openPath(manualFile()))
+  ipcMain.handle('open-admin-manual', () => shell.openPath(adminManualFile()))
 
   // version2 확장 자동 설치 도구(ExtensionDeveloperModeManager) 실행 —
   // 기존 version1 확장(앱 데이터 폴더)은 그대로 두고, extension_auto 내용을

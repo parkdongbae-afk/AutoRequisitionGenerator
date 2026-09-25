@@ -192,7 +192,16 @@ export default function AdminModal() {
       <div className="flex max-h-[92%] w-[680px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#E2E8F0] px-4 py-3">
           <h2 className="text-[15px] font-bold text-[#1E293B]">🛡 새 쇼핑몰 규칙 자동 생성 (관리자)</h2>
-          <button className="rounded px-2 py-0.5 text-[13px] text-[#94A3B8] hover:bg-[#F1F5F9]" onClick={() => setAdminModal(false)}>✕ 닫기</button>
+          <div className="flex items-center gap-1">
+            <button
+              className="rounded px-2 py-0.5 text-[13px] text-[#64748B] hover:bg-[#F1F5F9]"
+              onClick={() => window.api.openAdminManual()}
+              title="관리자 매뉴얼(PDF) — 도구 사용법과 오류 대처"
+            >
+              📖 매뉴얼
+            </button>
+            <button className="rounded px-2 py-0.5 text-[13px] text-[#94A3B8] hover:bg-[#F1F5F9]" onClick={() => setAdminModal(false)}>✕ 닫기</button>
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 space-y-3 overflow-auto px-4 py-4">

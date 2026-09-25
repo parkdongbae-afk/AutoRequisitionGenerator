@@ -21,7 +21,9 @@ export function findBookmarkFiles(userDataDir) {
 
 // 설치된 브라우저별 프로필 목록 — 북마크바 추가 대상을 사용자가 고를 수 있게 한다.
 // Local State의 profile.info_cache에서 표시 이름을 읽고, Bookmarks 파일이 있는
-// 프로필(실제 사용 중인 프로필)만 대상으로 한다.
+// 프로필(실제 사용 중인 프로필)만 대상으로 한다. Guest Profile·System Profile은
+// Bookmarks 파일이 없어도 폴더가 있으면 목록에 포함한다(2026-09-26 사용자 요구 —
+// 추가 시 ensureBookmarksFile로 골격을 만든다).
 export function listBrowserProfiles() {
   const out = []
   for (const b of BROWSER_DATA) {
@@ -34,14 +36,35 @@ export function listBrowserProfiles() {
     for (const entry of fs.readdirSync(b.userDataDir, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue
       const dir = entry.name
-      if (/^(System Profile|Guest Profile|Crashpad|ShaderCache|GrShaderCache|GraphiteDawnCache)$/i.test(dir)) continue
-      if (!fs.existsSync(path.join(b.userDataDir, dir, 'Bookmarks'))) continue
+      if (/^(Crashpad|ShaderCache|GrShaderCache|GraphiteDawnCache)$/i.test(dir)) continue
+      const special = /^(Guest Profile|System Profile)$/i.test(dir)
+      if (!special && !fs.existsSync(path.join(b.userDataDir, dir, 'Bookmarks'))) continue
       const info = infos[dir] || {}
-      const name = info.name || info.user_name || (dir === 'Default' ? '기본 프로필' : dir)
-      out.push({ browser: b.key, browserLabel: b.label, dir, name })
+      const name = special ? dir : (info.name || info.user_name || (dir === 'Default' ? '기본 프로필' : dir))
+      out.push({ browser: b.key, browserLabel: b.label, dir, name, special })
     }
   }
   return out
+}
+
+// Bookmarks 파일이 없는 특수 프로필(Guest/System)에 최소 골격을 만들고 경로를 돌려준다.
+// 이미 있으면 아무것도 하지 않고 null.
+export function ensureBookmarksFile(userDataDir, dir) {
+  if (!/^(Guest Profile|System Profile)$/i.test(dir)) return null
+  const f = path.join(userDataDir, dir, 'Bookmarks')
+  if (fs.existsSync(f)) return null
+  fs.mkdirSync(path.dirname(f), { recursive: true })
+  const now = chromeEpochNow()
+  const skeleton = {
+    roots: {
+      bookmark_bar: { children: [], date_added: now, date_modified: now, guid: crypto.randomUUID(), id: '1', name: '북마크바', type: 'folder' },
+      other: { children: [], date_added: now, date_modified: now, guid: crypto.randomUUID(), id: '2', name: '기타 북마크', type: 'folder' },
+      synced: { children: [], date_added: now, date_modified: now, guid: crypto.randomUUID(), id: '3', name: '모바일 북마크', type: 'folder' }
+    },
+    version: 1
+  }
+  fs.writeFileSync(f, JSON.stringify(skeleton, null, 3), 'utf-8')
+  return f
 }
 
 function chromeEpochNow() {

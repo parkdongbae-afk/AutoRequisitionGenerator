@@ -35,6 +35,7 @@ const api = {
   startupRegister: () => ipcRenderer.invoke('startup-register'),
   startupRemove: () => ipcRenderer.invoke('startup-remove'),
   openManual: () => ipcRenderer.invoke('open-manual'),
+  openAdminManual: () => ipcRenderer.invoke('open-admin-manual'),
   runExtensionV2: () => ipcRenderer.invoke('run-extension-v2'),
   revealFile: (p) => ipcRenderer.invoke('reveal-file', p),
   adminPickFile: (kind) => ipcRenderer.invoke('admin-pick-file', kind),
