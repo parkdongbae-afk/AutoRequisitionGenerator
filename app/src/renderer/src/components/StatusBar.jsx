@@ -25,8 +25,13 @@ export default function StatusBar() {
   const halfMode = useStore(s => s.halfMode)
 
   const itemCount = docs.reduce((n, d) => n + d.rows.filter(r => !r.isShipping).length, 0)
+  const pct = Number(priceMarkup) || 0
+  // 총액 = 품목(단가 인상 % 반영) + 배송비 — 배송비 행은 인상에서 제외
   const grandTotal = docs.reduce(
-    (n, d) => n + d.rows.reduce((m, r) => m + (r.qty || 0) * (r.roundedPrice || 0), 0), 0
+    (n, d) => n + d.rows.reduce((m, r) => {
+      const unit = r.isShipping ? (r.roundedPrice || 0) : Math.round((r.roundedPrice || 0) * (1 + pct / 100))
+      return m + (r.qty || 0) * unit
+    }, 0), 0
   )
 
   return (
@@ -49,12 +54,12 @@ export default function StatusBar() {
         <Chip label="품목" value={`${itemCount}건`} />
         <span
           className="flex items-center gap-2 rounded-full border border-[#DDD9FC] bg-[#EEEDFE] px-4 py-1"
-          title="모든 문서 품목의 수량×예상단가 합계"
+          title="모든 문서 품목의 수량×예상단가 합계 (단가 인상 % 반영, 배송비 포함)"
         >
           <span className="text-[16px] text-[#4C3DE6]">총액</span>
           <b className="text-[16px] font-bold text-[#5B4DFB]">{grandTotal.toLocaleString()}원</b>
         </span>
-        <label className="flex items-center gap-1.5 text-[#64748B]" title="엑셀에 저장 시 예상단가에 반영됩니다 (배송비는 제외)">
+        <label className="flex items-center gap-1.5 text-[#64748B]" title="선택 즉시 추출 결과의 예상단가와 총액에 반영됩니다 (배송비는 제외)">
           단가
           <select
             className="rounded-lg border border-[#E2E8F0] bg-white px-1.5 py-1 text-[#1E293B] transition-colors duration-150 hover:border-[#CBD5E1]"

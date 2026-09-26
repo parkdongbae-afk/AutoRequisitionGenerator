@@ -72,6 +72,16 @@ export default function Grid() {
   const deleteDuplicateRows = useStore(s => s.deleteDuplicateRows)
   const toast = useStore(s => s.toast)
   const closeDoc = useStore(s => s.closeDoc)
+  const priceMarkup = useStore(s => s.priceMarkup)
+  const pct = Number(priceMarkup) || 0
+
+  // 단가 인상 % 즉시 반영(2026-09-26 사용자 요구) — 배송비 행은 제외.
+  // 인상 중에는 입력한 금액이 표시 금액이 되도록 기본단가 = 입력 ÷ (1 + 인상률)로 저장한다.
+  const marked = (r) => {
+    const base = r.roundedPrice || 0
+    if (r.isShipping || !pct) return base
+    return Math.round(base * (1 + pct / 100))
+  }
 
   const [colWidths, setColWidths] = useState(DEFAULT_WIDTHS)
   const [activeCell, setActiveCell] = useState(null) // { key, col }
@@ -164,7 +174,7 @@ export default function Grid() {
   const headers = ['쇼핑몰', '순번', '품목명', '규격', '단위', '수량', '예상단가', '총액', '비고', '']
   const totalW = colWidths.reduce((a, b) => a + b, 0)
   const cellProps = (r, col, onChange, numeric) => ({
-    value: col === 'note' ? (r.note || '') : col === 'price' ? r.roundedPrice : r[col],
+    value: col === 'note' ? (r.note || '') : col === 'price' ? marked(r) : r[col],
     onChange,
     numeric,
     active: !!activeCell && activeCell.key === r.key && activeCell.col === col,
@@ -276,9 +286,15 @@ export default function Grid() {
                     <EditableCell {...cellProps(r, 'qty', v => updateRow(r.docId, r.key, 'qty', v), true)} />
                   </td>
                   <td className="overflow-hidden text-right">
-                    <EditableCell {...cellProps(r, 'price', v => updateRow(r.docId, r.key, 'roundedPrice', v), true)} />
+                    <EditableCell
+                      {...cellProps(r, 'price', v => {
+                        const num = parseInt(String(v).replace(/[^\d]/g, ''), 10) || 0
+                        const base = (pct > 0 && !r.isShipping) ? Math.round(num / (1 + pct / 100)) : num
+                        updateRow(r.docId, r.key, 'roundedPrice', base)
+                      }, true)}
+                    />
                   </td>
-                  <td className="px-1.5 py-1 text-right font-medium text-[#1E293B]">{((r.qty || 0) * (r.roundedPrice || 0)).toLocaleString()}원</td>
+                  <td className="px-1.5 py-1 text-right font-medium text-[#1E293B]">{((r.qty || 0) * marked(r)).toLocaleString()}원</td>
                   <td className="overflow-hidden">
                     <EditableCell {...cellProps(r, 'note', v => updateRow(r.docId, r.key, 'note', v))} />
                   </td>
