@@ -1,6 +1,6 @@
 # 프로젝트 작업 요약 (다른 세션 인계용)
 
-**작성일:** 2026-09-25 | **현재 버전:** v1.37.0 | **작업 폴더:** `C:\Users\dongbae\Desktop\Automatic_generation_of_approval_requests_html`
+**작성일:** 2026-09-25 | **현재 버전:** v1.38.0 | **작업 폴더:** `C:\Users\dongbae\Desktop\Automatic_generation_of_approval_requests_html`
 
 ## 1. 프로젝트 개요
 
@@ -13,6 +13,7 @@
 
 | 기능 | 상태 |
 |---|---|
+| [🚨 캡처 흡수 사고 수정: 수신자 식별 마커 검증 (v1.38.0)] "북마크·익스텐션 전면 작동 안함"의 원인 — **개발 중 띄운 임시 테스트 서버가 57330 포트를 점유** → 앱은 폴백 포트(57331)로 떠 있고, 북마크릿·익스텐션이 57330으로 보낸 캡처를 테스트 서버가 `{ok:true}`로 가짜 성공 응답(응답에 app 마커 없음을 발신자가 검증하지 않아 흡수됨). 수정: ① receiver.js가 **모든 응답(JSON)에 `app: 'auto-requisition-generator'` 마커** 포함(/ping·/bookmark-info·/html·/mhtml) ② **북마크릿·익스텐션·브리지가 응답의 app 마커를 검증** — 마커 없는 응답은 실패로 처리하고 다음 포트로 계속(가짜 수신처에 보내고 성공으로 끝내지 않음) ③ 확장 버전 1.6.2→**1.6.3**(manifest + arge-ext-version 표기 2곳) ④ 가로채진 마지막 캡처 복구 — bridge-payload(711,618B)를 **G마켓으로 식별해 inbox에 `07-00-56_복구_G마켓.html`로 저장**(앱에서 열어 확인 가능, 이전 캡처들은 덮어써져 복구 불가) ⑤ 임시 테스트 서버 제거·57330 포트 해제. 검증: E2E 19샘플 err 0 + receiverCheck 전항목 true + rendererErrs [] | ✅ v1.38.0 |
 | [🛡 북마크릿 CSP 우회 브리지 (v1.37.0)] 아이스크림몰 등 CSP(`connect-src`) 사이트에서 북마크릿 전송이 차단되는 문제 수정 — Playwright 실측으로 i-screammall.co.kr의 CSP가 `connect-src`·`frame-src`·`form-action` 전부 차단함을 확인(fetch·iframe 브리지·폼 POST 전부 불가). 해결: 수신기에 **`/bridge.html` 라우트 신설**(수신기 origin의 소형 문서) — 북마크릿이 ①직접 fetch 포트 순회(일반 사이트) → ②전부 차단 시 **짧은 URL로 bridge.html 팝업 오픈(CSP 내비게이션 제어 밖) → 브리지 준비 완료(arge-ready) → postMessage로 본문 전송(postMessage는 CSP 제어 밖) → 브리지가 같은 출처로 /html POST → 결과 통보 → 팝업 자동 닫힘**의 3단 폴백. 1.2MB 실측 페이로드 완전 수신 검증(Playwright 종단 테스트). 적용 대상 사이트는 [⭐ 북마크바 추가] 재실행으로 북마크 URL 교체 필요 | ✅ v1.37.0 |
 | [🛡 규칙 업데이트 다운그레이드 가드 + 오래된 사본 정리 (v1.36.0)] "네이버·아이스크림몰·예스24·오피스디포 수정분이 반영 안 됨"의 원인 — **설정을 열 때 자동 실행되는 규칙 업데이트 확인이 서버 구버전 rules.json(v1.0.2)을 내려받아 사용자 규칙으로 저장** → 사용자 사본이 내장 개선분을 가림(ruleById가 사용자 사본 우선, 이후 원격=사본이라 '같음' 판정으로 영구 고정). 수정: ① `rules/meta.json`(내장 규칙 세대 버전) 신설 — 서버 버전 ≤ 내장 버전이면 적용 스킵(**다운그레이드 가드**), make-rules-json/관리자 도구 재생성 시 meta 동시 갱신 ② 업데이트 비교 기준을 ruleById(사본) → **builtin**으로 변경 ③ 사용자 데이터의 오래된 내장 규칙 사본 **34건 삭제**. 검증: E2E 19샘플 err 0 + adminCheck v1.0.4 synced | ✅ v1.36.0 |
 | [🛒 네이버 추가상품 추출 + 아이스크림몰 주문서 수량/단가 수정 (v1.35.0)] 사용자 제공 캡처(shoping_cart/new2)로 분석·수정: ① **네이버 주문서 추가상품 추출** — 행(ProductItem_article) 안에 ProductOption_article 블록이 본 옵션 + 추가상품마다 반복됨(예: 남성 특대형 고무장갑 = 본 옵션 마미손질긴 L 23,900원 + 추가 빅사이즈슬리퍼 : 블랙 290mm 45,000원) → naver.json에 **units sel ProductOption_article** 적용, 추가상품이 독립 품목으로 추출(7→8건, 옵션=추가상품명). 기존 픽스처(추가상품 없음) 회귀 없음 ② **아이스크림몰 주문서 수량·단가 수정** — 수량은 옵션 줄(div.label1 span)의 "N개"(기존 셀렉터는 단일상품만 인식 → 옵션 상품 수량 1로 고정), 행 금액(p.body2)=**수량 포함 총액**이므로 `priceIs lineTotal` 추가로 단가 환산 — 합계 205,400원 = 페이지 상품금액 정확 일치(qty 2/1/1/4/4/8 · 단가 17,800/52,500/4,500/500/2,500/12,600). rules.json v1.0.4. 검증: E2E 19샘플 err 0 + rendererErrs [] | ✅ v1.35.0 |

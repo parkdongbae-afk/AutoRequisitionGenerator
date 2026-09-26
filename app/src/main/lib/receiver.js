@@ -11,6 +11,9 @@ const PORT_CANDIDATES = [57330, 57331, 57332, 57333, 57334, 57335]
 // 북마크 정체성은 항상 57330 캐노니컬 URL로 통일 — 실제 바인드 포트를 내보내면
 // 확장 self-heal이 포트별로 다른 URL의 북마크를 계속 새로 만들어 중복이 늘어남
 const BOOKMARKLET_PORT = 57330
+// 발신자(북마크릿·확장)가 응답을 검증하는 앱 식별자 — 57330 포트를 타 프로세스가
+// 점유하고 있어도 발신자가 가짜 응답을 성공으로 처리해 캡처를 잃지 않게 한다(v1.38.0)
+export const APP_ID = 'auto-requisition-generator'
 
 function listen(server, port) {
   return new Promise((resolve, reject) => {
@@ -80,11 +83,11 @@ export async function startReceiver({ onCapture }) {
     }
     if (req.method === 'GET' && req.url === '/ping') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
-      return res.end(JSON.stringify({ ok: true, app: 'auto-requisition-generator' }))
+      return res.end(JSON.stringify({ ok: true, app: APP_ID }))
     }
     if (req.method === 'GET' && req.url === '/bookmark-info') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
-      return res.end(JSON.stringify({ ok: true, name: '🛒품의캡처', url: buildBookmarklet(BOOKMARKLET_PORT) }))
+      return res.end(JSON.stringify({ ok: true, app: APP_ID, name: '🛒품의캡처', url: buildBookmarklet(BOOKMARKLET_PORT) }))
     }
     if (req.method === 'GET' && (req.url === '/install' || req.url.startsWith('/install?'))) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
@@ -103,7 +106,7 @@ window.addEventListener('message', async function (ev) {
   try {
     var r = await fetch('/html', { method: 'POST', headers: { 'Content-Type': 'text/html', 'X-Filename': d.fn, 'X-Source-Url': d.su }, body: d.html })
     var j = await r.json()
-    try { ev.source.postMessage({ type: 'arge-result', ok: !!j.ok }, '*') } catch (e) {}
+    try { ev.source.postMessage({ type: 'arge-result', ok: !!j.ok && j.app === 'auto-requisition-generator' }, '*') } catch (e) {}
     setTimeout(function () { try { window.close() } catch (e) {} }, 400)
   } catch (e) {
     try { ev.source.postMessage({ type: 'arge-result', ok: false }, '*') } catch (e2) {}
@@ -148,7 +151,7 @@ window.addEventListener('message', async function (ev) {
             }
             if (sourceUrl) fs.writeFileSync(path.join(dir, `${base}.url.txt`), sourceUrl, 'utf-8')
             res.writeHead(200, { 'Content-Type': 'application/json' })
-            res.end(JSON.stringify({ ok: true, file }))
+            res.end(JSON.stringify({ ok: true, file, app: APP_ID }))
             onCapture && onCapture(file, sourceUrl)
           } catch (e) {
             res.writeHead(500, { 'Content-Type': 'application/json' })

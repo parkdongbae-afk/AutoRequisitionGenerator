@@ -7,7 +7,8 @@ async function fetchBookmarkInfo() {
       const res = await fetch(`http://127.0.0.1:${port}/bookmark-info`)
       if (res.ok) {
         const data = await res.json()
-        if (data && data.url && data.name) return data
+        // app 마커 검증 — 타 프로세스가 포트를 점유해도 가짜 응답을 수신처로 쓰지 않는다
+        if (data && data.app === 'auto-requisition-generator' && data.url && data.name) return data
       }
     } catch (e) {}
   }
@@ -90,7 +91,7 @@ async function postMhtml(blob, filename) {
         body: blob
       })
       const data = await res.json()
-      if (data.ok) return true
+      if (data.ok && data.app === 'auto-requisition-generator') return true
     } catch (e) {}
   }
   return false
@@ -132,7 +133,7 @@ function syncCheckStates() {
     // 실패해 saveAsMHTML 폴백으로 저장될 때도 문서에 남는다
     try {
       document.querySelectorAll('meta[name="arge-channel"],meta[name="arge-ext-version"]').forEach(e => e.remove())
-      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.2">')
+      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.3">')
     } catch (e) {}
     document.querySelectorAll('input[type=checkbox]').forEach(el => {
       el.setAttribute('data-arge-checked', el.checked ? 'true' : 'false')
@@ -194,7 +195,7 @@ async function captureLiveHtml() {
   const channelMeta = () => {
     try {
       document.querySelectorAll('meta[name="arge-channel"],meta[name="arge-ext-version"]').forEach(e => e.remove())
-      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.2">')
+      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.3">')
     } catch (e) {}
   }
   channelMeta()
@@ -259,7 +260,8 @@ async function postHtml(text, filename, sourceUrl) {
         body: text
       })
       const data = await res.json()
-      if (data.ok) return true
+      // app 마커 검증 — 가짜 수신처(포트 점유 프로세스)에 보내고 성공으로 끝내지 않는다
+      if (data.ok && data.app === 'auto-requisition-generator') return true
     } catch (e) {}
   }
   return false
