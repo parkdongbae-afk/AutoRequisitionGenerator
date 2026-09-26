@@ -1,6 +1,6 @@
 {
-  "version": "1.0.2",
-  "generatedAt": "2026-09-25T15:46:07.828Z",
+  "version": "1.0.4",
+  "generatedAt": "2026-09-26T05:08:42.387Z",
   "count": 34,
   "rules": [
     {
@@ -216,7 +216,10 @@
         "sel": "[class*=ProductStore_delivery]",
         "regex": "([\\d,]+)원"
       },
-      "notes": "CSS모듈 해시클래스 - prefix 매칭. ProductStore_delivery는 판매자그룹별 배송비"
+      "notes": "CSS모듈 해시클래스 - prefix 매칭. ProductStore_delivery는 판매자그룹별 배송비. 행 안의 ProductOption_article 블록이 본 옵션+추가상품마다 반복되므로 units로 각각 품목화(2026-09-26 추가상품 미추출 수정)",
+      "units": {
+        "sel": "[class*=ProductOption_article]"
+      }
     },
     {
       "id": "naver-cart",
@@ -365,8 +368,8 @@
           "sel": "p.body3"
         },
         "qty": {
-          "sel": "span:contains('단일상품')",
-          "regex": "(\\d+)개"
+          "sel": "div.label1 span",
+          "regex": "(\\d+)\\s*개$"
         },
         "price": {
           "sel": "p.body2",
@@ -380,7 +383,8 @@
         "discountSel": "div.sub-head2:contains('배송비 할인')",
         "discountRegex": "([\\d,]+)"
       },
-      "notes": "Tailwind 클래스 구조. lazy-load 상품명은 '로딩 중'으로 추출되어 수동 수정 필요"
+      "notes": "Tailwind 클래스 구조. 행 금액(p.body2)=수량 포함 총액(priceIs lineTotal로 단가 환산). 수량은 옵션 줄(div.label1 span)의 \"N개\". lazy-load 상품명은 \"로딩 중\"으로 추출되어 수동 수정 필요",
+      "priceIs": "lineTotal"
     },
     {
       "id": "alphamall-cart",
@@ -408,10 +412,9 @@
       "shipping": {
         "mode": "selector",
         "sel": "td div.labels p strong",
-        "regex": "([\\d,]+)원",
-        "first": true
+        "regex": "([\\d,]+)원"
       },
-      "notes": "장바구니(alpha.co.kr/order/cart) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). price-after=판매가(단가), input CP_CNTs value=수량. 배송비는 행별 'N원 (5만원이상 무료)' 정책 표시라 첫 행 값만 사용(first)."
+      "notes": "알파몰 장바구니. V체크된 상품만 추출. 배송비는 판매자 그룹별 표시값 합계 — 50,000원 이상 그룹은 페이지가 0원으로 표시(2026-09-26 사용자 제공 정책)."
     },
     {
       "id": "alphamall",
@@ -522,10 +525,11 @@
       },
       "shipping": {
         "mode": "selector",
-        "sel": "tfoot span:contains('배송비') + strong.cost",
-        "regex": "([\\d,]+)원"
+        "sel": "tfoot span:contains('배송비') strong.cost",
+        "regex": "([\\d,]+)원",
+        "freeOver": 15000
       },
-      "notes": "카트(yes24.com/dMyCart/CartMain) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). '나중에 주문 리스트'(chkAfterOrderGoods)는 제외. price_txt=할인단가(수량 속성이 DOM에 없어 기본 1), tfoot의 '( + 배송비 ) N원'을 배송비로 사용(0원=무료)."
+      "notes": "예스24 장바구니. V체크된 상품만 추출. tfoot 합계 줄의 (+ 배송비 N원) 요소에서 배송비 추출 — strong이 span 내부에 있어 자손 선택자 사용. 15,000원 이상 무료 정책(freeOver, 2026-09-26 사용자 제공)."
     },
     {
       "id": "yes24",
@@ -886,9 +890,11 @@
         }
       },
       "shipping": {
-        "mode": "none"
+        "mode": "conditional",
+        "fee": 3000,
+        "freeOver": 30000
       },
-      "notes": "장바구니(officedepot.co.kr/cart/myCart.do) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). 첫 span.price=판매가(단가), input.itemCount value=수량. 업체별도배송 상품이라 배송비 추출 없음."
+      "notes": "오피스디포 장바구니. V체크된 상품만 추출. 배송비는 30,000원 이상 구매 시 무료, 미만 3,000원(2026-09-26 사용자 제공 정책 — 조건부 모드)."
     },
     {
       "id": "daisomall-order",

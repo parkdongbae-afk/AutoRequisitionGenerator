@@ -1,17 +1,27 @@
 {
   "id": "yes24-cart",
   "name": "예스24 장바구니",
-  "match": ["yes24.com/dMyCart/CartMain"],
+  "match": [
+    "yes24.com/dMyCart/CartMain"
+  ],
   "rowSelector": "tbody tr:has(input[name=chkCartGoodsYes24])",
-  "checkedOnly": { "sel": "input[name=chkCartGoodsYes24]" },
+  "checkedOnly": {
+    "sel": "input[name=chkCartGoodsYes24]"
+  },
   "fields": {
-    "name": { "sel": "div.goods_name a.pd_a" },
-    "price": { "sel": "strong.price_txt", "regex": "([\\d,]+)원" }
+    "name": {
+      "sel": "div.goods_name a.pd_a"
+    },
+    "price": {
+      "sel": "strong.price_txt",
+      "regex": "([\\d,]+)원"
+    }
   },
   "shipping": {
     "mode": "selector",
-    "sel": "tfoot span:contains('배송비') + strong.cost",
-    "regex": "([\\d,]+)원"
+    "sel": "tfoot span:contains('배송비') strong.cost",
+    "regex": "([\\d,]+)원",
+    "freeOver": 15000
   },
-  "notes": "카트(yes24.com/dMyCart/CartMain) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). '나중에 주문 리스트'(chkAfterOrderGoods)는 제외. price_txt=할인단가(수량 속성이 DOM에 없어 기본 1), tfoot의 '( + 배송비 ) N원'을 배송비로 사용(0원=무료)."
+  "notes": "예스24 장바구니. V체크된 상품만 추출. tfoot 합계 줄의 (+ 배송비 N원) 요소에서 배송비 추출 — strong이 span 내부에 있어 자손 선택자 사용. 15,000원 이상 무료 정책(freeOver, 2026-09-26 사용자 제공)."
 }

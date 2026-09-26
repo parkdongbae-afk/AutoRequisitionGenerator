@@ -1,12 +1,23 @@
 {
   "id": "icecreammall",
   "name": "아이스크림몰",
-  "match": ["i-screammall.co.kr", "screammall.co.kr"],
+  "match": [
+    "i-screammall.co.kr",
+    "screammall.co.kr"
+  ],
   "rowSelector": "div.relative.flex.items-start.border-b:has(p.body3)",
   "fields": {
-    "name": { "sel": "p.body3" },
-    "qty": { "sel": "span:contains('단일상품')", "regex": "(\\d+)개" },
-    "price": { "sel": "p.body2", "regex": "([\\d,]+)원" }
+    "name": {
+      "sel": "p.body3"
+    },
+    "qty": {
+      "sel": "div.label1 span",
+      "regex": "(\\d+)\\s*개$"
+    },
+    "price": {
+      "sel": "p.body2",
+      "regex": "([\\d,]+)원"
+    }
   },
   "shipping": {
     "mode": "selector",
@@ -15,5 +26,6 @@
     "discountSel": "div.sub-head2:contains('배송비 할인')",
     "discountRegex": "([\\d,]+)"
   },
-  "notes": "Tailwind 클래스 구조. lazy-load 상품명은 '로딩 중'으로 추출되어 수동 수정 필요"
+  "notes": "Tailwind 클래스 구조. 행 금액(p.body2)=수량 포함 총액(priceIs lineTotal로 단가 환산). 수량은 옵션 줄(div.label1 span)의 \"N개\". lazy-load 상품명은 \"로딩 중\"으로 추출되어 수동 수정 필요",
+  "priceIs": "lineTotal"
 }

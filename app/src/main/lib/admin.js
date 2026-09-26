@@ -319,8 +319,9 @@ export function buildRulesList(repoRoot) {
   const dir = rulesSourceDir(repoRoot)
   const byId = {}
   for (const f of fs.readdirSync(dir)) {
-    if (!f.endsWith('.json')) continue
+    if (!f.endsWith('.json') || f === 'meta.json') continue
     const r = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf-8'))
+    if (!r.id) continue
     byId[r.id] = r
   }
   const missing = ORDER.filter(id => !byId[id])
@@ -358,7 +359,12 @@ export function rebuildRulesJson(repoRoot, { bump = false } = {}) {
   const doc = buildRulesJsonDoc(repoRoot, { bump })
   const out = path.join(repoRoot, 'rules.json')
   fs.writeFileSync(out, JSON.stringify({ version: doc.version, generatedAt: doc.generatedAt, count: doc.count, rules: doc.rules }, null, 2), 'utf-8')
-  return { out, count: doc.count, version: doc.version, generatedAt: doc.generatedAt, extra: doc.extra, missing: doc.missing }
+  const metaPath = path.join(rulesSourceDir(repoRoot), 'meta.json')
+  const prevMeta = (() => { try { return JSON.parse(fs.readFileSync(metaPath, 'utf-8')) } catch { return {} } })()
+  const metaVersion = bump ? doc.version : (prevMeta.version || doc.version)
+  const metaGenerated = bump ? doc.generatedAt : (prevMeta.generatedAt || doc.generatedAt)
+  fs.writeFileSync(metaPath, JSON.stringify({ version: metaVersion, generatedAt: metaGenerated }, null, 2) + '\n', 'utf-8')
+  return { out, count: doc.count, version: metaVersion, generatedAt: metaGenerated, extra: doc.extra, missing: doc.missing }
 }
 
 // 저장소 루트 rules.json의 버전 메타 — 설정 화면 표시용
@@ -531,9 +537,10 @@ export function listMalls() {
   const dir = rulesSourceDir(repoRoot)
   const items = []
   for (const f of fs.readdirSync(dir)) {
-    if (!f.endsWith('.json')) continue
+    if (!f.endsWith('.json') || f === 'meta.json') continue
     try {
       const r = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf-8'))
+      if (!r.id) continue
       items.push({ id: r.id, name: r.name || r.id, inOrder: ORDER.includes(r.id) })
     } catch {}
   }

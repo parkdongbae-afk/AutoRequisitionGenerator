@@ -71,6 +71,7 @@ export default function Grid() {
   const gridFontScale = useStore(s => s.gridFontScale)
   const deleteDuplicateRows = useStore(s => s.deleteDuplicateRows)
   const toast = useStore(s => s.toast)
+  const closeDoc = useStore(s => s.closeDoc)
 
   const [colWidths, setColWidths] = useState(DEFAULT_WIDTHS)
   const [activeCell, setActiveCell] = useState(null) // { key, col }
@@ -248,6 +249,17 @@ export default function Grid() {
                       title={r.mallName}
                     >
                       <div className="break-keep leading-tight">{r.mallName}</div>
+                      <button
+                        className="mt-1 rounded bg-[#FEE2E2] px-1.5 py-0.5 text-[10px] font-semibold text-red-600 transition-colors duration-100 hover:bg-red-500 hover:text-white"
+                        title={`'${r.mallName}' 항목 전체 삭제 — 추출 표와 미리보기 탭이 함께 닫힙니다`}
+                        onClick={e => {
+                          e.stopPropagation()
+                          closeDoc(r.docId)
+                          toast(`'${r.mallName}' 항목 전체를 삭제했습니다 (미리보기 탭 포함)`, 'ok')
+                        }}
+                      >
+                        전체삭제
+                      </button>
                     </td>
                   )}
                   <td className="px-1 py-1 text-center text-[#94A3B8]">{r.isShipping ? '🚚' : ++no}</td>

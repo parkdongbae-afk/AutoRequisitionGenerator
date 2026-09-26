@@ -274,6 +274,7 @@ function extractItems(html, rule) {
           const disc = collect(rule.shipping.discountSel, rule.shipping.discountRegex || rule.shipping.regex);
           if (disc != null) shippingFee -= disc.reduce((s, f) => s + f, 0);
         }
+        if (!shippingFee) shippingFee = null;
       }
     }
   }

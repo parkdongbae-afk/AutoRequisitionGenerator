@@ -21,7 +21,7 @@ const ORDER = [
 ]
 const byId = {}
 for (const f of fs.readdirSync(RULES)) {
-  if (!f.endsWith('.json')) continue
+  if (!f.endsWith('.json') || f === 'meta.json') continue
   const r = JSON.parse(fs.readFileSync(path.join(RULES, f), 'utf-8'))
   byId[r.id] = r
 }
@@ -39,5 +39,7 @@ const pm = String(prevVersion).match(/^(\d+)\.(\d+)\.(\d+)$/)
 const version = pm ? `${pm[1]}.${pm[2]}.${Number(pm[3]) + 1}` : '1.0.0'
 const doc = { version, generatedAt: new Date().toISOString(), count: list.length, rules: list }
 fs.writeFileSync(out, JSON.stringify(doc, null, 2), 'utf-8')
+// 내장 규칙 세대 버전(meta.json) — exe가 서버 규칙과 비교해 다운그레이드를 막는 기준
+fs.writeFileSync(path.join(RULES, 'meta.json'), JSON.stringify({ version, generatedAt: doc.generatedAt }, null, 2) + '\n', 'utf-8')
 console.log(`rules.json 생성: ${out} | 규칙 ${list.length}건 | 버전 v${version} | ${Math.round(fs.statSync(out).size / 1024)}KB`)
 console.log('다음: git add rules.json && git commit && git push → 사용자 [업데이트 확인]에 반영')

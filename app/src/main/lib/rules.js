@@ -33,6 +33,13 @@ import emartmall from './rules/emartmall.json'
 import { app } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
+import meta from './rules/meta.json'
+
+// exe에 내장된 규칙 세대 버전(meta.json — make-rules-json.js가 rules.json과 함께 갱신).
+// 규칙 업데이트 확인 시 서버 버전이 이 버전 이하면 내장 규칙이 더 새것이므로 다운그레이드하지 않는다.
+export function builtinRulesVersion() {
+  return meta.version || null
+}
 
 // 규칙 순서 = URL 매칭 우선순위. 카트 규칙은 같은 도메인의 주문서 규칙보다 반드시 앞에.
 // naver가 naver-cart보다 앞: 주문서 URL의 backUrl 쿼리에 'shopping.naver.com/cart'가

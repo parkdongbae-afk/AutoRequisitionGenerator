@@ -6,7 +6,7 @@ import * as cheerio from 'cheerio'
 import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
 import { loadDocument, getDoc, removeDoc, reextract, updateRows, listDocIds, rewriteCssUrls } from './lib/docstore.js'
-import { allRules, saveUserRule, deleteUserRule, ruleById, renameRule } from './lib/rules.js'
+import { allRules, saveUserRule, deleteUserRule, ruleById, renameRule, builtin, builtinRulesVersion } from './lib/rules.js'
 import { readExcelRows, appendRows, createNewWorkbook, loadExcelFull } from './lib/excel.js'
 import { startReceiver } from './lib/receiver.js'
 import { PICKER_SCRIPT } from './lib/picker.js'
@@ -818,6 +818,13 @@ function registerIpc() {
     } else {
       return { ok: false, error: '형식이 올바르지 않습니다 — 규칙 배열 또는 {rules:[...]} 문서가 필요합니다' }
     }
+    // 다운그레이드 가드 — exe 내장 규칙 세대가 서버 이상이면 서버 규칙을 적용하지 않는다.
+    // (설정을 열 때의 자동 확인이 구버전 규칙으로 내장 개선분을 덮어쓰는 사고 방지, v1.36.0)
+    const bVer = builtinRulesVersion()
+    const verNum = (v) => { const m = String(v || '').match(/(\d+)\.(\d+)\.(\d+)/); return m ? Number(m[1]) * 10000 + Number(m[2]) * 100 + Number(m[3]) : null }
+    if (remoteVersion && bVer && verNum(remoteVersion) !== null && verNum(remoteVersion) <= verNum(bVer)) {
+      return { ok: true, results: [], remoteVersion, skipped: true }
+    }
     const stable = (v) => {
       if (Array.isArray(v)) return v.map(stable)
       if (v && typeof v === 'object') {
@@ -833,7 +840,9 @@ function registerIpc() {
         results.push({ id: (r && r.id) || '?', name: (r && r.name) || (r && r.id) || '?', status: 'invalid' })
         continue
       }
-      const cur = ruleById(r.id)
+      // 비교 기준은 내장 규칙 — 오래된 사용자 사본이 존재하면 원격과 같아 '같음'으로
+      // 판정되어 내장 개선분이 영원히 적용되지 않는 사고(v1.36.0 전)를 막는다
+      const cur = builtin.find(b => b.id === r.id) || ruleById(r.id)
       if (cur && stable(cur) === stable(r)) {
         results.push({ id: r.id, name: r.name || r.id, status: 'same' })
         continue

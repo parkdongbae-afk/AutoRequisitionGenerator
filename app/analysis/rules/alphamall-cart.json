@@ -1,19 +1,30 @@
 {
   "id": "alphamall-cart",
   "name": "알파몰 장바구니",
-  "match": ["alpha.co.kr/order/cart"],
+  "match": [
+    "alpha.co.kr/order/cart"
+  ],
   "rowSelector": "table.list-product-a tbody tr:has(input.chk-row)",
-  "checkedOnly": { "sel": "input.chk-row" },
+  "checkedOnly": {
+    "sel": "input.chk-row"
+  },
   "fields": {
-    "name": { "sel": "p.name" },
-    "qty": { "sel": "input[name=CP_CNTs]", "attr": "value" },
-    "price": { "sel": "p.price-after strong", "regex": "([\\d,]+)원" }
+    "name": {
+      "sel": "p.name"
+    },
+    "qty": {
+      "sel": "input[name=CP_CNTs]",
+      "attr": "value"
+    },
+    "price": {
+      "sel": "p.price-after strong",
+      "regex": "([\\d,]+)원"
+    }
   },
   "shipping": {
     "mode": "selector",
     "sel": "td div.labels p strong",
-    "regex": "([\\d,]+)원",
-    "first": true
+    "regex": "([\\d,]+)원"
   },
-  "notes": "장바구니(alpha.co.kr/order/cart) 화면. V체크된 상품만 추출(checkedOnly — data-arge-checked 스탬프, 수동 저장 시 이 몰은 체크 상태가 소실되어 전체 추출로 폴백+안내). price-after=판매가(단가), input CP_CNTs value=수량. 배송비는 행별 'N원 (5만원이상 무료)' 정책 표시라 첫 행 값만 사용(first)."
+  "notes": "알파몰 장바구니. V체크된 상품만 추출. 배송비는 판매자 그룹별 표시값 합계 — 50,000원 이상 그룹은 페이지가 0원으로 표시(2026-09-26 사용자 제공 정책)."
 }
