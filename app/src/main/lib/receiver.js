@@ -90,6 +90,27 @@ export async function startReceiver({ onCapture }) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
       return res.end(installPage(BOOKMARKLET_PORT))
     }
+    // CSP 사이트(예: 아이스크림몰 connect-src)에서 북마크릿 fetch가 차단될 때의 우회 브리지 —
+    // 북마크릿이 이 페이지를 팝업으로 열고 postMessage로 본문을 넘기면, 수신기 origin 문서가
+    // 같은 출처로 /html을 POST한다. postMessage·팝업 내비게이션은 페이지 CSP의 제어 밖이다.
+    if (req.method === 'GET' && req.url === '/bridge.html') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+      return res.end(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>캡처 전송 중…</title></head><body style="font-family:'Malgun Gothic',sans-serif;padding:24px;color:#334155">품의 캡처 전송 처리 중… (이 창은 자동으로 닫힙니다)<script>
+window.addEventListener('load', function () { try { window.opener.postMessage({ type: 'arge-ready' }, '*') } catch (e) {} })
+window.addEventListener('message', async function (ev) {
+  var d = ev.data || {}
+  if (d.type !== 'arge-send') return
+  try {
+    var r = await fetch('/html', { method: 'POST', headers: { 'Content-Type': 'text/html', 'X-Filename': d.fn, 'X-Source-Url': d.su }, body: d.html })
+    var j = await r.json()
+    try { ev.source.postMessage({ type: 'arge-result', ok: !!j.ok }, '*') } catch (e) {}
+    setTimeout(function () { try { window.close() } catch (e) {} }, 400)
+  } catch (e) {
+    try { ev.source.postMessage({ type: 'arge-result', ok: false }, '*') } catch (e2) {}
+  }
+})
+</script></body></html>`)
+    }
     if (req.method === 'POST' && (req.url === '/mhtml' || req.url === '/html')) {
       const chunks = []
       req.on('data', c => chunks.push(c))
