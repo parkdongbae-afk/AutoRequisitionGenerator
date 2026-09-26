@@ -1,25 +1,51 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 
 const BASE_FONT = 12.5
 // 쇼핑몰 / 순번 / 품목명 / 규격 / 단위 / 수량 / 예상단가 / 총액 / 비고 / 삭제
 const DEFAULT_WIDTHS = [110, 56, 300, 110, 70, 64, 96, 104, 130, 44]
+// Tab/Shift+Tab 셀 이동이 순회하는 편집 가능 열(왼쪽→오른쪽)
+const EDITABLE_COLS = ['name', 'spec', 'unit', 'qty', 'price', 'note']
 
-function EditableCell({ value, onChange, numeric }) {
-  const [editing, setEditing] = useState(false)
+// 제어형 편집 셀 — active prop으로 편집 모드가 결정된다. Tab/Shift+Tab은
+// Grid의 navigate()가 다음/이전 편집 셀을 계산해 활성화한다.
+function EditableCell({ value, onChange, numeric, active, onActivate, onDeactivate, onNavigate }) {
   const [draft, setDraft] = useState(value)
+  const doneRef = useRef(false)
 
-  if (editing) {
+  useEffect(() => {
+    if (active) {
+      setDraft(value)
+      doneRef.current = false
+    }
+  }, [active])
+
+  const commit = () => {
+    if (doneRef.current) return
+    doneRef.current = true
+    onChange(numeric ? String(draft).replace(/[^\d]/g, '') : draft)
+    onDeactivate()
+  }
+
+  if (active) {
     return (
       <input
         className="cell-input"
         autoFocus
         value={draft}
         onChange={e => setDraft(e.target.value)}
-        onBlur={() => { setEditing(false); onChange(numeric ? String(draft).replace(/[^\d]/g, '') : draft) }}
+        onBlur={() => commit()}
         onKeyDown={e => {
-          if (e.key === 'Enter') { setEditing(false); onChange(numeric ? String(draft).replace(/[^\d]/g, '') : draft) }
-          if (e.key === 'Escape') { setEditing(false); setDraft(value) }
+          if (e.key === 'Enter') commit()
+          else if (e.key === 'Escape') { doneRef.current = true; onDeactivate() }
+          else if (e.key === 'Tab') {
+            e.preventDefault()
+            if (!doneRef.current) {
+              doneRef.current = true
+              onChange(numeric ? String(draft).replace(/[^\d]/g, '') : draft)
+            }
+            onNavigate(e.shiftKey)
+          }
         }}
       />
     )
@@ -27,8 +53,8 @@ function EditableCell({ value, onChange, numeric }) {
   return (
     <div
       className="cursor-cell truncate px-1.5 py-1 hover:bg-[#EEEDFE] hover:ring-1 hover:ring-[#C9C3FC]"
-      onClick={() => { setDraft(value); setEditing(true) }}
-      title="클릭하여 수정"
+      onClick={() => { setDraft(value); onActivate() }}
+      title="클릭하여 수정 (Tab: 다음 셀, Shift+Tab: 이전 셀)"
     >
       {numeric ? Number(value || 0).toLocaleString() : (value || '')}
     </div>
@@ -47,6 +73,7 @@ export default function Grid() {
   const toast = useStore(s => s.toast)
 
   const [colWidths, setColWidths] = useState(DEFAULT_WIDTHS)
+  const [activeCell, setActiveCell] = useState(null) // { key, col }
   const resizeRef = useRef(null)
 
   const startResize = (i, e) => {
@@ -93,6 +120,32 @@ export default function Grid() {
     toast(`중복 항목 ${arr.length - 1}행을 삭제했습니다 (첫 1세트 유지)`, 'ok')
   }
 
+  // Tab/Shift+Tab — 편집 가능 열 안에서 다음/이전 셀로 이동한다.
+  // 행의 끝에 도달하면 다음 행의 첫 편집 셀로, 첫 셀에서 Shift+Tab이면 이전 행의 마지막 셀로 이동.
+  const navigate = (shift) => {
+    if (!activeCell) return
+    const ri = allRows.findIndex(r => r.key === activeCell.key)
+    if (ri === -1) { setActiveCell(null); return }
+    let r = ri
+    let c = EDITABLE_COLS.indexOf(activeCell.col)
+    for (;;) {
+      c += shift ? -1 : 1
+      if (c < 0) { r--; c = EDITABLE_COLS.length - 1 }
+      else if (c >= EDITABLE_COLS.length) { r++; c = 0 }
+      if (r < 0 || r >= allRows.length) { setActiveCell(null); return }
+      setActiveCell({ key: allRows[r].key, col: EDITABLE_COLS[c] })
+      return
+    }
+  }
+
+  // +행 추가 — 셀을 선택(편집) 중이면 그 행 바로 아래에 삽입하고 새 행의 품목명 셀을 활성화,
+  // 선택이 없으면 맨 아래에 추가한다(2026-09-26 사용자 요구).
+  const addRowClick = () => {
+    const sel = activeCell ? allRows.find(r => r.key === activeCell.key) : null
+    const newKey = addRow(sel ? sel.key : null)
+    if (newKey) setActiveCell({ key: newKey, col: 'name' })
+  }
+
   // 쇼핑몰 열 셀 병합: 문서별 행 수와 각 행의 문서 내 위치(첫 행 여부)를 계산
   const docRowCount = {}
   for (const r of allRows) docRowCount[r.docId] = (docRowCount[r.docId] || 0) + 1
@@ -109,17 +162,26 @@ export default function Grid() {
 
   const headers = ['쇼핑몰', '순번', '품목명', '규격', '단위', '수량', '예상단가', '총액', '비고', '']
   const totalW = colWidths.reduce((a, b) => a + b, 0)
+  const cellProps = (r, col, onChange, numeric) => ({
+    value: col === 'note' ? (r.note || '') : col === 'price' ? r.roundedPrice : r[col],
+    onChange,
+    numeric,
+    active: !!activeCell && activeCell.key === r.key && activeCell.col === col,
+    onActivate: () => setActiveCell({ key: r.key, col }),
+    onDeactivate: () => setActiveCell(null),
+    onNavigate: navigate
+  })
 
   return (
     <section className="flex h-full min-w-0 flex-1 flex-col bg-white">
       <div className="flex items-center justify-between border-b border-[#E2E8F0] bg-white px-3 py-2">
         <span className="text-[13px] font-bold text-[#1E293B]">
-          추출 결과 <span className="text-[11.5px] font-medium text-[#94A3B8]">(클릭하여 수정 · 열 경계를 드래그하면 폭 조절)</span>
+          추출 결과 <span className="text-[11.5px] font-medium text-[#94A3B8]">(클릭하여 수정 · Tab으로 셀 이동 · 열 경계를 드래그하면 폭 조절)</span>
         </span>
         <button
           className="rounded-full bg-[#EEEDFE] px-3 py-1 text-[11.5px] font-semibold text-[#5B4DFB] transition-colors duration-150 hover:bg-[#E0DCFD]"
-          onClick={addRow}
-          title="빈 행을 추가합니다 (선택된 문서에 추가, 문서가 없으면 '직접 입력' 문서 생성)"
+          onClick={addRowClick}
+          title="새 행을 추가합니다 — 셀을 선택한 상태면 그 행 바로 아래에, 없으면 맨 아래에 추가됩니다"
         >
           ＋ 행 추가
         </button>
@@ -190,23 +252,23 @@ export default function Grid() {
                   )}
                   <td className="px-1 py-1 text-center text-[#94A3B8]">{r.isShipping ? '🚚' : ++no}</td>
                   <td className="overflow-hidden">
-                    <EditableCell value={r.name} onChange={v => updateRow(r.docId, r.key, 'name', v)} />
+                    <EditableCell {...cellProps(r, 'name', v => updateRow(r.docId, r.key, 'name', v))} />
                   </td>
                   <td className="overflow-hidden">
-                    <EditableCell value={r.spec} onChange={v => updateRow(r.docId, r.key, 'spec', v)} />
+                    <EditableCell {...cellProps(r, 'spec', v => updateRow(r.docId, r.key, 'spec', v))} />
                   </td>
                   <td className="overflow-hidden">
-                    <EditableCell value={r.unit} onChange={v => updateRow(r.docId, r.key, 'unit', v)} />
+                    <EditableCell {...cellProps(r, 'unit', v => updateRow(r.docId, r.key, 'unit', v))} />
                   </td>
                   <td className="overflow-hidden text-right">
-                    <EditableCell value={r.qty} numeric onChange={v => updateRow(r.docId, r.key, 'qty', v)} />
+                    <EditableCell {...cellProps(r, 'qty', v => updateRow(r.docId, r.key, 'qty', v), true)} />
                   </td>
                   <td className="overflow-hidden text-right">
-                    <EditableCell value={r.roundedPrice} numeric onChange={v => updateRow(r.docId, r.key, 'roundedPrice', v)} />
+                    <EditableCell {...cellProps(r, 'price', v => updateRow(r.docId, r.key, 'roundedPrice', v), true)} />
                   </td>
                   <td className="px-1.5 py-1 text-right font-medium text-[#1E293B]">{((r.qty || 0) * (r.roundedPrice || 0)).toLocaleString()}원</td>
                   <td className="overflow-hidden">
-                    <EditableCell value={r.note || ''} onChange={v => updateRow(r.docId, r.key, 'note', v)} />
+                    <EditableCell {...cellProps(r, 'note', v => updateRow(r.docId, r.key, 'note', v))} />
                   </td>
                   <td className="text-center">
                     {dupKeyByRowKey.has(r.key) ? (

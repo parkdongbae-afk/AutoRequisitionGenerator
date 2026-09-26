@@ -45,3 +45,20 @@ html, body, #root {
 
 tr.excel-source td:first-child{box-shadow:inset 3px 0 0 #94a3b8}
 tr.active-row td{background:#EEEDFE !important}
+
+/* 좁은 창(반반·절반 폭)에서 잘림 없이 쓰도록 여백·간격을 줄인다 */
+@media (max-width: 1100px) {
+  .app-main {
+    padding-left: 8px;
+    padding-right: 8px;
+    gap: 8px;
+  }
+  .app-header {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .app-statusbar {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}

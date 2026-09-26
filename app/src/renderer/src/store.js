@@ -53,6 +53,12 @@ export const useStore = create((set, get) => ({
   rulesModal: false,
   settingsModal: false,
   adminModal: false,
+  showOpenFolder: false,
+  showOpenFiles: false,
+  showBookmarkAdd: true,
+  showExtensionAdd: true,
+  showHalfButton: true,
+  halfMode: false,
   showRuleAdd: false,
   zoomSensitivity: 1.7,
   gridFontScale: 1.5,
@@ -90,6 +96,29 @@ export const useStore = create((set, get) => ({
   setShowRuleAdd(v) {
     set({ showRuleAdd: !!v })
     window.api.setSetting('showRuleAdd', !!v)
+  },
+  setShowOpenFolder(v) {
+    set({ showOpenFolder: !!v })
+    window.api.setSetting('showOpenFolder', !!v)
+  },
+  setShowOpenFiles(v) {
+    set({ showOpenFiles: !!v })
+    window.api.setSetting('showOpenFiles', !!v)
+  },
+  setShowBookmarkAdd(v) {
+    set({ showBookmarkAdd: !!v })
+    window.api.setSetting('showBookmarkAdd', !!v)
+  },
+  setShowExtensionAdd(v) {
+    set({ showExtensionAdd: !!v })
+    window.api.setSetting('showExtensionAdd', !!v)
+  },
+  setShowHalfButton(v) {
+    set({ showHalfButton: !!v })
+    window.api.setSetting('showHalfButton', !!v)
+  },
+  setHalfMode(v) {
+    set({ halfMode: !!v })
   },
   setZoomSensitivity(v) {
     const n = Math.min(10, Math.max(0.5, Math.round((Number(v) || 1.7) * 10) / 10))
@@ -657,10 +686,16 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  addRow() {
+  // 행 추가 — afterKey(셀 선택 상태)가 있으면 그 행 바로 아래에 삽입, 없으면 맨 아래에 추가.
+  // 문서가 없으면 '직접 입력' 문서를 만든다. 새 행의 key를 반환한다.
+  addRow(afterKey) {
     const s = get()
-    let docId = s.selectedDocId
-    if (!docId && s.docs.length) docId = s.docs[s.docs.length - 1].id
+    let docId = null
+    if (afterKey) {
+      const d = s.docs.find(d => d.rows.some(r => r.key === afterKey))
+      if (d) docId = d.id
+    }
+    if (!docId) docId = s.selectedDocId || (s.docs.length ? s.docs[s.docs.length - 1].id : null)
     if (!docId) {
       const manual = withKeys({
         id: `manual-${Date.now()}`,
@@ -675,14 +710,18 @@ export const useStore = create((set, get) => ({
       set({ docs: [...s.docs, manual], selectedDocId: manual.id })
       docId = manual.id
     }
+    const newRow = { docId, key: nextRowKey(), name: '', spec: '', unit: '개', qty: 1, unitPrice: 0, roundedPrice: 0, isShipping: false, note: '' }
     set(st => ({
-      docs: st.docs.map(d => (d.id === docId
-        ? {
-            ...d,
-            rows: [...d.rows, { docId, key: nextRowKey(), name: '', spec: '', unit: '개', qty: 1, unitPrice: 0, roundedPrice: 0, isShipping: false, note: '' }]
-          }
-        : d))
+      docs: st.docs.map(d => {
+        if (d.id !== docId) return d
+        const rows = [...d.rows]
+        const i = afterKey ? rows.findIndex(r => r.key === afterKey) : -1
+        if (i >= 0) rows.splice(i + 1, 0, newRow)
+        else rows.push(newRow)
+        return { ...d, rows }
+      })
     }))
+    return newRow.key
   },
 
   async addBookmarklets(selection) {
@@ -767,6 +806,21 @@ export const useStore = create((set, get) => ({
     }
     if (settings && settings.showRuleAdd === true) {
       set({ showRuleAdd: true })
+    }
+    if (settings && settings.showOpenFolder === true) {
+      set({ showOpenFolder: true })
+    }
+    if (settings && settings.showOpenFiles === true) {
+      set({ showOpenFiles: true })
+    }
+    if (settings && settings.showBookmarkAdd === false) {
+      set({ showBookmarkAdd: false })
+    }
+    if (settings && settings.showExtensionAdd === false) {
+      set({ showExtensionAdd: false })
+    }
+    if (settings && settings.showHalfButton === false) {
+      set({ showHalfButton: false })
     }
     if (settings && Number(settings.zoomSensitivity) > 0) {
       set({ zoomSensitivity: Math.min(10, Math.max(0.5, Number(settings.zoomSensitivity))) })

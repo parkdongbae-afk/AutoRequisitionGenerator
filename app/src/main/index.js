@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, protocol, shell, net, clipboard } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, shell, net, clipboard, screen } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
@@ -135,7 +135,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1500,
     height: 950,
-    minWidth: 1100,
+    minWidth: 640,
     minHeight: 700,
     title: '자동 품의 요구 생성기',
     autoHideMenuBar: true,
@@ -1041,6 +1041,55 @@ function registerIpc() {
 
   ipcMain.handle('open-manual', () => shell.openPath(manualFile()))
   ipcMain.handle('open-admin-manual', () => shell.openPath(adminManualFile()))
+
+  // 반반 기능 — Win+Right 키 입력으로 정확히 화면 오른쪽 1/2에 강제 스냅한다.
+  // 스냅 애시스트가 떠서 왼쪽 절반에 놓을 다른 프로그램을 사용자가 고를 수 있다.
+  // 최대화 상태에선 스냅이 어긋날 수 있어 unmaximize 후 시도하고, 키 입력이 실패해도
+  // setBounds + workArea 클램프로 오른쪽 끝이 화면 밖으로 나가지 않게 보정한다.
+  ipcMain.handle('snap-window-right', async () => {
+    try {
+      if (!mainWindow || mainWindow.isDestroyed()) return { ok: false, error: '창이 없습니다' }
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      if (mainWindow.isMaximized()) mainWindow.unmaximize()
+      mainWindow.focus()
+      const ps = [
+        'Add-Type -TypeDefinition \'using System;using System.Runtime.InteropServices;public class ArgeSnap{[DllImport("user32.dll")]public static extern void keybd_event(byte bVk,byte bScan,uint dwFlags,UIntPtr dwExtraInfo);}\'',
+        'Start-Sleep -Milliseconds 150',
+        '[ArgeSnap]::keybd_event(0x5B,0,0,[UIntPtr]::Zero)',
+        '[ArgeSnap]::keybd_event(0x27,0,0,[UIntPtr]::Zero)',
+        'Start-Sleep -Milliseconds 80',
+        '[ArgeSnap]::keybd_event(0x27,0,2,[UIntPtr]::Zero)',
+        '[ArgeSnap]::keybd_event(0x5B,0,2,[UIntPtr]::Zero)'
+      ].join('; ')
+      await execFileAsync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps], { windowsHide: true })
+      await new Promise(r => setTimeout(r, 800))
+      const disp = screen.getDisplayMatching(mainWindow.getBounds())
+      const wa = disp.workArea
+      const target = { x: wa.x + Math.ceil(wa.width / 2), y: wa.y, width: Math.floor(wa.width / 2), height: wa.height }
+      const g = mainWindow.getBounds()
+      const near = (a, b) => Math.abs(a - b) <= 40
+      if (!(near(g.x, target.x) && near(g.y, target.y) && near(g.width, target.width) && near(g.height, target.height))) {
+        mainWindow.setBounds(target)
+      }
+      const g2 = mainWindow.getBounds()
+      const cw = Math.min(g2.width, wa.width)
+      const ch = Math.min(g2.height, wa.height)
+      const cx = Math.min(Math.max(g2.x, wa.x), wa.x + wa.width - cw)
+      const cy = Math.min(Math.max(g2.y, wa.y), wa.y + wa.height - ch)
+      if (cx !== g2.x || cy !== g2.y || cw !== g2.width || ch !== g2.height) {
+        mainWindow.setBounds({ x: cx, y: cy, width: cw, height: ch })
+      }
+      return { ok: true }
+    } catch (e) {
+      try {
+        const wa = screen.getPrimaryDisplay().workArea
+        mainWindow.setBounds({ x: wa.x + Math.ceil(wa.width / 2), y: wa.y, width: Math.floor(wa.width / 2), height: wa.height })
+        return { ok: true, fallback: true }
+      } catch (e2) {
+        return { ok: false, error: String(e.message || e) }
+      }
+    }
+  })
 
   // version2 확장 자동 설치 도구(ExtensionDeveloperModeManager) 실행 —
   // 기존 version1 확장(앱 데이터 폴더)은 그대로 두고, extension_auto 내용을

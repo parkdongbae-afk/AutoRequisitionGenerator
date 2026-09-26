@@ -1,6 +1,19 @@
 import React, { useEffect } from 'react'
 import { useStore } from '../store'
 
+const OPEN_SOURCE_LICENSES = [
+  { name: 'electron', version: '33.2.1', license: 'MIT', purpose: '데스크톱 앱 런타임' },
+  { name: 'cheerio', version: '1.0.0', license: 'MIT', purpose: 'HTML DOM 파싱' },
+  { name: 'xlsx (SheetJS)', version: '0.18.5', license: 'Apache-2.0', purpose: '엑셀 파일 처리' },
+  { name: 'iconv-lite', version: '0.7.3', license: 'MIT', purpose: '문자셋 디코딩' },
+  { name: 'zustand', version: '5.0.3', license: 'MIT', purpose: '상태 관리' },
+  { name: 'react / react-dom', version: '18.3.1', license: 'MIT', purpose: 'UI 프레임워크' },
+  { name: 'tailwindcss', version: '4.1.4', license: 'MIT', purpose: 'UI 스타일링' },
+  { name: 'vite', version: '5.4.11', license: 'MIT', purpose: '빌드 및 번들러' },
+  { name: 'electron-builder', version: '25.1.8', license: 'MIT', purpose: '앱 패키징' },
+  { name: 'pdfkit', version: '0.20.2', license: 'MIT', purpose: 'PDF 문서 생성' }
+]
+
 export default function SettingsModal() {
   const setSettingsModal = useStore(s => s.setSettingsModal)
   const showRuleAdd = useStore(s => s.showRuleAdd)
@@ -22,6 +35,12 @@ export default function SettingsModal() {
   const setAdminModal = useStore(s => s.setAdminModal)
   const rulesVersion = useStore(s => s.rulesVersion)
   const loadRulesVersion = useStore(s => s.loadRulesVersion)
+  const showBookmarkAdd = useStore(s => s.showBookmarkAdd)
+  const setShowBookmarkAdd = useStore(s => s.setShowBookmarkAdd)
+  const showExtensionAdd = useStore(s => s.showExtensionAdd)
+  const setShowExtensionAdd = useStore(s => s.setShowExtensionAdd)
+  const showHalfButton = useStore(s => s.showHalfButton)
+  const setShowHalfButton = useStore(s => s.setShowHalfButton)
 
   useEffect(() => {
     loadRulesVersion()
@@ -50,7 +69,8 @@ export default function SettingsModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-      <div className="max-h-[90%] w-[540px] overflow-auto rounded-2xl bg-white shadow-2xl">
+      <div className="max-h-[90%] w-[810px] max-w-full overflow-auto rounded-2xl bg-white shadow-2xl">
+        <div style={{ zoom: 1.5 }}>
         <div className="flex items-center justify-between border-b border-[#E2E8F0] px-4 py-3">
           <h2 className="text-[15px] font-bold text-[#1E293B]">⚙ 설정</h2>
           <button className="rounded px-2 py-0.5 text-[13px] text-[#94A3B8] hover:bg-[#F1F5F9]" onClick={() => setSettingsModal(false)}>✕ 닫기</button>
@@ -215,6 +235,45 @@ export default function SettingsModal() {
 
           <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
             <span className="text-[13.5px] text-[#1E293B]">
+              북마크바 추가 버튼 표시
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단의 "⭐ 북마크바 추가" 버튼을 켜거나 끕니다 (기본: 켜기)</span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 shrink-0 accent-blue-600"
+              checked={!!showBookmarkAdd}
+              onChange={e => setShowBookmarkAdd(e.target.checked)}
+            />
+          </label>
+
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <span className="text-[13.5px] text-[#1E293B]">
+              익스텐션 추가 버튼 표시
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단의 "🧩 익스텐션 추가" 버튼을 켜거나 끕니다 (기본: 켜기)</span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 shrink-0 accent-blue-600"
+              checked={!!showExtensionAdd}
+              onChange={e => setShowExtensionAdd(e.target.checked)}
+            />
+          </label>
+
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <span className="text-[13.5px] text-[#1E293B]">
+              반반 버튼 표시
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단의 "반반" 버튼을 켜거나 끕니다 (기본: 켜기) — 누르면 미리보기가 숨겨지고 창이 화면 오른쪽 절반으로 맞춰집니다</span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 shrink-0 accent-blue-600"
+              checked={!!showHalfButton}
+              onChange={e => setShowHalfButton(e.target.checked)}
+            />
+          </label>
+
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <span className="text-[13.5px] text-[#1E293B]">
               새 쇼핑몰 규칙 추가 버튼 표시
               <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단의 "새 쇼핑몰 규칙 추가" 버튼을 켜거나 끕니다 (기본: 끄기)</span>
             </span>
@@ -239,9 +298,34 @@ export default function SettingsModal() {
             </button>
           </div>
 
-          <div className="text-right text-[10.5px] text-[#CBD5E1]" title="관리자 전용: F9를 누르면 새 쇼핑몰 규칙 자동 생성 도구가 열립니다">
-            관리자: 이 화면에서 F9
+          <div className="rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <div className="text-[13.5px] text-[#1E293B]">📄 오픈소스 라이선스 안내</div>
+            <p className="mt-1 text-[11.5px] text-[#64748B]">본 프로그램은 아래의 오픈소스 라이브러리를 사용합니다.</p>
+            <div className="mt-2 overflow-hidden rounded-lg border border-[#E2E8F0]">
+              <table className="w-full text-left text-[11.5px]">
+                <thead className="bg-[#F8FAFC] text-[#64748B]">
+                  <tr>
+                    <th className="px-2.5 py-1.5 font-semibold">라이브러리</th>
+                    <th className="px-2.5 py-1.5 font-semibold">라이선스</th>
+                    <th className="px-2.5 py-1.5 font-semibold">용도</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[#334155]">
+                  {OPEN_SOURCE_LICENSES.map(l => (
+                    <tr key={l.name} className="border-t border-[#F1F5F9]">
+                      <td className="px-2.5 py-1.5">
+                        {l.name} <span className="text-[#94A3B8]">({l.version})</span>
+                      </td>
+                      <td className="px-2.5 py-1.5">{l.license}</td>
+                      <td className="px-2.5 py-1.5">{l.purpose}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-1.5 text-[10.5px] text-[#94A3B8]">위 라이브러리들의 저작권은 각 개발자에게 있으며, MIT/Apache-2.0 라이선스 조건에 따라 사용됩니다.</p>
           </div>
+        </div>
         </div>
       </div>
     </div>

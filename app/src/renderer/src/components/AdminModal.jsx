@@ -59,6 +59,10 @@ export default function AdminModal() {
   const toast = useStore(s => s.toast)
   const refreshRules = useStore(s => s.refreshRules)
   const loadRulesVersion = useStore(s => s.loadRulesVersion)
+  const showOpenFolder = useStore(s => s.showOpenFolder)
+  const setShowOpenFolder = useStore(s => s.setShowOpenFolder)
+  const showOpenFiles = useStore(s => s.showOpenFiles)
+  const setShowOpenFiles = useStore(s => s.setShowOpenFiles)
 
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState(DEFAULT_MODEL)
@@ -189,7 +193,8 @@ export default function AdminModal() {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-      <div className="flex max-h-[92%] w-[680px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="flex max-h-[92%] w-[1020px] max-w-full flex-col overflow-auto rounded-2xl bg-white shadow-2xl">
+        <div style={{ zoom: 1.5 }} className="flex min-h-0 flex-1 flex-col">
         <div className="flex items-center justify-between border-b border-[#E2E8F0] px-4 py-3">
           <h2 className="text-[15px] font-bold text-[#1E293B]">🛡 새 쇼핑몰 규칙 자동 생성 (관리자)</h2>
           <div className="flex items-center gap-1">
@@ -335,6 +340,32 @@ export default function AdminModal() {
 
           <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
             <span className="text-[13.5px] text-[#1E293B]">
+              MHTML 폴더 열기 버튼 표시
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단의 "MHTML 폴더 열기" 버튼을 켜거나 끕니다 (기본: 끄기)</span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 shrink-0 accent-blue-600"
+              checked={!!showOpenFolder}
+              onChange={e => setShowOpenFolder(e.target.checked)}
+            />
+          </label>
+
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <span className="text-[13.5px] text-[#1E293B]">
+              MHTML 파일 열기 버튼 표시
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단의 "MHTML 파일 열기" 버튼을 켜거나 끕니다 (기본: 끄기)</span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 shrink-0 accent-blue-600"
+              checked={!!showOpenFiles}
+              onChange={e => setShowOpenFiles(e.target.checked)}
+            />
+          </label>
+
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <span className="text-[13.5px] text-[#1E293B]">
               Git 자동 커밋/푸시
               <span className="mt-0.5 block text-[11.5px] text-[#64748B]">생성·삭제된 규칙 JSON + rules.json을 커밋·푸시해 규칙 업데이트 서버에 반영합니다</span>
             </span>
@@ -368,6 +399,7 @@ export default function AdminModal() {
               ))}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

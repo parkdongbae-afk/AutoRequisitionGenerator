@@ -6,6 +6,14 @@ import ExcelView from './ExcelView'
 // 추출 데이터 기반 커스텀 카드로 표시한다(2026-09-25 사용자 지정). 다른 몰은 원본 그대로.
 const CARD_MALLS = new Set(['naver-cart', 'coupang'])
 
+// 탭 라벨: 캡처 파일명의 시간 접두사(23-59-27_G마켓-장바구니)를 몰 이름이 먼저
+// 오도록 재배열(G마켓-장바구니-23-59-27). 시간 접두사가 없는 엑셀/직접 입력은 그대로.
+function tabLabel(fileName) {
+  const base = String(fileName || '').replace(/\.(mhtml?|html?)$/i, '')
+  const m = base.match(/^(\d{1,2}-\d{1,2}-\d{1,2})_(.+)$/)
+  return m ? `${m[2]}-${m[1]}` : base
+}
+
 function Thumb({ src, name }) {
   const [err, setErr] = useState(false)
   useEffect(() => { setErr(false) }, [src])
@@ -274,24 +282,24 @@ export default function Viewer() {
 
   return (
     <section className="relative flex h-full min-w-0 flex-1 flex-col bg-white">
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-[#E2E8F0] bg-white px-1 py-1">
+      <div className="flex items-center gap-1 overflow-x-auto border-b border-[#E2E8F0] bg-white px-1 py-1" style={{ zoom: 1.5 }}>
         {docs.length === 0 && !waiting && (
           <span className="px-2 py-1 text-[12px] text-[#94A3B8]">
-            MHTML 폴더/파일 열기 또는 🛒품의캡처 북마크릿·익스텐션으로 전송하세요
+            🛒품의캡처(북마크릿·익스텐션)로 화면을 전송하면 여기에 표시됩니다
           </span>
         )}
         {docs.map(d => (
           <button
             key={d.id}
             onClick={() => selectDoc(d.id)}
-            className={`group flex max-w-[180px] shrink-0 items-center gap-1 rounded-t-lg px-2.5 py-1.5 text-[11.5px] transition-colors duration-150 ${
+            className={`group flex max-w-[240px] shrink-0 items-center gap-1 rounded-t-lg px-2.5 py-1.5 text-[11.5px] transition-colors duration-150 ${
               d.id === selectedDocId ? 'bg-[#EEEDFE] font-semibold text-[#5B4DFB] shadow-[inset_0_-2px_0_#5B4DFB]' : 'bg-[#F8FAFC] text-[#64748B] hover:bg-[#F1F5F9]'
             }`}
             title={d.sourceUrl}
           >
             <span className="truncate">
               {!d.ruleId && !d.excel && '⚠ '}
-              {d.fileName.replace(/\.(mhtml?|html?)$/i, '')}
+              {tabLabel(d.fileName)}
             </span>
             <span
               className="ml-1 rounded px-1 text-[#94A3B8] opacity-0 hover:bg-[#E2E8F0] group-hover:opacity-100"

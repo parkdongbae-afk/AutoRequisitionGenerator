@@ -22,6 +22,7 @@ const bookmarkModal = useStore(s => s.bookmarkModal)
   const rulesModal = useStore(s => s.rulesModal)
   const settingsModal = useStore(s => s.settingsModal)
   const adminModal = useStore(s => s.adminModal)
+  const halfMode = useStore(s => s.halfMode)
   const splitRatio = useStore(s => s.splitRatio)
   const setSplitRatio = useStore(s => s.setSplitRatio)
   const containerRef = useRef(null)
@@ -72,18 +73,22 @@ const bookmarkModal = useStore(s => s.bookmarkModal)
   return (
     <div className="flex h-full flex-col bg-[#F4F6F8] text-[#334155]">
       <Header />
-      <div ref={containerRef} className="relative flex min-h-0 flex-1 gap-4 px-4 py-4">
-        <div className="min-w-0 overflow-hidden rounded-2xl bg-white shadow-[0_4px_12px_rgba(0,0,0,0.03)]" style={{ width: `${pct}%` }}>
-          <Viewer />
-        </div>
-        <div
-          className="group relative w-1.5 shrink-0 cursor-col-resize rounded-full bg-[#E2E8F0] transition-colors duration-150 hover:bg-[#5B4DFB]"
-          title="드래그하여 좌/우 크기 조절 (더블클릭 시 2/3 기본 복원)"
-          onPointerDown={startDrag}
-          onDoubleClick={resetRatio}
-        >
-          <div className="absolute left-1/2 top-[45%] h-8 w-0.5 -translate-x-1/2 rounded bg-[#94A3B8] group-hover:bg-white" />
-        </div>
+      <div ref={containerRef} className="app-main relative flex min-h-0 flex-1 gap-4 overflow-x-auto px-4 py-4">
+        {!halfMode && (
+          <div className="min-w-0 overflow-hidden rounded-2xl bg-white shadow-[0_4px_12px_rgba(0,0,0,0.03)]" style={{ width: `${pct}%` }}>
+            <Viewer />
+          </div>
+        )}
+        {!halfMode && (
+          <div
+            className="group relative w-1.5 shrink-0 cursor-col-resize rounded-full bg-[#E2E8F0] transition-colors duration-150 hover:bg-[#5B4DFB]"
+            title="드래그하여 좌/우 크기 조절 (더블클릭 시 2/3 기본 복원)"
+            onPointerDown={startDrag}
+            onDoubleClick={resetRatio}
+          >
+            <div className="absolute left-1/2 top-[45%] h-8 w-0.5 -translate-x-1/2 rounded bg-[#94A3B8] group-hover:bg-white" />
+          </div>
+        )}
         <div className="min-w-0 flex-1 overflow-hidden rounded-2xl bg-white shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
           <Grid />
         </div>

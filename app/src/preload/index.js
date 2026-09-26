@@ -43,6 +43,7 @@ const api = {
   adminListMalls: () => ipcRenderer.invoke('admin-list-malls'),
   adminDeleteMall: (payload) => ipcRenderer.invoke('admin-delete-mall', payload),
   rulesVersion: () => ipcRenderer.invoke('rules-version'),
+  snapRightHalf: () => ipcRenderer.invoke('snap-window-right'),
   onAdminLog: (cb) => {
     const handler = (_e, p) => cb(p)
     ipcRenderer.on('admin-log', handler)
