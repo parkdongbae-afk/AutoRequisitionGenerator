@@ -58,6 +58,7 @@ export const useStore = create((set, get) => ({
   showBookmarkAdd: true,
   showExtensionAdd: true,
   showHalfButton: true,
+  showRequisition: true,
   halfMode: false,
   showRuleAdd: false,
   zoomSensitivity: 1.7,
@@ -93,6 +94,10 @@ export const useStore = create((set, get) => ({
   setRulesModal(v) { set({ rulesModal: v }) },
   setSettingsModal(v) { set({ settingsModal: v }) },
   setAdminModal(v) { set({ adminModal: v }) },
+  setShowRequisition(v) {
+    set({ showRequisition: !!v })
+    window.api.setSetting('showRequisition', !!v)
+  },
   setShowRuleAdd(v) {
     set({ showRuleAdd: !!v })
     window.api.setSetting('showRuleAdd', !!v)
@@ -821,6 +826,9 @@ export const useStore = create((set, get) => ({
     }
     if (settings && settings.showHalfButton === false) {
       set({ showHalfButton: false })
+    }
+    if (settings && settings.showRequisition === false) {
+      set({ showRequisition: false })
     }
     if (settings && Number(settings.zoomSensitivity) > 0) {
       set({ zoomSensitivity: Math.min(10, Math.max(0.5, Number(settings.zoomSensitivity))) })

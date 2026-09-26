@@ -8,8 +8,10 @@ const OPEN_SOURCE_LICENSES = [
   { name: 'iconv-lite', version: '0.7.3', license: 'MIT', purpose: '문자셋 디코딩' },
   { name: 'zustand', version: '5.0.3', license: 'MIT', purpose: '상태 관리' },
   { name: 'react / react-dom', version: '18.3.1', license: 'MIT', purpose: 'UI 프레임워크' },
-  { name: 'tailwindcss', version: '4.1.4', license: 'MIT', purpose: 'UI 스타일링' },
+  { name: 'tailwindcss + @tailwindcss/vite', version: '4.1.4', license: 'MIT', purpose: 'UI 스타일링' },
   { name: 'vite', version: '5.4.11', license: 'MIT', purpose: '빌드 및 번들러' },
+  { name: 'electron-vite', version: '2.3.0', license: 'MIT', purpose: 'Electron 빌드 파이프라인' },
+  { name: '@vitejs/plugin-react', version: '4.4.1', license: 'MIT', purpose: 'React JSX 변환' },
   { name: 'electron-builder', version: '25.1.8', license: 'MIT', purpose: '앱 패키징' },
   { name: 'pdfkit', version: '0.20.2', license: 'MIT', purpose: 'PDF 문서 생성' }
 ]
@@ -41,6 +43,8 @@ export default function SettingsModal() {
   const setShowExtensionAdd = useStore(s => s.setShowExtensionAdd)
   const showHalfButton = useStore(s => s.showHalfButton)
   const setShowHalfButton = useStore(s => s.setShowHalfButton)
+  const showRequisition = useStore(s => s.showRequisition)
+  const setShowRequisition = useStore(s => s.setShowRequisition)
 
   useEffect(() => {
     loadRulesVersion()
@@ -269,6 +273,19 @@ export default function SettingsModal() {
               className="h-5 w-5 shrink-0 accent-blue-600"
               checked={!!showHalfButton}
               onChange={e => setShowHalfButton(e.target.checked)}
+            />
+          </label>
+
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <span className="text-[13.5px] text-[#1E293B]">
+              요구서 작성 버튼 표시
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 하단 우측의 "요구서 작성" 버튼을 켜거나 끕니다 (기본: 켜기) — 누르면 품의 개요 작성 프로그램이 열립니다</span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 shrink-0 accent-blue-600"
+              checked={!!showRequisition}
+              onChange={e => setShowRequisition(e.target.checked)}
             />
           </label>
 

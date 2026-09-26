@@ -14,6 +14,7 @@ import { BROWSER_DATA, findBookmarkFiles, addBookmarkToFront, readCaptureBookmar
 import { buildBookmarklet } from './lib/bookmarklet.js'
 import { buildMhtmlFromHtml } from './lib/mhtmlsave.js'
 import { parseMhtml, smartDecode } from './lib/mhtml.js'
+import { parseBudgetCard } from './lib/budgetcard.js'
 import { resolveRepoRoot, runAdminFlow, adminSelfTest, listMalls, deleteMall, readRulesVersion } from './lib/admin.js'
 
 const execFileAsync = promisify(execFile)
@@ -26,6 +27,14 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let mainWindow = null
+let requisitionWindow = null
+
+// 캡처 문서를 모든 창(메인+품의 개요 창)에 전달 — 별도 창에서도 실시간 반영
+function broadcastDoc(doc) {
+  for (const w of [mainWindow, requisitionWindow]) {
+    if (w && !w.isDestroyed()) w.webContents.send('mhtml-received', doc)
+  }
+}
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json')
 
 function getSettings() {
@@ -129,6 +138,36 @@ function startupTarget() {
     } catch {}
   }
   return `"${process.execPath}"`
+}
+
+// 품의 개요 작성 프로그램 — 화면 어디든 이동 가능한 별도 OS 창(frameless, 제목 표시줄 드래그)
+function createRequisitionWindow() {
+  if (requisitionWindow && !requisitionWindow.isDestroyed()) {
+    requisitionWindow.focus()
+    return
+  }
+  requisitionWindow = new BrowserWindow({
+    width: 1024,
+    height: 920,
+    minWidth: 700,
+    minHeight: 600,
+    frame: false,
+    backgroundColor: '#FFFFFF',
+    title: '품의 개요 작성 프로그램',
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  })
+  if (process.env.ELECTRON_RENDERER_URL) {
+    requisitionWindow.loadURL(process.env.ELECTRON_RENDERER_URL + '#requisition')
+  } else {
+    requisitionWindow.loadFile(path.join(__dirname, '../renderer/index.html'), { hash: 'requisition' })
+  }
+  requisitionWindow.on('closed', () => { requisitionWindow = null })
 }
 
 function createWindow() {
@@ -333,7 +372,7 @@ async function runE2E() {
           } catch {}
           await new Promise(r => setTimeout(r, 500))
         }
-        mainWindow.webContents.send('mhtml-received', loadedDocs[0])
+        broadcastDoc(loadedDocs[0])
         await new Promise(r => setTimeout(r, 4500))
         const img = await mainWindow.webContents.capturePage()
         const buf = img.toPNG()
@@ -482,7 +521,7 @@ async function runE2E() {
       await new Promise(r => setTimeout(r, 2000))
       try {
         const state = await mainWindow.webContents.executeJavaScript(
-          "(() => ({ rootChildren: (document.getElementById('root')||{children:[]}).children.length, hasHeader: !!document.querySelector('header'), footer: (document.querySelector('footer')||{textContent:''}).textContent.slice(0,60), tableCols: document.querySelectorAll('thead th').length }))()"
+          "(() => ({ rootChildren: (document.getElementById('root')||{children:[]}).children.length, hasHeader: !!document.querySelector('header'), footer: (document.querySelector('footer')||{textContent:''}).textContent.slice(0,160), tableCols: document.querySelectorAll('thead th').length }))()"
         )
         resolve({ errs: errs.slice(0, 5), ...state })
       } catch (e) {
@@ -507,7 +546,7 @@ async function runE2E() {
         const mapFile = path.join(app.getPath('temp'), 'e2e-mapping-capture.html')
         fs.writeFileSync(mapFile, sampleHtml, 'utf-8')
         const doc = loadDocument(mapFile, { sourceUrl: 'https://maptest-mall.example.co.kr/order' })
-        mainWindow.webContents.send('mhtml-received', doc)
+        broadcastDoc(doc)
 
         await new Promise(r => setTimeout(r, 3000))
         const st1 = await mainWindow.webContents.executeJavaScript("(() => { const m = window.__store.getState().mapping; return { waiting: m.waiting, captured: !!m.capturedDocId, step: m.step } })()")
@@ -761,8 +800,88 @@ function registerIpc() {
     }
   })
 
+  // 품의 개요 작성 프로그램(v1.43.0): 별도 OS 창으로 개학 — 화면 어디든 이동 가능
+  ipcMain.handle('open-requisition-window', () => {
+    createRequisitionWindow()
+    return { ok: true }
+  })
+  ipcMain.handle('get-all-docs', () => listDocIds().map(id => getDoc(id)).filter(Boolean))
+
+  // 품의 개요 작성 프로그램(v1.42.0): 참고 자료 폴더(앱 리소스에 번들) 목록·파일 열기·출처 링크
+  const referenceFolder = () => (app.isPackaged
+    ? path.join(process.resourcesPath, 'resources', 'reference')
+    : path.join(app.getAppPath(), 'resources', 'reference'))
+  ipcMain.handle('list-reference-files', () => {
+    const dir = referenceFolder()
+    try {
+      const files = fs.readdirSync(dir)
+        .filter(f => /\.(pdf|hwp|hwpx|doc|docx|xls|xlsx|txt)$/i.test(f))
+        .sort()
+      return { ok: true, dir, files }
+    } catch (e) {
+      return { error: String(e.message || e), dir, files: [] }
+    }
+  })
+  ipcMain.handle('open-reference-file', (_e, name) => {
+    const safe = path.basename(String(name || ''))
+    if (!safe) return { error: '파일 이름이 비어 있습니다' }
+    return shell.openPath(path.join(referenceFolder(), safe)).then(err => (err ? { error: err } : { ok: true }))
+  })
+  ipcMain.handle('open-external', (_e, url) => {
+    const u = String(url || '')
+    if (!/^https?:\/\//i.test(u)) return { error: '허용되지 않은 주소입니다' }
+    return shell.openExternal(u).then(() => ({ ok: true })).catch(e => ({ error: String(e.message || e) }))
+  })
+
   ipcMain.handle('get-settings', () => getSettings())
   ipcMain.handle('set-setting', (_e, k, v) => setSetting(k, v))
+
+  // 품의 개요 작성 프로그램(v1.40.0): K-에듀파인 사업관리카드(예산) 엑셀 선택 → 3단 계층 파싱
+  ipcMain.handle('pick-budget-card', async () => {
+    const r = await dialog.showOpenDialog(mainWindow, {
+      title: '사업관리카드(예산) 엑셀 파일 선택',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Excel (*.xls, *.xlsx)', extensions: ['xls', 'xlsx'] }
+      ]
+    })
+    if (r.canceled || !r.filePaths.length) return { canceled: true }
+    const p = r.filePaths[0]
+    try {
+      const parsed = parseBudgetCard(p)
+      return { ok: true, path: p, fileName: path.basename(p), ...parsed }
+    } catch (e) {
+      return { error: String(e.message || e), path: p }
+    }
+  })
+
+  // 품의 개요 작성 프로그램(v1.41.0): 저장된 경로의 사업관리카드 재파싱(자동 로드용)
+  ipcMain.handle('parse-budget-card', async (_e, filePath) => {
+    const p = String(filePath || '')
+    try {
+      if (!p || !fs.existsSync(p)) return { error: `파일이 없습니다: ${p}`, path: p }
+      const parsed = parseBudgetCard(p)
+      return { ok: true, path: p, fileName: path.basename(p), ...parsed }
+    } catch (e) {
+      return { error: String(e.message || e), path: p }
+    }
+  })
+
+  // 품의 개요 작성 프로그램(v1.40.0): 완성된 개요 텍스트를 USE.TXT로 저장
+  ipcMain.handle('save-use-txt', async (_e, text) => {
+    const r = await dialog.showSaveDialog(mainWindow, {
+      title: 'USE.TXT 저장',
+      defaultPath: 'USE.TXT',
+      filters: [{ name: '텍스트 문서 (*.txt)', extensions: ['txt'] }]
+    })
+    if (r.canceled || !r.filePath) return { canceled: true }
+    try {
+      fs.writeFileSync(r.filePath, String(text || '').replace(/\r?\n/g, '\r\n'), 'utf-8')
+      return { ok: true, path: r.filePath }
+    } catch (e) {
+      return { error: String(e.message || e), path: r.filePath }
+    }
+  })
 
   ipcMain.handle('extension-info', () => ({ dir: extensionFolder() }))
 
@@ -1414,9 +1533,9 @@ if (gotLock) {
         onCapture: (file, sourceUrl) => {
           try {
             const doc = noteDoc(loadDocument(file, { sourceUrl }))
-            mainWindow && mainWindow.webContents.send('mhtml-received', doc)
+            broadcastDoc(doc)
           } catch (e) {
-            mainWindow && mainWindow.webContents.send('mhtml-received', { fileName: path.basename(file), error: String(e.message || e) })
+            broadcastDoc({ fileName: path.basename(file), error: String(e.message || e) })
           }
         }
       })

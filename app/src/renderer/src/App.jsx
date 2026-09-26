@@ -10,10 +10,17 @@ import BookmarkProfileModal from './components/BookmarkProfileModal'
 import RulesModal from './components/RulesModal'
 import SettingsModal from './components/SettingsModal'
 import AdminModal from './components/AdminModal'
+import RequisitionPage from './components/RequisitionModal'
 import BookmarkProgress from './components/BookmarkProgress'
 import Toasts from './components/Toasts'
 
 export default function App() {
+  // #requisition 해시 = 품의 개요 작성 프로그램 별도 창 — 메인 UI 없이 서브 프로그램만 렌더
+  if (window.location.hash.replace('#', '') === 'requisition') return <RequisitionPage />
+  return <MainApp />
+}
+
+function MainApp() {
   const init = useStore(s => s.init)
   const receivePick = useStore(s => s.receivePick)
   const mapping = useStore(s => s.mapping)

@@ -6,12 +6,15 @@ import ExcelView from './ExcelView'
 // 추출 데이터 기반 커스텀 카드로 표시한다(2026-09-25 사용자 지정). 다른 몰은 원본 그대로.
 const CARD_MALLS = new Set(['naver-cart', 'coupang'])
 
-// 탭 라벨: 캡처 파일명의 시간 접두사(23-59-27_G마켓-장바구니)를 몰 이름이 먼저
-// 오도록 재배열(G마켓-장바구니-23-59-27). 시간 접두사가 없는 엑셀/직접 입력은 그대로.
-function tabLabel(fileName) {
-  const base = String(fileName || '').replace(/\.(mhtml?|html?)$/i, '')
+// 탭 라벨: "쇼핑몰이름-inbox 일련번호" 형태(예: 네이버-07-29-58) — 쇼핑몰 이름은 추출 결과
+// 쇼핑몰 열에 보이는 이름(mallName), 일련번호는 캡처 파일명의 시간 접두사(HH-MM-SS).
+// 시간 접두사가 없는 엑셀/직접 입력은 파일명 그대로, 쇼핑몰 미확인 캡처는 기존 형태 유지.
+function tabLabel(doc) {
+  const base = String(doc.fileName || '').replace(/\.(mhtml?|html?)$/i, '')
   const m = base.match(/^(\d{1,2}-\d{1,2}-\d{1,2})_(.+)$/)
-  return m ? `${m[2]}-${m[1]}` : base
+  if (!m) return base
+  const mall = String(doc.mallName || '').trim()
+  return mall ? `${mall}-${m[1]}` : `${m[2]}-${m[1]}`
 }
 
 function Thumb({ src, name }) {
@@ -299,7 +302,7 @@ export default function Viewer() {
           >
             <span className="truncate">
               {!d.ruleId && !d.excel && '⚠ '}
-              {tabLabel(d.fileName)}
+              {tabLabel(d)}
             </span>
             <span
               className="ml-1 rounded px-1 text-[#94A3B8] opacity-0 hover:bg-[#E2E8F0] group-hover:opacity-100"

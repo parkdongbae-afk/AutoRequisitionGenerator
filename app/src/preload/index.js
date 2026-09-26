@@ -43,6 +43,14 @@ const api = {
   adminListMalls: () => ipcRenderer.invoke('admin-list-malls'),
   adminDeleteMall: (payload) => ipcRenderer.invoke('admin-delete-mall', payload),
   rulesVersion: () => ipcRenderer.invoke('rules-version'),
+  pickBudgetCard: () => ipcRenderer.invoke('pick-budget-card'),
+  parseBudgetCard: (p) => ipcRenderer.invoke('parse-budget-card', p),
+  saveUseTxt: (text) => ipcRenderer.invoke('save-use-txt', text),
+  listReferenceFiles: () => ipcRenderer.invoke('list-reference-files'),
+  openReferenceFile: (name) => ipcRenderer.invoke('open-reference-file', name),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  openRequisitionWindow: () => ipcRenderer.invoke('open-requisition-window'),
+  getAllDocs: () => ipcRenderer.invoke('get-all-docs'),
   snapRightHalf: () => ipcRenderer.invoke('snap-window-right'),
   onAdminLog: (cb) => {
     const handler = (_e, p) => cb(p)

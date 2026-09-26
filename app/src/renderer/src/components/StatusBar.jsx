@@ -23,8 +23,9 @@ export default function StatusBar() {
   const priceMarkup = useStore(s => s.priceMarkup)
   const setPriceMarkup = useStore(s => s.setPriceMarkup)
   const halfMode = useStore(s => s.halfMode)
+  const showRequisition = useStore(s => s.showRequisition)
 
-  const itemCount = docs.reduce((n, d) => n + d.rows.filter(r => !r.isShipping).length, 0)
+  const itemCount = docs.reduce((n, d) => n + d.rows.length, 0)
   const pct = Number(priceMarkup) || 0
   // 총액 = 품목(단가 인상 % 반영) + 배송비 — 배송비 행은 인상에서 제외
   const grandTotal = docs.reduce(
@@ -51,7 +52,7 @@ export default function StatusBar() {
         </span>
       )}
       <div className="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-        <Chip label="품목" value={`${itemCount}건`} />
+        <Chip label="품목" value={`${itemCount}건`} title="배송비 행을 포함한 모든 품목 행 수" />
         <span
           className="flex items-center gap-2 rounded-full border border-[#DDD9FC] bg-[#EEEDFE] px-4 py-1"
           title="모든 문서 품목의 수량×예상단가 합계 (단가 인상 % 반영, 배송비 포함)"
@@ -79,6 +80,15 @@ export default function StatusBar() {
         >
           엑셀에 저장
         </button>
+        {showRequisition && (
+          <button
+            className="rounded-[10px] border border-[#DDD9FC] bg-[#EEEDFE] px-5 py-2 text-[12.5px] font-bold text-[#4C3DE6] transition-all duration-150 hover:bg-[#DDD9FC]"
+            onClick={() => window.api.openRequisitionWindow()}
+            title="품의 개요 작성 프로그램 — 사업관리카드(예산) 선택과 메인 품목 데이터로 품의 개요를 자동 생성해 USE.TXT로 저장합니다"
+          >
+            요구서 작성
+          </button>
+        )}
       </div>
     </footer>
   )

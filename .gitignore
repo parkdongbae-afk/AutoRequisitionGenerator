@@ -25,3 +25,6 @@ e2e-*
 
 # Playwright MCP ���⹰
 .playwright-mcp/
+
+# 로컬 참조 자료(실제 예산 데이터 포함 — 저장소 비공개 대상)
+Proposal/
