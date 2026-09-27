@@ -30,7 +30,7 @@ let mainWindow = null
 let requisitionWindow = null
 
 // 앱 버전 — SUMMARY.MD 버전 체계를 따른다(package.json 버전은 업데이트가 누락되어 왔다)
-const APP_VERSION = '1.48.1'
+const APP_VERSION = '1.48.3'
 
 // 뷰어를 항상 라이트로 고정 — Windows 다크모드에서 미리보기(쇼핑몰 CSS의
 // prefers-color-scheme 다크 전환)가 검게 렌더되는 것을 막는다(v1.47.14)
@@ -1427,6 +1427,7 @@ function registerIpc() {
   })
 
   // Gemini API 키·모델 연결 확인(관리자 모달 [🔗 연결] 버튼) — models 엔드포인트로 키·모델 유효성 검사
+  ipcMain.handle('app-version', () => APP_VERSION)
   ipcMain.handle('admin-test-gemini', async (_e, opts) => {
     const key = String((opts && opts.apiKey) || '').trim()
     const model = String((opts && opts.model) || '').trim()

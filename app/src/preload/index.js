@@ -43,6 +43,7 @@ const api = {
   adminRun: (flow) => ipcRenderer.invoke('admin-run', flow),
   adminRegisterBuiltin: () => ipcRenderer.invoke('admin-register-builtin'),
   adminTestGemini: (opts) => ipcRenderer.invoke('admin-test-gemini', opts),
+  appVersion: () => ipcRenderer.invoke('app-version'),
   adminListMalls: () => ipcRenderer.invoke('admin-list-malls'),
   adminDeleteMall: (payload) => ipcRenderer.invoke('admin-delete-mall', payload),
   rulesVersion: () => ipcRenderer.invoke('rules-version'),

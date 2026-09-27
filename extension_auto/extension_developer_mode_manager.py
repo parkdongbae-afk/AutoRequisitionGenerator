@@ -986,6 +986,31 @@ def find_extension_folder_dialog(
                             title_match = any(
                                 word in title for word in title_words
                             )
+                            is_nested = candidate is not top_window
+                            dialog_class = top_class in {
+                                "#32770",
+                                "CabinetWClass",
+                            }
+
+                            # 비용이 큰 컨트롤 탐색(folder_dialog_controls)은 필요한
+                            # 창에만 수행합니다 — 제목이 일치하면 즉시 채택하고,
+                            # 새 창·대화상자 클래스·브라우저 소속 창만 검사합니다
+                            # (v1.48.2: 경로 붙여넣기까지의 지연 단축).
+                            if title_match:
+                                score = (
+                                    0,
+                                    0,
+                                    0 if is_nested else 1,
+                                    0 if is_new_top else 1,
+                                )
+                                candidates.append((score, candidate))
+                                continue
+                            if not (
+                                is_new_top
+                                and (dialog_class or browser_owner)
+                            ):
+                                continue
+
                             folder_edit, select_button = (
                                 folder_dialog_controls(candidate)
                             )
@@ -993,26 +1018,11 @@ def find_extension_folder_dialog(
                                 folder_edit is not None
                                 and select_button is not None
                             )
-                            is_nested = candidate is not top_window
-                            dialog_class = top_class in {
-                                "#32770",
-                                "CabinetWClass",
-                            }
-
-                            if not (
-                                title_match
-                                or controls_match
-                                or (
-                                    is_new_top
-                                    and (dialog_class or browser_owner)
-                                )
-                            ):
+                            if not controls_match:
                                 continue
-
-                            # 실제 자식 대화상자 + 정확한 1152/1 컨트롤을 최우선합니다.
                             score = (
-                                0 if controls_match else 1,
-                                0 if title_match else 1,
+                                1,
+                                1,
                                 0 if is_nested else 1,
                                 0 if is_new_top else 1,
                             )
@@ -1652,8 +1662,6 @@ class App(tk.Tk):
         self.geometry("940x900")
         self.minsize(880, 780)
         self.maxsize(1100, 1000)
-        # 시작 시 작업 표시줄로 최소화 — 사용자가 필요할 때 작업 표시줄에서 복원
-        self.iconify()
         self.configure(bg="#F2F4F7")
 
         self.setup_windows_fonts()

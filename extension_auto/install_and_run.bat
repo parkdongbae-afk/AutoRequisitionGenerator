@@ -1,8 +1,14 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Extension Developer Mode Manager v18.1
 
+rem 1st: bundled standalone EXE - works without Python on the target PC (v1.48.3).
+if exist "%~dp0ExtensionDeveloperModeManager.exe" (
+    start "" "%~dp0ExtensionDeveloperModeManager.exe"
+    exit /b 0
+)
+
+rem 2nd: Python environment (requires pywinauto + psutil - auto-installed once).
 where py >nul 2>nul
 if %errorlevel%==0 (
     set PYTHON=py
@@ -17,9 +23,7 @@ if errorlevel 1 (
     if errorlevel 1 goto :error
 )
 
-rem 도구 창·콘솔을 작업 표시줄에서 최소화 상태로 시작(v1.48.1)
-start "ExtTool" /min /wait %PYTHON% extension_developer_mode_manager.py
-if errorlevel 1 pause
+start "ExtTool" %PYTHON% extension_developer_mode_manager.py
 exit /b 0
 
 :error

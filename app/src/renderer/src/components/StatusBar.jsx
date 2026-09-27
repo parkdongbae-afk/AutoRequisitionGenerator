@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useStore } from '../store'
 
 const ROUND_MODES = [
@@ -29,6 +29,11 @@ export default function StatusBar() {
   const halfMode = useStore(s => s.halfMode)
   const showRequisition = useStore(s => s.showRequisition)
   const adminShowStatusInfo = useStore(s => s.adminShowStatusInfo)
+  const [appVersion, setAppVersion] = useState('')
+
+  useEffect(() => {
+    window.api.appVersion?.().then(v => setAppVersion(v || '')).catch(() => {})
+  }, [])
 
   const itemCount = docs.reduce((n, d) => n + d.rows.length, 0)
   // 총액 = 품목 수량×예상단가 + 배송비 (백원/천원 올림은 엑셀 저장 시 반영되므로 여기서는 추출값 기준)
@@ -52,6 +57,10 @@ export default function StatusBar() {
           </span>
         </span>
       )}
+      {/* 프로그램 버전 — 좌측 하단에 요란하지 않게 표시 */}
+      <span className="text-[10px] text-[#CBD5E1]" title={`자동 품의 요구 생성기 v${appVersion}`}>
+        v{appVersion}
+      </span>
       <div className="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
         {/* 품목 칩 — 총액 칩과 동일한 강조 스타일 */}
         <span
@@ -94,7 +103,7 @@ export default function StatusBar() {
             onClick={() => window.api.openRequisitionWindow()}
             title="품의 개요 작성 프로그램 — 사업관리카드(예산) 선택과 메인 품목 데이터로 품의 개요를 자동 생성해 USE.TXT로 저장합니다"
           >
-            품의 내용
+            품의 개요 작성
           </button>
         )}
       </div>

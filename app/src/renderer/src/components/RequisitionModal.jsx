@@ -302,17 +302,17 @@ export default function RequisitionPage() {
 
   const copyOverview = async () => {
     await window.api.copyText(editorText)
-    toast('품의 내역이 클립보드에 복사되었습니다.', 'ok')
+    toast('품의 개요가 클립보드에 복사되었습니다.', 'ok')
   }
 
   const saveUseTxt = async () => {
     const res = await window.api.saveUseTxt(editorText)
     if (!res || res.canceled) return
     if (res.error) {
-      toast(`품의 내역 파일 저장 실패: ${res.error}`, 'err')
+      toast(`품의 개요 파일 저장 실패: ${res.error}`, 'err')
       return
     }
-    toast(`품의 내역 파일 저장 완료 → ${res.path}`, 'ok')
+    toast(`품의 개요 파일 저장 완료 → ${res.path}`, 'ok')
   }
 
   const refreshMainData = () => {
@@ -557,18 +557,18 @@ export default function RequisitionPage() {
               </button>
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded-[10px] bg-[#5B4DFB] px-5 py-2 text-[12.5px] font-bold text-white hover:bg-[#4C3DE6]"
+                  className="rounded-md border border-[#DDD9FC] bg-[#EEEDFE] px-4 py-2 text-[12.5px] font-bold text-[#4C3DE6] hover:bg-[#DDD9FC]"
                   onClick={copyOverview}
-                  title="완성된 품의 내역 전체를 클립보드에 복사"
+                  title="완성된 품의 개요 전체를 클립보드에 복사"
                 >
-                  📋 품의 내역 복사
+                  📋 품의 개요 복사
                 </button>
                 <button
                   className="rounded-md border border-[#DDD9FC] bg-[#EEEDFE] px-4 py-2 text-[12.5px] font-bold text-[#4C3DE6] hover:bg-[#DDD9FC]"
                   onClick={saveUseTxt}
-                  title="완성된 품의 내역을 텍스트 파일(USE.TXT)로 저장"
+                  title="완성된 품의 개요를 텍스트 파일(USE.TXT)로 저장"
                 >
-                💾 품의 내역 파일 저장
+                💾 품의 개요 파일 저장
               </button>
               </div>
             </div>
