@@ -30,7 +30,7 @@ let mainWindow = null
 let requisitionWindow = null
 
 // 앱 버전 — SUMMARY.MD 버전 체계를 따른다(package.json 버전은 업데이트가 누락되어 왔다)
-const APP_VERSION = '1.48.3'
+const APP_VERSION = '1.48.6'
 
 // 뷰어를 항상 라이트로 고정 — Windows 다크모드에서 미리보기(쇼핑몰 CSS의
 // prefers-color-scheme 다크 전환)가 검게 렌더되는 것을 막는다(v1.47.14)
@@ -1201,48 +1201,28 @@ function registerIpc() {
   ipcMain.handle('open-manual', () => shell.openPath(manualFile()))
   ipcMain.handle('open-admin-manual', () => shell.openPath(adminManualFile()))
 
-  // 반반 기능 — Win+Right 키 입력으로 정확히 화면 오른쪽 1/2에 강제 스냅한다.
-  // 스냅 애시스트가 떠서 왼쪽 절반에 놓을 다른 프로그램을 사용자가 고를 수 있다.
-  // 최대화 상태에선 스냅이 어긋날 수 있어 unmaximize 후 시도하고, 키 입력이 실패해도
-  // setBounds + workArea 클램프로 오른쪽 끝이 화면 밖으로 나가지 않게 보정한다.
+  // 반반 기능(v1.48.5 재작성) — Win+Right 키 시뮬레이션은 환경에 따라 창을 최소화하거나
+  // 뒤로 숨기는 문제(다른 PC 실측)가 있어 제거하고, Electron API만으로 오른쪽 절반에 배치한다.
+  // workArea 기준 setBounds + show/focus/moveTop으로 항상 맨 앞에 떠 있게 한다.
   ipcMain.handle('snap-window-right', async () => {
     try {
       if (!mainWindow || mainWindow.isDestroyed()) return { ok: false, error: '창이 없습니다' }
       if (mainWindow.isMinimized()) mainWindow.restore()
       if (mainWindow.isMaximized()) mainWindow.unmaximize()
+      const display = screen.getDisplayMatching(mainWindow.getBounds())
+      const wa = display.workArea
+      const halfW = Math.floor(wa.width / 2)
+      mainWindow.setBounds({ x: wa.x + wa.width - halfW, y: wa.y, width: halfW, height: wa.height })
+      mainWindow.show()
       mainWindow.focus()
-      const ps = [
-        'Add-Type -TypeDefinition \'using System;using System.Runtime.InteropServices;public class ArgeSnap{[DllImport("user32.dll")]public static extern void keybd_event(byte bVk,byte bScan,uint dwFlags,UIntPtr dwExtraInfo);}\'',
-        'Start-Sleep -Milliseconds 150',
-        '[ArgeSnap]::keybd_event(0x5B,0,0,[UIntPtr]::Zero)',
-        '[ArgeSnap]::keybd_event(0x27,0,0,[UIntPtr]::Zero)',
-        'Start-Sleep -Milliseconds 80',
-        '[ArgeSnap]::keybd_event(0x27,0,2,[UIntPtr]::Zero)',
-        '[ArgeSnap]::keybd_event(0x5B,0,2,[UIntPtr]::Zero)'
-      ].join('; ')
-      await execFileAsync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps], { windowsHide: true })
-      await new Promise(r => setTimeout(r, 800))
-      const disp = screen.getDisplayMatching(mainWindow.getBounds())
-      const wa = disp.workArea
-      const target = { x: wa.x + Math.ceil(wa.width / 2), y: wa.y, width: Math.floor(wa.width / 2), height: wa.height }
-      const g = mainWindow.getBounds()
-      const near = (a, b) => Math.abs(a - b) <= 40
-      if (!(near(g.x, target.x) && near(g.y, target.y) && near(g.width, target.width) && near(g.height, target.height))) {
-        mainWindow.setBounds(target)
-      }
-      const g2 = mainWindow.getBounds()
-      const cw = Math.min(g2.width, wa.width)
-      const ch = Math.min(g2.height, wa.height)
-      const cx = Math.min(Math.max(g2.x, wa.x), wa.x + wa.width - cw)
-      const cy = Math.min(Math.max(g2.y, wa.y), wa.y + wa.height - ch)
-      if (cx !== g2.x || cy !== g2.y || cw !== g2.width || ch !== g2.height) {
-        mainWindow.setBounds({ x: cx, y: cy, width: cw, height: ch })
-      }
-      return { ok: true }
+      mainWindow.moveTop()
+      return { ok: true, bounds: mainWindow.getBounds() }
     } catch (e) {
       try {
         const wa = screen.getPrimaryDisplay().workArea
         mainWindow.setBounds({ x: wa.x + Math.ceil(wa.width / 2), y: wa.y, width: Math.floor(wa.width / 2), height: wa.height })
+        mainWindow.show()
+        mainWindow.moveTop()
         return { ok: true, fallback: true }
       } catch (e2) {
         return { ok: false, error: String(e.message || e) }
@@ -1287,7 +1267,16 @@ function registerIpc() {
         cfg.extension_path = extDir
         fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2), 'utf-8')
       } catch (e) {}
-      const child = spawn('cmd.exe', ['/c', 'install_and_run.bat'], { cwd: v2Dir, detached: true, stdio: 'ignore' })
+      // 설치 도구 EXE를 Electron에서 직접 실행 — bat·콘솔 경유 시 최소화 상태가
+      // 상속되어 도구 창이 작업 표시줄로 내려가는 것을 방지한다(v1.48.4).
+      const toolExe = path.join(v2Dir, 'ExtensionDeveloperModeManager.exe')
+      if (fs.existsSync(toolExe)) {
+        const gui = spawn(toolExe, [], { cwd: v2Dir, detached: true, stdio: 'ignore' })
+        gui.unref()
+        return { ok: true, v2Dir, extDir }
+      }
+
+      const child = spawn('cmd.exe', ['/c', 'install_and_run.bat'], { cwd: v2Dir, detached: true, stdio: 'ignore', windowsHide: true })
       child.unref()
       return { ok: true, v2Dir, extDir }
     } catch (e) {
@@ -1332,6 +1321,7 @@ function registerIpc() {
       }
       fs.rmSync(extDir, { recursive: true, force: true })
       copyDirRecursive(extSrc, extDir)
+      // 도구가 시작 시 자동 선택 폴더를 미리 선택하도록 config를 먼저 기록한다
       try {
         const mgrDir = path.join(process.env.APPDATA || path.join(app.getPath('userData'), '..'), 'ExtensionDeveloperModeManager')
         fs.mkdirSync(mgrDir, { recursive: true })
@@ -1341,7 +1331,14 @@ function registerIpc() {
         cfg.extension_path = extDir
         fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2), 'utf-8')
       } catch {}
-      const child = spawn('cmd.exe', ['/c', 'install_and_run.bat'], { cwd: toolDir, detached: true, stdio: 'ignore' })
+      // 설치 도구 EXE를 Electron에서 직접 실행 — 콘솔·최소화 상속 방지(v1.48.4)
+      const autoToolExe = path.join(toolDir, 'ExtensionDeveloperModeManager.exe')
+      if (fs.existsSync(autoToolExe)) {
+        const gui = spawn(autoToolExe, [], { cwd: toolDir, detached: true, stdio: 'ignore' })
+        gui.unref()
+        return { ok: true, extDir }
+      }
+      const child = spawn('cmd.exe', ['/c', 'install_and_run.bat'], { cwd: toolDir, detached: true, stdio: 'ignore', windowsHide: true })
       child.unref()
       return { ok: true, extDir }
     } catch (e) {

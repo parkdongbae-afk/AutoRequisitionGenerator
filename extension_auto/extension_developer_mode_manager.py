@@ -1658,10 +1658,17 @@ class App(tk.Tk):
         super().__init__()
 
         self.title(APP_NAME)
-        # v14 대비 가로 20% 축소, 세로 20% 확대
-        self.geometry("940x900")
+        # 고해상도 모니터 대응(v1.48.5) — 화면 크기에 맞춰 창을 크게 잡고 최대화를 허용한다
+        # (고정 maxsize는 하단 버튼이 잘리는 원인이었다)
+        screen_w = self.winfo_screenwidth()
+        screen_h = self.winfo_screenheight()
+        width = min(1100, max(880, int(screen_w * 0.62)))
+        height = min(1000, max(780, int(screen_h * 0.78)))
         self.minsize(880, 780)
-        self.maxsize(1100, 1000)
+        if screen_w >= 1920 and screen_h >= 1080:
+            self.state("zoomed")
+        else:
+            self.geometry(f"{width}x{height}+{max(0, (screen_w - width) // 2)}+{max(0, (screen_h - height) // 3)}")
         self.configure(bg="#F2F4F7")
 
         self.setup_windows_fonts()
@@ -2665,6 +2672,10 @@ class App(tk.Tk):
         popup.transient(self)
         popup.grab_set()
         self.center_popup(popup, width, height)
+        # 크롬 재실행 후 결과 창이 브라우저 뒤로 숨는 것을 막는다(사용자 실측 v1.48.5)
+        popup.attributes("-topmost", True)
+        popup.lift()
+        popup.focus_force()
 
         accent_bg = "#FEF3F2" if has_failures else "#ECFDF3"
         accent = "#D92D20" if has_failures else "#039855"

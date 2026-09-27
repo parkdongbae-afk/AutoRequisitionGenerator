@@ -133,7 +133,7 @@ function syncCheckStates() {
     // 실패해 saveAsMHTML 폴백으로 저장될 때도 문서에 남는다
     try {
       document.querySelectorAll('meta[name="arge-channel"],meta[name="arge-ext-version"]').forEach(e => e.remove())
-      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.8">')
+      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.9">')
     } catch (e) {}
     document.querySelectorAll('input[type=checkbox]').forEach(el => {
       el.setAttribute('data-arge-checked', el.checked ? 'true' : 'false')
@@ -248,7 +248,7 @@ async function captureAliOrderHtml() {
     }
     try {
       document.querySelectorAll('meta[name="arge-channel"],meta[name="arge-ext-version"]').forEach(e => e.remove())
-      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.8"><meta name="color-scheme" content="light">')
+      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.9"><meta name="color-scheme" content="light">')
       if (!document.querySelector('style[data-arge-scheme]')) {
         const s = document.createElement('style')
         s.setAttribute('data-arge-scheme', '1')
@@ -332,7 +332,7 @@ async function captureLiveHtml() {
   const channelMeta = () => {
     try {
       document.querySelectorAll('meta[name="arge-channel"],meta[name="arge-ext-version"]').forEach(e => e.remove())
-      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.8">')
+      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.9">')
     } catch (e) {}
   }
   channelMeta()

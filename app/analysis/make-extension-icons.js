@@ -1,4 +1,4 @@
-// 확장 프로그램 아이콘 생성 — 품의캡처(노랑/카메라), 물품 자동 선택(초록/체크)
+// 확장 프로그램 아이콘 생성 — 품의캡처(노랑/검정 '품'), 물품 자동 선택(노랑/검정 'V')
 // 외부 의존 없이 PNG를 직접 인코딩한다(RGBA + filter 0 + zlib deflate)
 const fs = require('fs');
 const path = require('path');
@@ -45,6 +45,8 @@ function encodePng(size, pixels) {
   ]);
 }
 
+const BLACK = [10, 10, 10, 255];
+const inBox = (fx, fy, x1, y1, x2, y2) => fx >= x1 && fx <= x2 && fy >= y1 && fy <= y2;
 const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const dist = (x, y, cx, cy) => Math.hypot(x - cx, y - cy);
 function distToSeg(x, y, x1, y1, x2, y2) {
@@ -58,7 +60,6 @@ function inRoundedRect(x, y, x1, y1, x2, y2, r) {
   const cy = Math.max(y1 + r, Math.min(y2 - r, y));
   return dist(x, y, cx, cy) <= r;
 }
-
 function draw(size, bg, symbol) {
   const s = size / 128; // 128 기준 좌표 스케일
   const px = Buffer.alloc(size * size * 4);
@@ -66,7 +67,7 @@ function draw(size, bg, symbol) {
     for (let x = 0; x < size; x++) {
       const fx = (x + 0.5) / s, fy = (y + 0.5) / s;
       let col = [0, 0, 0, 0];
-      if (inRoundedRect(fx, fy, 4, 4, 124, 124, 26)) col = hex(bg);
+      if (inRoundedRect(fx, fy, 4, 4, 124, 124, 24)) col = hex(bg);
       const out = symbol(fx, fy, col);
       const o = (y * size + x) * 4;
       px[o] = out[0]; px[o + 1] = out[1]; px[o + 2] = out[2]; px[o + 3] = out[3];
@@ -75,22 +76,30 @@ function draw(size, bg, symbol) {
   return px;
 }
 
-// 물품 자동 선택 — 초록 배경 + 흰 체크
-const GREEN = '#1FA34A';
-const check = (fx, fy, col) => {
-  const d = Math.min(distToSeg(fx, fy, 33, 68, 56, 92), distToSeg(fx, fy, 56, 92, 96, 44));
-  if (d <= 11) return [255, 255, 255, 255];
+// 물품 자동 선택 — 노랑 배경 + 검정 'V'
+const YELLOW = '#FFCC00';
+const vee = (fx, fy, col) => {
+  const d = Math.min(distToSeg(fx, fy, 30, 28, 64, 100), distToSeg(fx, fy, 64, 100, 98, 28));
+  if (d <= 15) return BLACK;
   return col;
 };
-// 품의캡처 — 노랑 배경 + 흰 카메라(몸통 + 렌즈 + 뷰파인더)
-const YELLOW = '#F5B301';
-const camera = (fx, fy, col) => {
-  if (inRoundedRect(fx, fy, 46, 32, 82, 48, 6)) return [255, 255, 255, 255];
-  if (inRoundedRect(fx, fy, 22, 44, 106, 100, 12)) {
-    const d = dist(fx, fy, 64, 72);
-    if (d <= 20) return hex(YELLOW);
-    if (d <= 11) return [255, 255, 255, 255];
-    return [255, 255, 255, 255];
+
+// 품의캡처 — 노랑 배경 + 검정 '품'(사각형 조합: 두 칸 창 + 가로 막대 + 박스)
+const pum = (fx, fy, col) => {
+  const b = 7.5;
+  // 품 윗부분: 외곽 사각 + 중앙 세로막대 = 두 칸 창
+  if (inBox(fx, fy, 34, 22, 94, 55)) {
+    const inner = fx > 34 + b && fx < 94 - b && fy > 22 + b && fy < 55 - b;
+    const divider = fx >= 60.25 && fx <= 67.75;
+    if (!inner || divider) return BLACK;
+  }
+  // 중앙 가로 막대
+  if (inBox(fx, fy, 30, 60, 98, 69)) return BLACK;
+  // 품 아랫부분: 박스 + 안쪽 선반
+  if (inBox(fx, fy, 34, 73, 94, 106)) {
+    const inner = fx > 34 + b && fx < 94 - b && fy > 73 + b && fy < 106 - b;
+    const shelf = inBox(fx, fy, 34 + b, 85, 94 - b, 92);
+    if (!inner || shelf) return BLACK;
   }
   return col;
 };
@@ -114,5 +123,5 @@ function writeSet(dir, symbol, bg) {
   console.log('icons written:', dir);
 }
 
-writeSet(path.join(__dirname, '..', 'extension-autoselect', 'icons'), check, GREEN);
-writeSet(path.join(__dirname, '..', 'extension', 'icons'), camera, YELLOW);
+writeSet(path.join(__dirname, '..', 'extension-autoselect', 'icons'), vee, YELLOW);
+writeSet(path.join(__dirname, '..', 'extension', 'icons'), pum, YELLOW);
