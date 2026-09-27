@@ -81,6 +81,57 @@ export function createNewWorkbook(filePath) {
   return filePath
 }
 
+const ADMIN_SHEET = '행정실용'
+const ADMIN_META_SHEET = '_AUTO_SELECT_META'
+const ADMIN_SCHEMA = 'AUTO_SELECT_V1'
+const ADMIN_HEADERS = ['상품 URL', '수량', '옵션', '기준 단가', '상품명', '쇼핑몰', '상품 키', '판매자', '원본 행 ID', '스키마 버전']
+
+// 물품 자동 선택(AUTO_SELECT.MD §5): 행정실용 시트를 현재 표 기준으로 재생성(교체)한다.
+// A~C(상품 URL·수량·옵션)는 가시, D~J(기준 단가·상품명·쇼핑몰·상품 키·판매자·행 ID·스키마)는
+// 숨김 기술 열 — 확장 프로그램이 읽는다. 배송비 행은 제외한다.
+export function writeAdminSheet(filePath, { rows = [], teacherName = '', appVersion = '' } = {}) {
+  const wb = XLSX.readFile(filePath)
+  for (const name of [ADMIN_SHEET, ADMIN_META_SHEET]) {
+    const idx = wb.SheetNames.indexOf(name)
+    if (idx >= 0) { wb.SheetNames.splice(idx, 1); delete wb.Sheets[name] }
+  }
+  const items = (rows || []).filter(r => r && !r.isShipping)
+  const aoa = [ADMIN_HEADERS, ...items.map((r, i) => [
+    r.productUrl || r.url || '',
+    Number(r.qty) || 0,
+    r.option || '',
+    Number(r.price != null ? r.price : r.roundedPrice) || 0,
+    r.name || '',
+    r.mallName || '',
+    r.productKey || '',
+    r.sellerName || '',
+    r.rowId || `row-${i + 1}`,
+    ADMIN_SCHEMA
+  ])]
+  const ws = XLSX.utils.aoa_to_sheet(aoa)
+  ws['!cols'] = [
+    { wch: 60 }, { wch: 8 }, { wch: 32 },
+    { wch: 12, hidden: true }, { wch: 30, hidden: true }, { wch: 14, hidden: true },
+    { wch: 14, hidden: true }, { wch: 14, hidden: true }, { wch: 14, hidden: true }, { wch: 14, hidden: true }
+  ]
+  XLSX.utils.book_append_sheet(wb, ws, ADMIN_SHEET)
+  const meta = XLSX.utils.aoa_to_sheet([
+    ['key', 'value'],
+    ['schema', ADMIN_SCHEMA],
+    ['teacherName', teacherName || ''],
+    ['createdAt', new Date().toISOString()],
+    ['appVersion', appVersion || ''],
+    ['rowCount', String(items.length)]
+  ])
+  XLSX.utils.book_append_sheet(wb, meta, ADMIN_META_SHEET)
+  wb.Workbook = wb.Workbook || {}
+  wb.Workbook.Sheets = wb.Workbook.Sheets || []
+  const metaIdx = wb.SheetNames.indexOf(ADMIN_META_SHEET)
+  if (wb.Workbook.Sheets[metaIdx]) wb.Workbook.Sheets[metaIdx].Hidden = 1
+  XLSX.writeFile(wb, filePath, { bookType: bookTypeOf(filePath) })
+  return { rowCount: items.length }
+}
+
 const HEADER_ALIASES = {
   name: ['내용', '품목명', '품명', '품목', '상품명', '물품명'],
   spec: ['규격', '사양', '옵션', '모델'],

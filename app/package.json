@@ -30,6 +30,10 @@
         "to": "extension"
       },
       {
+        "from": "extension-autoselect",
+        "to": "extension-autoselect"
+      },
+      {
         "from": "../extension_auto",
         "to": "extension_auto"
       },

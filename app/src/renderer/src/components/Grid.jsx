@@ -2,10 +2,14 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 
 const BASE_FONT = 12.5
-// 쇼핑몰 / 순번 / 품목명 / 규격 / 단위 / 수량 / 예상단가 / 총액 / 비고 / 삭제
-const DEFAULT_WIDTHS = [110, 56, 300, 110, 70, 64, 96, 104, 130, 44]
+// 쇼핑몰 / 순번 / 품목명 / 규격 / 단위 / 수량 / 예상단가 / 총액 / 비고 / 상품 URL / 옵션 / 삭제
+// 상품 URL·옵션(자동 선택용, v1.47.0)은 F8 토글로만 표시된다 — 기본 숨김
+const DEFAULT_WIDTHS = [110, 56, 300, 110, 70, 64, 96, 104, 130, 280, 180, 44]
 // Tab/Shift+Tab 셀 이동이 순회하는 편집 가능 열(왼쪽→오른쪽)
 const EDITABLE_COLS = ['name', 'spec', 'unit', 'qty', 'price', 'note']
+const HEADERS = ['쇼핑몰', '순번', '품목명', '규격', '단위', '수량', '예상단가', '총액', '비고', '상품 URL', '옵션', '']
+// 표시 열 → colWidths 상태 인덱스 매핑 (F8 토글 시 9·10 열만 삽입/제거)
+const stateIdxsFor = (showUrl) => (showUrl ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 11])
 
 // 제어형 편집 셀 — active prop으로 편집 모드가 결정된다. Tab/Shift+Tab은
 // Grid의 navigate()가 다음/이전 편집 셀을 계산해 활성화한다.
@@ -84,18 +88,34 @@ export default function Grid() {
   }
 
   const [colWidths, setColWidths] = useState(DEFAULT_WIDTHS)
+  // F8 — 상품 URL·옵션 열 토글(개발/검수 편의, 설정에 저장하지 않는다 — AUTO_SELECT.MD §4.3)
+  const [showUrlCols, setShowUrlCols] = useState(false)
   const [activeCell, setActiveCell] = useState(null) // { key, col }
   const resizeRef = useRef(null)
 
-  const startResize = (i, e) => {
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'F8') {
+        e.preventDefault()
+        setShowUrlCols(v => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  const stateIdxs = stateIdxsFor(showUrlCols)
+  const widths = stateIdxs.map(i => colWidths[i])
+
+  const startResize = (stateIdx, e) => {
     e.preventDefault()
     e.stopPropagation()
-    resizeRef.current = { i, startX: e.clientX, startW: colWidths[i] }
+    resizeRef.current = { stateIdx, startX: e.clientX, startW: colWidths[stateIdx] }
     const onMove = (ev) => {
       const r = resizeRef.current
       if (!r) return
       const w = Math.max(36, r.startW + ev.clientX - r.startX)
-      setColWidths(ws => ws.map((x, j) => (j === r.i ? w : x)))
+      setColWidths(ws => ws.map((x, j) => (j === r.stateIdx ? w : x)))
     }
     const onUp = () => {
       resizeRef.current = null
@@ -171,8 +191,8 @@ export default function Grid() {
   const fontPx = BASE_FONT * (Number(gridFontScale) || 1.5)
   const th = 'sticky top-0 z-10 border-b border-[#E2E8F0] bg-[#F8FAFC] px-2 py-2.5 text-left font-semibold text-[#475569]'
 
-  const headers = ['쇼핑몰', '순번', '품목명', '규격', '단위', '수량', '예상단가', '총액', '비고', '']
-  const totalW = colWidths.reduce((a, b) => a + b, 0)
+  const headers = HEADERS.filter((_, i) => stateIdxs.includes(i))
+  const totalW = widths.reduce((a, b) => a + b, 0)
   const cellProps = (r, col, onChange, numeric) => ({
     value: col === 'note' ? (r.note || '') : col === 'price' ? marked(r) : r[col],
     onChange,
@@ -187,7 +207,7 @@ export default function Grid() {
     <section className="flex h-full min-w-0 flex-1 flex-col bg-white">
       <div className="flex items-center justify-between border-b border-[#E2E8F0] bg-white px-3 py-2">
         <span className="text-[13px] font-bold text-[#1E293B]">
-          추출 결과 <span className="text-[11.5px] font-medium text-[#94A3B8]">(클릭하여 수정 · Tab으로 셀 이동 · 열 경계를 드래그하면 폭 조절)</span>
+          추출 결과 <span className="text-[11.5px] font-medium text-[#94A3B8]">(클릭하여 수정 · Tab으로 셀 이동 · 열 경계를 드래그하면 폭 조절 · F8: 상품 URL·옵션 열)</span>
         </span>
         <button
           className="rounded-full bg-[#EEEDFE] px-3 py-1 text-[11.5px] font-semibold text-[#5B4DFB] transition-colors duration-150 hover:bg-[#E0DCFD]"
@@ -200,18 +220,18 @@ export default function Grid() {
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="border-collapse" style={{ width: totalW, fontSize: `${fontPx}px`, tableLayout: 'fixed' }}>
           <colgroup>
-            {colWidths.map((w, i) => <col key={i} style={{ width: w }} />)}
+            {widths.map((w, i) => <col key={i} style={{ width: w }} />)}
           </colgroup>
           <thead>
             <tr>
-              {headers.map((h, i) => (
-                <th key={i} className={`${th} relative`} style={i < colWidths.length ? { width: colWidths[i] } : undefined}>
+              {headers.map((h, di) => (
+                <th key={di} className={`${th} relative`} style={{ width: widths[di] }}>
                   {h}
-                  {i < colWidths.length - 1 && (
+                  {di < headers.length - 1 && (
                     <span
                       className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none bg-transparent hover:bg-[#C9C3FC]"
                       title="드래그하여 열 폭 조절"
-                      onMouseDown={e => startResize(i, e)}
+                      onMouseDown={e => startResize(stateIdxs[di], e)}
                     />
                   )}
                 </th>
@@ -298,6 +318,18 @@ export default function Grid() {
                   <td className="overflow-hidden">
                     <EditableCell {...cellProps(r, 'note', v => updateRow(r.docId, r.key, 'note', v))} />
                   </td>
+                  {showUrlCols && (
+                    <td className="overflow-hidden" title={r.productUrl || ''}>
+                      <div className="truncate px-1.5 py-1 text-[#64748B]" title={r.productUrl || ''}>
+                        {r.productUrl || ''}
+                      </div>
+                    </td>
+                  )}
+                  {showUrlCols && (
+                    <td className="overflow-hidden">
+                      <EditableCell {...cellProps(r, 'option', v => updateRow(r.docId, r.key, 'option', v))} />
+                    </td>
+                  )}
                   <td className="text-center">
                     {dupKeyByRowKey.has(r.key) ? (
                       <button

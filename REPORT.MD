@@ -1,6 +1,6 @@
 # REPORT.MD — 자동 품의 요구 생성기 프로그램 보고서
 
-**작성일:** 2026-09-26 | **대상 버전:** v1.44.0 | **저장소:** github.com/parkdongbae-afk/AutoRequisitionGenerator
+**작성일:** 2026-09-27 | **대상 버전:** v1.47.9 | **저장소:** github.com/parkdongbae-afk/AutoRequisitionGenerator
 
 ---
 
@@ -98,6 +98,34 @@ Chrome 137+가 `--load-extension` 플래그를 차단한 뒤로 확장을 자동
 
 앱 연동: 앱 시작 시 `%APPDATA%\...\extension` 최신 확장을 extension_v2에 복제 → [🧩 익스텐션 추가] 버튼이 `run-extension-v2` IPC로 이 도구를 스폰(extraResources로 패키징 포함). UI 테마는 v1.18.3에서 앱 팔레트로 맞춰져 있음.
 
+### 3.6 extension-autoselect — 물품 자동 선택(장바구니 자동 V체크) 확장 (v1.47.0)
+
+교원이 만든 품목내역 엑셀의 **행정실용 시트**를 읽어, 운영 담당자가 연 학교 공용 계정 장바구니에서 일치 상품만 자동으로 V체크하는 Chrome MV3 확장. 폴더 `app/extension-autoselect/` (extraResources로 패키징 포함).
+
+| 파일 | 내용 |
+|---|---|
+| `manifest.json` | MV3 — storage·activeTab·scripting 권한, 지원 15몰 도메인 한정 host_permissions·content_scripts, **초록 아이콘**(icons/ 16·48·128) |
+| `popup/` | 엑셀 드롭·선택(로컬 파싱 전용), 행정실용+`AUTO_SELECT_V1` 검증, 금액 무시 한도(chrome.storage.local), 결과 요약·필터 탭·문구/전체 안내문 복사. 화면 배율 1.2배 |
+| `content/core.js` | 순수 로직 — URL 정규화(추적 파라미터 제거), 상품 키 추출(`/products/`, `/item/<번호>` 등 경로형 포함), 매칭 우선순위(상품키+옵션 > URL+옵션 > URL·양쪽 무옵션, 모호 시 미체크), 멀티 유닛 카드 클릭 계획(planCheckboxClicks — 재클릭 해제 방지·미커버 유닛 보류), 검증(수량·단가 한도·옵션), §9.2 교원 안내문 템플릿. node 테스트 가능(module.exports) |
+| `content/rules-data.js` | **자동 생성** — analysis/make-autoselect-rules.js가 캡처 규칙(app/src/main/lib/rules/*.json)의 셀렉터를 그대로 통과(단일 출처). checkedOnly/:has에서 체크박스·상태 모드(checked/aria-checked) 자동 파생, rowBase·productKey(네이버 data-shp-contents-id)·selectedState(쿠팡 data-selected)·zoomBeforeRun(네이버 25%) 전달 |
+| `content/cart-router.js` | 장바구니 DOM 읽기(체크 안 된 행 포함, 렌더링 안 된 중복 카드 스킵·키+옵션 중복 병합), 클릭 계획에 따른 안전 V체크 — 클릭 후 **행 id로 최신 노드를 다시 찾아 1.5초 폴링 검증**(React 비동기 반영 대응) + 행 표식(data-selected) 보조 확인 + 클릭 간 안정화 대기(서버 동기화 레이스 방지), 기존 체크 해제 없음 |
+| `background.js` | 팝업↔콘텐츠 메시지 중계(tabId 전달), 선택 수 배지, **네이버 실행 시 배율 25%→전체 렌더→복원**(가상화 대응, 품의캡처와 동일 방식) |
+| `vendor/xlsx.full.min.js` | SheetJS 0.18.5 번들(앱과 동일 버전, 로컬 읽기 전용) |
+
+몰별 특이 대응(v1.47.1~v1.47.9 실측): **G마켓·네이버** 멀티 유닛 카드(카드 1박스+옵션 N개)는 클릭 계획기로 1회만 클릭. **네이버**는 상품 URL 대신 data-shp-contents-id 상품 키 매칭 + 25% 축소 전체 렌더. **쿠팡**은 PC/모바일 카드 복제 DOM을 중복 병합하고 data-selected 검증 폴링. **알리익스프레스**는 장바구니 규칙 match를 /p/shoppingcart로 한정(주문서 선매칭 방지), /item/<번호> 경로 상품 키 매칭, 표시 가격이 단가(lineTotal 폐지), 클릭 간 안정화 대기. **알리 주문서** 규칙은 표시 가격이 단가(lineTotal 폐지), 배송비 perFee(3000/4573 각 1행), '상품 더 보기' 캐러셀처럼 이름이 없는 행은 nameFallback("이름 미표시 상품")으로 생성해 사용자가 표에서 수정.
+
+매칭·검증 원칙: 수량·옵션·단가(현재 단가 − 기준 단가 > 금액 무시 한도)가 모두 문제없는 행만 체크. 누락(MISSING)·수량(QTY_MISMATCH)·가격(PRICE_HIGHER)·옵션(OPTION_MISMATCH)·모호(AMBIGUOUS_MATCH)·체크 실패(CHECK_FAILED)는 체크하지 않고 교원 안내문 생성(교원 이름은 엑셀 메타, 없으면 "선생님"). 결제·주문·수량 변경은 자동화하지 않음.
+
+앱 연동: ① [엑셀에 저장] 시 excel.js `writeAdminSheet`가 행정실용 시트(A~C 가시 + D~J 숨김)와 `_AUTO_SELECT_META` 시트를 생성·갱신 ② 설정 ⚙ [🧩 물품 자동 선택 익스텐션 추가]가 `run-autoselect-install` IPC로 extension_auto 설치 도구(§3.5)를 `%APPDATA%\...\autoselect-tool`에 복제 실행 — config.json `extension_path`를 `%APPDATA%\...\extension-autoselect`(확장 복제본)로 미리 지정 ③ 교원 이름 최초 저장 모달·{이름}-품목내역(통합).xls 기본 파일명·결과 표 F8(URL·옵션 열) 토글은 데스크톱 앱 측 지원.
+
+테스트: `node analysis\test-autoselect-excel.js`(시트 생성·판독 23건), `node analysis\test-autoselect-core.js`(매칭·검증·클릭 계획·안내문 91건), 재생성: `node analysis\make-autoselect-rules.js`. 아이콘 재생성: `node analysis\make-extension-icons.js`(품의캡처 노랑 · 자동 선택 초록).
+
+### 3.7 관리자 도구 UI 개선 (v1.47.5~v1.47.8)
+
+- **Gemini API**: API 키·모델 [💾 저장] 버튼(즉시 settings.json 저장), **[🔗 연결] 버튼**(models 엔드포인트로 키·모델 유효성 검사 — 성공/실패 인라인 표시, 429는 키 유효 처리), 모델을 드롭다운 대신 **라디오 리스트박스**로 전환(Gemini 3.5 Pro/Flash/Flash Lite 추가 — 총 12종)
+- **[🧩 미등록 규칙 builtin에 등록] 버튼**: AI 생성 규칙은 파일+rules.json만 저장되고 rules.js builtin 배열에는 자동 등록되지 않으므로, 버튼 1회로 미등록 .json 전체를 import(meta 앞)+배열 항목(끝)으로 등록 — -cart 규칙이 베이스보다 먼저 오도록 긴 id 순 정렬, 변수 충돌 검사, 등록 후 드롭다운·버전 즉시 갱신(admin-register-builtin IPC)
+- "규칙 배포 시 주의" 안내문은 창 **맨 아래**에 배치
+
 ## 4. 실행환경 및 실행방법
 
 ### 4.1 사용자(배포본)
@@ -111,7 +139,14 @@ Chrome 137+가 `--load-extension` 플래그를 차단한 뒤로 확장을 자동
 | 내부 포트 | 127.0.0.1:57330~57335 (수신 서버 폴백) — 단일 인스턴스 잠금 |
 | 관리자 도구 | [⚙ 설정] 화면에서 F9 (배포 exe는 저장소 루트 폴더에서 실행 권장) |
 
-### 4.2 주요 화면 동작 (v1.27~v1.30)
+### 4.2 주요 화면 동작 (v1.27~v1.47)
+
+- **물품 자동 선택(장바구니 V체크)**: §3.6 — 상태바 [엑셀에 저장]으로 만든 엑셀을 확장 팝업에 드롭해 지원 쇼핑몰 장바구니의 일치 상품만 자동 V체크
+- **F8 숨김 열**: 추출 표의 상품 URL·옵션 열(자동 선택용)은 기본 숨김 — 앱 창에서 F8로 표시/숨김 전환(설정 미저장 임시 보기)
+- **설정 ⚙ 화면 순서**: 쇼핑몰 규칙 버전 배너 → 쇼핑몰 규칙 업데이트(GitHub) → 교원 이름 → 물품 자동 선택 → 이하 기존 항목 순
+- **교원 이름**: 최초 [엑셀에 저장] 시 이름 입력 모달, 기본 파일명 `{이름}-품목내역(통합).xls` 제안, 행정실용 시트에 안내문 반영
+- **관리자 도구**: §3.7 — Gemini 저장·연결 확인·모델 12종 리스트박스·미등록 규칙 builtin 등록 버튼
+- **확장 아이콘**: 품의캡처 노랑, 물품 자동 선택 초록(브라우저 툴바에서 구분)
 
 - **글자 배율**: 헤더·뷰어 탭·상태바·설정/관리자 모달은 1.5배(CSS zoom), 총액 칩은 2배. 추출 결과 표는 별도 설정(글자 크기 슬라이더)으로 관리
 - **▣ 반반 버튼**(헤더, 설정에서 표시/숨김 — 기본 표시): 클릭 시 좌측 미리보기와 상태바 좌측 정보를 숨기고, **Win+Right 키 시뮬레이션으로 정확히 화면 오른쪽 1/2에 강제 스냅** — 스냅 애시스트가 떠서 왼쪽 절반에 놓을 다른 프로그램을 선택할 수 있다. 최대화 상태는 먼저 해제 후 시도하며, 키 입력 실패 시 setBounds로 오른쪽 절반에 배치하고 workArea를 벗어나지 않게 클램프한다. 다시 누르면 미리보기 복원

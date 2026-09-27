@@ -28,6 +28,8 @@ import officedepot from './rules/officedepot.json'
 import officedepotOrder from './rules/officedepot-order.json'
 import daisomall from './rules/daisomall.json'
 import daisomallOrder from './rules/daisomall-order.json'
+import aliexpressCart from './rules/aliexpress-cart.json'
+import aliexpress from './rules/aliexpress.json'
 import emartmallCart from './rules/emartmall-cart.json'
 import emartmall from './rules/emartmall.json'
 import { app } from 'electron'
@@ -51,6 +53,7 @@ const builtin = [
   alphamallCart, alphamall, st11Cart, st11,
   yes24Cart, yes24, teachermallCart, teachermall,
   auctionCart, auction, coupang,
+  aliexpressCart, aliexpress,
   emartmallCart, emartmall,
   eleparts, ic114, lottemart, officedepotOrder, officedepot,
   daisomallOrder, daisomall

@@ -4,6 +4,9 @@ import { useStore } from '../store'
 const DEFAULT_MODEL = 'gemini-3.1-flash-lite'
 
 const GEMINI_MODELS = [
+  { id: 'gemini-3.5-pro', label: 'Gemini 3.5 Pro (최고 정밀, 느림)' },
+  { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
+  { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite (최저가)' },
   { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite (기본)' },
   { id: 'gemini-3.1-flash', label: 'Gemini 3.1 Flash' },
   { id: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro (정밀, 느림)' },
@@ -111,6 +114,49 @@ export default function AdminModal() {
     }
   }
 
+  const saveGemini = () => {
+    if (!apiKey.trim()) {
+      toast('API 키를 입력한 뒤 저장해 주세요', 'warn')
+      return
+    }
+    window.api.setSetting('adminGeminiApiKey', apiKey.trim())
+    window.api.setSetting('adminGeminiModel', model)
+    toast('Gemini API 키와 모델을 settings.json에 저장했습니다', 'ok')
+  }
+
+  const [geminiTest, setGeminiTest] = useState(null)
+  const [testing, setTesting] = useState(false)
+  const testGemini = async () => {
+    if (!apiKey.trim()) {
+      toast('API 키를 입력한 뒤 연결을 확인해 주세요', 'warn')
+      return
+    }
+    setTesting(true)
+    setGeminiTest(null)
+    const res = await window.api.adminTestGemini({ apiKey: apiKey.trim(), model })
+    setTesting(false)
+    setGeminiTest(res || { ok: false, message: '응답이 없습니다' })
+    if (res && res.ok) appendLog(`🔗 Gemini 연결 성공 — ${model}`, 'step')
+    else appendLog(`❌ Gemini 연결 실패 — ${(res && res.message) || '알 수 없는 오류'}`, 'err')
+  }
+
+  const registerBuiltin = async () => {
+    const res = await window.api.adminRegisterBuiltin()
+    if (res && res.ok) {
+      if (res.added && res.added.length) {
+        appendLog(`✅ builtin 등록: ${res.added.join(', ')} — rules.js 갱신됨`, 'step')
+        toast(`builtin 등록 완료: ${res.added.join(', ')} — 드롭다운과 캡처 매칭이 활성화됩니다`, 'ok', 7000)
+      } else {
+        appendLog(res.message || '미등록 규칙이 없습니다', 'info')
+        toast(res.message || '미등록 규칙이 없습니다', 'info')
+      }
+      await refreshRules()
+      await loadRulesVersion()
+    } else {
+      toast(`builtin 등록 실패: ${(res && res.error) || '알 수 없는 오류'}`, 'err', 8000)
+    }
+  }
+
   const setMallNameWrap = (v) => {
     setMallName(v)
     if (!idTouched) setBaseId(deriveId(v))
@@ -213,24 +259,59 @@ export default function AdminModal() {
           <div className={section}>
             <div className="mb-2 text-[13.5px] font-bold text-[#1E293B]">🔑 Gemini API</div>
             <div className="space-y-2">
-              <input
-                type="password"
-                className={input}
-                placeholder="Gemini API Key (aiza... — 실행 시 로컬 settings.json에 저장됩니다)"
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-              />
-              <div className="flex items-center gap-2">
-                <select className={input + ' flex-1'} value={model} onChange={e => setModel(e.target.value)}>
-                  {GEMINI_MODELS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-                </select>
+              <div className="flex items-start gap-2">
+                <input
+                  type="password"
+                  className={input + ' flex-1'}
+                  placeholder="Gemini API Key (aiza...)"
+                  value={apiKey}
+                  onChange={e => setApiKey(e.target.value)}
+                />
                 <button
-                  className="shrink-0 rounded-md border border-[#E2E8F0] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#334155] hover:bg-[#F1F5F9]"
-                  onClick={loadSavedGemini}
-                  title="settings.json에 저장된 API 키와 모델을 다시 불러옵니다"
+                  className="shrink-0 rounded-md border border-[#5B4DFB] bg-white px-3 py-1.5 text-[12px] font-bold text-[#5B4DFB] hover:bg-[#EEEDFE] disabled:opacity-50"
+                  onClick={testGemini}
+                  disabled={testing}
+                  title="입력한 API 키와 선택한 모델로 구글 서버에 연결을 시도합니다"
                 >
-                  💾 불러오기
+                  {testing ? '확인 중...' : '🔗 연결'}
                 </button>
+              </div>
+              {geminiTest && (
+                <p className={`text-[11.5px] font-semibold ${geminiTest.ok ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {geminiTest.ok ? `✅ 연결 성공 — ${model} 사용 가능` : `❌ 연결 실패 — ${geminiTest.message || '알 수 없는 오류'}`}
+                </p>
+              )}
+              <div className="flex items-start gap-2">
+                <div className="max-h-[240px] flex-1 space-y-0.5 overflow-auto rounded-md border border-[#F1F5F9] p-1">
+                  {GEMINI_MODELS.map(m => (
+                    <label key={m.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-[#F1F5F9]">
+                      <input
+                        type="radio"
+                        name="gemini-model"
+                        className="h-3.5 w-3.5 shrink-0 accent-[#5B4DFB]"
+                        checked={model === m.id}
+                        onChange={() => setModel(m.id)}
+                      />
+                      <span className={`text-[12px] ${model === m.id ? 'font-bold text-[#5B4DFB]' : 'text-[#334155]'}`}>{m.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex shrink-0 flex-col gap-1.5">
+                  <button
+                    className="rounded-md bg-[#5B4DFB] px-3 py-1.5 text-[12px] font-bold text-white hover:bg-[#4C3DE6]"
+                    onClick={saveGemini}
+                    title="입력한 API 키와 선택한 모델을 settings.json에 즉시 저장합니다"
+                  >
+                    💾 저장
+                  </button>
+                  <button
+                    className="rounded-md border border-[#E2E8F0] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#334155] hover:bg-[#F1F5F9]"
+                    onClick={loadSavedGemini}
+                    title="settings.json에 저장된 API 키와 모델을 다시 불러옵니다"
+                  >
+                    💾 불러오기
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -371,6 +452,21 @@ export default function AdminModal() {
             </span>
             <input type="checkbox" className="h-5 w-5 shrink-0 accent-blue-600" checked={doGit} onChange={e => setDoGit(e.target.checked)} />
           </label>
+
+          <div className="rounded-lg border border-[#DDD9FC] bg-[#EEEDFE] px-4 py-3 text-[12px] leading-relaxed text-[#4C3DE6]">
+            <b>📌 규칙 배포 시 주의:</b> AI가 생성한 규칙은 파일(app\src\main\lib\rules\{'{id}'}.json)과 rules.json으로만 저장되며,
+            앱이 실제로 불러오는 <b>내장 규칙 목록(rules.js의 builtin 배열)에는 자동 등록되지 않습니다</b>.
+            생성 후 반드시 rules.js에 1) <code>{"import id from './rules/{id}.json'"}</code> 형태의 import와
+            2) builtin 배열 항목을 추가하세요(장바구니 규칙은 같은 도메인 주문서 규칙보다 <b>앞에</b>).
+            미등록 규칙은 미리보기 규칙 드롭다운에 나타나지 않고, 캡처도 "주문서 상태에서 품의캡쳐 해주세요."로 거부됩니다.
+            <button
+              className="ml-2 rounded-md bg-[#5B4DFB] px-3 py-1 text-[11.5px] font-bold text-white hover:bg-[#4C3DE6]"
+              onClick={registerBuiltin}
+              title="규칙 폴더의 모든 .json 규칙을 rules.js builtin 배열에 자동 등록합니다 (이미 등록된 것은 건너뜁니다)"
+            >
+              🧩 미등록 규칙 builtin에 등록
+            </button>
+          </div>
 
           <div className="flex gap-2">
             <button

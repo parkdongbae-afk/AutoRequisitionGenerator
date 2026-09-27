@@ -4,6 +4,7 @@
   "match": ["coupang.com"],
   "rowSelector": "div[id^=item_][data-selected=true]",
   "checkedOnly": { "sel": "input[type=checkbox]" },
+  "selectedState": { "attr": "data-selected", "value": "true" },
   "priceIs": "lineTotal",
   "fields": {
     "name": { "sel": "div#name span.twc-break-all" },

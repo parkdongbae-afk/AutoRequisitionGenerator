@@ -20,6 +20,7 @@ const RULE_REJECT_MESSAGES = {
   'auction-cart': '옥션 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
   'alphamall-cart': '알파몰 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
   'yes24-cart': '예스24 카트에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
+  'aliexpress-cart': '알리익스프레스 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
   officedepot: '오피스디포 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.'
 }
 
@@ -72,6 +73,23 @@ export const useStore = create((set, get) => ({
   rulesUpdateUrl: 'https://raw.githubusercontent.com/parkdongbae-afk/AutoRequisitionGenerator/main/rules.json',
   ruleUpdateStatus: null,
   rulesVersion: null,
+  teacherName: '',
+  teacherNameModal: false,
+  autoSelectTolerance: 0,
+  autoSelectInstallStatus: null,
+
+  setTeacherName(name) {
+    const v = String(name || '').trim().replace(/[\\/:*?"<>|]/g, '')
+    if (!v) return
+    set({ teacherName: v })
+    window.api.setSetting('teacherName', v)
+  },
+
+  setAutoSelectTolerance(v) {
+    const n = Math.max(0, Math.min(100000, parseInt(v, 10) || 0))
+    set({ autoSelectTolerance: n })
+    window.api.setSetting('autoSelectPriceToleranceWon', n)
+  },
 
   async loadRulesVersion() {
     try { set({ rulesVersion: await window.api.rulesVersion() }) } catch { set({ rulesVersion: null }) }
@@ -94,6 +112,7 @@ export const useStore = create((set, get) => ({
   setRulesModal(v) { set({ rulesModal: v }) },
   setSettingsModal(v) { set({ settingsModal: v }) },
   setAdminModal(v) { set({ adminModal: v }) },
+  setTeacherNameModal(v) { set({ teacherNameModal: !!v }) },
   setShowRequisition(v) {
     set({ showRequisition: !!v })
     window.api.setSetting('showRequisition', !!v)
@@ -280,26 +299,65 @@ export const useStore = create((set, get) => ({
   },
 
   async saveExcelAs() {
-    const { docs, priceMarkup } = get()
+    // 최초 저장 시 교원 이름 입력 모달(AUTO_SELECT.MD §4.1) — 이름이 있으면 바로 저장
+    if (!get().teacherName) {
+      set({ teacherNameModal: true })
+      return null
+    }
+    return get().doSaveExcelAs()
+  },
+
+  async saveTeacherNameAndSaveExcel(name) {
+    get().setTeacherName(name)
+    if (!get().teacherName) {
+      get().toast('성함을 입력해 주세요', 'warn')
+      return null
+    }
+    set({ teacherNameModal: false })
+    return get().doSaveExcelAs()
+  },
+
+  async doSaveExcelAs() {
+    const { docs, priceMarkup, teacherName } = get()
     const pct = Number(priceMarkup) || 0
     const rows = docs.flatMap(d => d.rows.map(r => {
       const price = (!r.isShipping && pct > 0)
         ? Math.round((r.roundedPrice || 0) * (1 + pct / 100))
         : r.roundedPrice
-      return { name: r.name, spec: r.spec, unit: r.unit, qty: r.qty, price, isShipping: !!r.isShipping }
+      return {
+        name: r.name, spec: r.spec, unit: r.unit, qty: r.qty, price, isShipping: !!r.isShipping,
+        productUrl: r.productUrl || '', option: r.option || '', productKey: r.productKey || null,
+        mallName: d.mallName, rowId: r.key
+      }
     }))
     if (!rows.length) {
       get().toast('저장할 품목이 없습니다', 'warn')
       return null
     }
-    const res = await window.api.saveExcelAs(rows)
+    const res = await window.api.saveExcelAs(rows, { teacherName })
     if (!res || res.canceled) return null
     if (res.error) {
       get().toast(`엑셀 저장 실패: ${res.error}`, 'err')
       return null
     }
     set({ excelPath: res.path, excelCount: res.totalRows })
-    get().toast(`${res.appended}행 저장 완료 (파일을 현재 표 내용으로 교체${pct > 0 ? ` · 예상단가 ${pct}% 인상, 배송비 제외` : ''}) → ${res.path}`, 'ok')
+    if (res.admin && res.admin.error) {
+      get().toast(`행정실용 시트 생성 실패: ${res.admin.error} (품목내역은 저장됨)`, 'warn')
+    }
+    get().toast(`${res.appended}행 저장 완료 (파일을 현재 표 내용으로 교체${pct > 0 ? ` · 예상단가 ${pct}% 인상, 배송비 제외` : ''}${res.admin && res.admin.rowCount ? ` · 행정실용 시트 ${res.admin.rowCount}건` : ''}) → ${res.path}`, 'ok')
+    return res
+  },
+
+  async runAutoselectInstall() {
+    set({ autoSelectInstallStatus: { running: true } })
+    const res = await window.api.runAutoselectInstall()
+    if (!res || res.error) {
+      set({ autoSelectInstallStatus: { ok: false, message: (res && res.error) || '실행 실패' } })
+      get().toast(`물품 자동 선택 설치 도구 실행 실패: ${(res && res.error) || '알 수 없는 오류'}`, 'err')
+      return res
+    }
+    set({ autoSelectInstallStatus: { ok: true, extDir: res.extDir } })
+    get().toast('설치 도구를 실행했습니다 — 브라우저를 종료한 뒤 도구 창에서 설치를 진행하세요', 'ok', 7000)
     return res
   },
 
@@ -844,6 +902,12 @@ export const useStore = create((set, get) => ({
     }
     if (settings && settings.ruleUpdateLastCheck && typeof settings.ruleUpdateLastCheck === 'object') {
       set({ ruleUpdateStatus: settings.ruleUpdateLastCheck })
+    }
+    if (settings && typeof settings.teacherName === 'string') {
+      set({ teacherName: settings.teacherName })
+    }
+    if (settings && settings.autoSelectPriceToleranceWon !== undefined) {
+      set({ autoSelectTolerance: Math.max(0, parseInt(settings.autoSelectPriceToleranceWon, 10) || 0) })
     }
     window.api.onMhtmlReceived(doc => {
       const m = get().mapping

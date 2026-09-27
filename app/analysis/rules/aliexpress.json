@@ -5,7 +5,7 @@
     "aliexpress.com"
   ],
   "rowSelector": ".pl-product, .group-product--s-product--2GsgTja",
-  "priceIs": "lineTotal",
+  "nameFallback": "이름 미표시 상품",
   "fields": {
     "name": {
       "sel": "[data-pl='pl-product-title'], .group-product--s-product-img--j4ADxvF + span + div + div + div"
@@ -24,8 +24,9 @@
   },
   "shipping": {
     "mode": "selector",
-    "sel": "[data-pl='pl-shipping-fee'], .group-ship-options--cost-label--2nUGmAX",
+    "perFee": true,
+    "sel": "[data-pl='pl-shipping-fee']",
     "regex": "([\\d,]+)"
   },
-  "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25)"
+  "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25). 2026-09-27 수정: priceIs lineTotal 제거(주문서 표시 가격이 단가 — 정답 1900/2400 확인), 배송비를 perFee로 전환(판매자별 3000/4573 각각 1행 — 총 배송비 7573 합산 폐지), group-product 행(상품 더 보기 캐러셀)은 DOM에 이름이 없어 nameFallback으로 행 생성 — 이름은 사용자가 표에서 직접 수정"
 }

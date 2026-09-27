@@ -3,6 +3,7 @@
   "name": "네이버 장바구니",
   "match": ["shopping.naver.com/cart"],
   "rowSelector": "div[class^=product--]:has(button[role=checkbox][aria-checked=true])",
+  "productKey": { "sel": "[data-shp-contents-type=chnl_prod_no]", "attr": "data-shp-contents-id" },
   "units": { "sel": "div[class^=product_item--]" },
   "priceIs": "lineTotal",
   "fields": {

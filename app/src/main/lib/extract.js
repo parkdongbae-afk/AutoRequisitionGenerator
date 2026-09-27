@@ -7,6 +7,30 @@ function cleanInt(str) {
   return parseInt(digits, 10);
 }
 
+// 상품 키(상품번호/상품 ID) — URL 쿼리의 상품번호성 파라미터 또는 경로 패턴에서 추출.
+// 자동 선택(장바구니 V체크)의 최우선 매칭 값(AUTO_SELECT.MD §8.4)으로 쓴다.
+const KEY_PARAM_RE = /^(?:goods(?:_?no|no|code|seq|_?id)?|product(?:_?no|no|code|seq|_?id)?|prd(?:_?no|no|code|seq|_?id)?|item(?:no|_no|seq|_seq|code|_code|_?id)?|itmid|gcode)$/i;
+// URL 자체가 상품 상세임을 나타내는 힌트(쿼리 파라미터 또는 경로형 상품번호)
+const productParamRe = /(?:goods|product|prd|item|prod)[_-]?(?:no|code|seq|id)|goodscode|goods_code|\/products?\/\d/i;function extractProductKey(u) {
+  if (!u) return null;
+  const qm = u.indexOf('?');
+  if (qm >= 0) {
+    const q = u.slice(qm + 1).split('#')[0];
+    for (const kv of q.split('&')) {
+      const eq = kv.indexOf('=');
+      if (eq <= 0) continue;
+      const k = kv.slice(0, eq);
+      let v = kv.slice(eq + 1);
+      if (!KEY_PARAM_RE.test(k) || !v) continue;
+      try { v = decodeURIComponent(v); } catch {}
+      if (/^[\w-]+$/.test(v)) return v;
+    }
+  }
+  // 경로형 상품번호(쿠팡 /products/1234567, 알리익스프레스 /item/100500123.html 등)
+  const pm = /\/(?:products?|item)\/(\d{4,})/.exec(u);
+  return pm ? pm[1] : null;
+}
+
 function extractField(scope, spec) {
   if (!spec) return null;
   let el = scope;
@@ -76,12 +100,33 @@ function extractItems(html, rule) {
   // 캡처 채널(익스텐션·북마크릿)은 캡처 직전 체크박스의 checked 프로퍼티를
   // data-arge-checked 속성으로 박제해 보낸다 — 스탬프가 있으면 그 값을 우선 신뢰
   const stampedMode = !!checkedSpec && $('[data-arge-checked]').length > 0;
+  // 상품 URL — 자동 선택(장바구니 V체크)용(AUTO_SELECT.MD §4.2). rule.fields.url 스펙이
+  // 있으면 우선, 없으면 행 안의 첫 유효 링크(상품번호성 파라미터가 걸리는 링크 최우선).
+  // 내비게이션·제거 링크(cart/order/login/delete 등)는 후보에서 제외한다.
+  const linkJunkRe = /^(javascript:|#|mailto:|tel:|about:)/i;
+  const linkNavRe = /(?:^|[/=._?&-])(?:cart|basket|order|pay|login|logout|member|mypage|wish|search|category|coupon|event|notice|help|customer|join|register|delete|remove)(?:[/=._?&-]|$)/i;
+  const pickProductUrl = (scope) => {
+    if (rule.fields && rule.fields.url) {
+      const v = extractField(scope, rule.fields.url);
+      if (v) return v;
+    }
+    let fallback = '';
+    for (const el of scope.find('a[href]').toArray()) {
+      const href = $(el).attr('href') || '';
+      if (!href || linkJunkRe.test(href)) continue;
+      if (productParamRe.test(href)) return href;
+      if (!fallback && !linkNavRe.test(href)) fallback = href;
+    }
+    return fallback;
+  };
   const pending = [];
   let hasDefinitive = false;
 
   $(rule.rowSelector).each((_, el) => {
     const row = $(el);
-    const name = extractField(row, rule.fields.name);
+    // nameFallback: DOM에 상품명이 없는 행(알리 주문서의 '상품 더 보기' 캐러셀 등)도
+    // 가격·수량이 맞으면 행을 만든다 — 이름은 사용자가 추출 표에서 직접 수정한다
+    const name = extractField(row, rule.fields.name) || rule.nameFallback || '';
     const rowPriceStr = extractField(row, rule.fields.price);
     let rowQtyStr = extractField(row, rule.fields.qty);
     if (rowQtyStr != null && !/[0-9]/.test(rowQtyStr)) rowQtyStr = null;
@@ -89,6 +134,10 @@ function extractItems(html, rule) {
     const rowQty = rowQtyStr != null ? cleanInt(rowQtyStr) : null;
     const rowOption = extractField(row, rule.fields.option) || '';
     const rowImage = pickImage(row);
+    const rowUrl = pickProductUrl(row);
+    // 상품 키 — rule.productKey 스펙(예: 네이버 data-shp-contents-id) 우선, URL에서 추출 보조.
+    // 네이버 장바구니는 가상화·노드 재활용 SPA라 행 안에 앵커 링크가 없어 URL 저장이 불가능하다.
+    const rowKey = (rule.productKey ? extractField(row, rule.productKey) : null) || extractProductKey(rowUrl);
 
     if (rowMode && name && name.includes(rowMatch)) {
       const fee = rowPrice;
@@ -112,10 +161,12 @@ function extractItems(html, rule) {
             price: pStr != null ? cleanInt(pStr) : rowPrice,
             qty: qStr != null ? cleanInt(qStr) : rowQty,
             option: extractField(scope, rule.fields.option) || rowOption,
-            image: rowImage
+            image: rowImage,
+            url: rowUrl,
+            productKey: rowKey
           };
         })
-      : [{ price: rowPrice, qty: rowQty, option: rowOption, image: rowImage }];
+      : [{ price: rowPrice, qty: rowQty, option: rowOption, image: rowImage, url: rowUrl, productKey: rowKey }];
 
     // 장바구니 V체크 필터: 행의 체크박스 상태(null=상태 알 수 없음) — 유닛들은 행 상태를 따른다
     let state = null;
@@ -154,7 +205,7 @@ function extractItems(html, rule) {
         const qtyBox = row.find(rule.qtyInputSel).first();
         if (qtyBox.length) qtyBox.attr('value', String(effQty));
       }
-      pending.push({ name, qty: effQty, unitPrice, option: unit.option, image: unit.image || rowImage, state, row });
+      pending.push({ name, qty: effQty, unitPrice, option: unit.option, image: unit.image || rowImage, url: unit.url, productKey: unit.productKey, state, row });
     }
   });
 
@@ -168,7 +219,7 @@ function extractItems(html, rule) {
     // 전체가 규격인 몰(G마켓 장바구니). 유닛마다 옵션이 다른데 패턴 추출이 빈칸/일부만
     // 나오면 같은 카드의 유닛들이 중복 품목처럼 보인다(2026-09-25 사용자 보고).
     const rowPos = (docOrder && p.row && p.row[0]) ? docOrder.get(p.row[0]) : null;
-    items.push({ name: p.name, qty: p.qty, unitPrice: p.unitPrice, option: p.option, image: p.image || '', ...(rule.specFromOption ? { spec: p.option || '' } : {}), ...(rowPos != null ? { _rowPos: rowPos } : {}) });
+    items.push({ name: p.name, qty: p.qty, unitPrice: p.unitPrice, option: p.option, image: p.image || '', url: p.url || '', productKey: p.productKey || extractProductKey(p.url), ...(rule.specFromOption ? { spec: p.option || '' } : {}), ...(rowPos != null ? { _rowPos: rowPos } : {}) });
     // 상품별 배송비(11번가 등): 행 안의 배송비를 '<상품명> 배송비' 행으로 추가
     if (perItemMode && rule.shipping.sel) {
       const feeStr = extractField(p.row, { sel: rule.shipping.sel, regex: rule.shipping.regex });
@@ -352,7 +403,9 @@ function extractItemsByColumn(html, rule) {
       const effQty = qty || 1
       let unitPrice = price
       if (rule.priceIs === 'lineTotal' && effQty > 1) unitPrice = Math.round(price / effQty)
-      items.push({ name, qty: effQty, unitPrice, option: '' })
+      const nameA = nameTd ? nameTd.find('a[href]').first() : null
+      const url = nameA && nameA.length ? (nameA.attr('href') || '') : ''
+      items.push({ name, qty: effQty, unitPrice, option: '', url, productKey: extractProductKey(url) })
     }
     if (shippingFee == null && rule.shippingRow != null) {
       const shipTr = rows.eq(rule.shippingRow)
@@ -370,4 +423,4 @@ function extractItemsByColumn(html, rule) {
   return { items, shippingFee }
 }
 
-export { extractItems, roundUpToTen, cleanInt };
+export { extractItems, roundUpToTen, cleanInt, extractProductKey };

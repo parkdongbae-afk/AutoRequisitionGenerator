@@ -11,6 +11,7 @@ import RulesModal from './components/RulesModal'
 import SettingsModal from './components/SettingsModal'
 import AdminModal from './components/AdminModal'
 import RequisitionPage from './components/RequisitionModal'
+import TeacherNameModal from './components/TeacherNameModal'
 import BookmarkProgress from './components/BookmarkProgress'
 import Toasts from './components/Toasts'
 
@@ -29,6 +30,7 @@ const bookmarkModal = useStore(s => s.bookmarkModal)
   const rulesModal = useStore(s => s.rulesModal)
   const settingsModal = useStore(s => s.settingsModal)
   const adminModal = useStore(s => s.adminModal)
+  const teacherNameModal = useStore(s => s.teacherNameModal)
   const halfMode = useStore(s => s.halfMode)
   const splitRatio = useStore(s => s.splitRatio)
   const setSplitRatio = useStore(s => s.setSplitRatio)
@@ -108,6 +110,7 @@ const bookmarkModal = useStore(s => s.bookmarkModal)
       {rulesModal && <RulesModal />}
       {settingsModal && <SettingsModal />}
       {adminModal && <AdminModal />}
+      {teacherNameModal && <TeacherNameModal />}
       <BookmarkProgress />
       <Toasts />
     </div>

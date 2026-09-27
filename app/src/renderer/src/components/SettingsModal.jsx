@@ -45,6 +45,15 @@ export default function SettingsModal() {
   const setShowHalfButton = useStore(s => s.setShowHalfButton)
   const showRequisition = useStore(s => s.showRequisition)
   const setShowRequisition = useStore(s => s.setShowRequisition)
+  const teacherName = useStore(s => s.teacherName)
+  const setTeacherName = useStore(s => s.setTeacherName)
+  const autoSelectTolerance = useStore(s => s.autoSelectTolerance)
+  const setAutoSelectTolerance = useStore(s => s.setAutoSelectTolerance)
+  const autoSelectInstallStatus = useStore(s => s.autoSelectInstallStatus)
+  const runAutoselectInstall = useStore(s => s.runAutoselectInstall)
+
+  const [teacherDraft, setTeacherDraft] = React.useState(null)
+  const TOLERANCE_OPTIONS = [0, 100, 200, 300, 500, 1000, 1500, 2000]
 
   useEffect(() => {
     loadRulesVersion()
@@ -98,6 +107,111 @@ export default function SettingsModal() {
             {ruleUpdateStatus && ruleUpdateStatus.remoteVersion && (
               <div className="mt-1 text-[11px] text-[#64748B]">서버 최신 버전: v{ruleUpdateStatus.remoteVersion}</div>
             )}
+          </div>
+
+          <div className="rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <div className="text-[13.5px] text-[#1E293B]">🛒 쇼핑몰 규칙 업데이트 (GitHub)</div>
+            <input
+              type="text"
+              value={rulesUpdateUrl || ''}
+              onChange={e => setRulesUpdateUrl(e.target.value)}
+              placeholder="https://raw.githubusercontent.com/사용자/저장소/main/rules.json"
+              className="mt-2 w-full rounded-md border border-[#E2E8F0] bg-white px-2 py-1.5 text-[12px] text-[#1E293B]"
+            />
+            <p className="mt-1 text-[11.5px] text-[#64748B]">
+              깃허브에 올린 규칙 JSON(규칙 객체 배열)을 내려받아 <b>같은 id의 내장 규칙을 최신 내용으로 덮어씁니다</b> — 네이버·쿠팡 장바구니 등 모든 규칙 가능. 규칙이 없는 쇼핑몰이 개편되면 개발자에게 새 규칙을 요청하세요.
+            </p>
+            <button
+              className="mt-2 rounded-md bg-[#5B4DFB] px-4 py-2 text-[13px] font-bold text-white hover:bg-[#4C3DE6]"
+              onClick={() => checkRuleUpdates(false)}
+            >
+              ⬇ 업데이트 확인
+            </button>
+            {ruleUpdateStatus && ruleUpdateStatus.at && (
+              <div
+                className={`mt-2 rounded-lg px-3 py-2 text-[12px] ${
+                  !ruleUpdateStatus.ok
+                    ? 'border border-red-200 bg-red-50 text-red-700'
+                    : ruleUpdateStatus.upToDate
+                      ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                      : 'border border-[#DDD9FC] bg-[#EEEDFE] text-[#4C3DE6]'
+                }`}
+              >
+                {!ruleUpdateStatus.ok ? (
+                  <>⚠ 확인 실패 — {ruleUpdateStatus.message}</>
+                ) : ruleUpdateStatus.upToDate ? (
+                  <>✅ 모든 쇼핑몰 규칙이 최신입니다 <span className="text-[11px] opacity-70">(확인: {ruleUpdateStatus.at})</span></>
+                ) : (
+                  <>
+                    ⬆ 갱신 가능: {(ruleUpdateStatus.updated || []).concat(ruleUpdateStatus.created || []).join(', ')}
+                    <span className="ml-1 text-[11px] opacity-70">(확인: {ruleUpdateStatus.at} — [업데이트 확인]을 눌러 적용)</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <div className="text-[13.5px] text-[#1E293B]">👩‍🏫 교원 이름</div>
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="text"
+                value={teacherDraft !== null ? teacherDraft : (teacherName || '')}
+                onChange={e => setTeacherDraft(e.target.value)}
+                placeholder="예: 홍길동"
+                maxLength={30}
+                className="w-48 rounded-md border border-[#E2E8F0] bg-white px-2 py-1.5 text-[12.5px] text-[#1E293B]"
+              />
+              <button
+                className="rounded-md bg-[#5B4DFB] px-4 py-2 text-[13px] font-bold text-white hover:bg-[#4C3DE6]"
+                onClick={() => {
+                  const v = String(teacherDraft !== null ? teacherDraft : teacherName || '').trim().replace(/[\\/:*?"<>|]/g, '')
+                  if (!v) return
+                  setTeacherName(v)
+                  setTeacherDraft(null)
+                }}
+              >
+                저장
+              </button>
+            </div>
+            <p className="mt-1 text-[11.5px] text-[#64748B]">엑셀 기본 파일명(예: 홍길동-품목내역(통합).xls)과 행정실 안내문에 사용됩니다.</p>
+          </div>
+
+          <div className="rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <div className="text-[13.5px] text-[#1E293B]">🛒 물품 자동 선택 (장바구니 V체크)</div>
+            <p className="mt-1 text-[11.5px] text-[#64748B]">
+              운영 담당자가 교원 엑셀(행정실용 시트)의 물품을 장바구니에서 자동으로 V체크하는 확장 프로그램입니다. Edge/Chrome/Whale의 개발자 모드를 이용하여 학교 PC에 1회 등록합니다. 브라우저 정책 또는 학교 보안 정책에 따라 자동 설치가 제한될 수 있습니다.
+            </p>
+            <button
+              className="mt-2 rounded-md bg-[#5B4DFB] px-4 py-2 text-[13px] font-bold text-white hover:bg-[#4C3DE6]"
+              onClick={runAutoselectInstall}
+              disabled={autoSelectInstallStatus && autoSelectInstallStatus.running}
+            >
+              {autoSelectInstallStatus && autoSelectInstallStatus.running ? '실행 중...' : '🧩 물품 자동 선택 익스텐션 추가'}
+            </button>
+            {autoSelectInstallStatus && !autoSelectInstallStatus.running && (
+              <p className={`mt-1.5 text-[11.5px] font-semibold ${autoSelectInstallStatus.ok ? 'text-emerald-600' : 'text-red-600'}`}>
+                {autoSelectInstallStatus.ok
+                  ? '설치 도구 준비됨 — 브라우저를 종료한 후 실행해 주세요.'
+                  : `실패: ${autoSelectInstallStatus.message || '알 수 없는 오류'}`}
+              </p>
+            )}
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-[12.5px] text-[#1E293B]">💰 금액 무시 한도</span>
+              <select
+                className="rounded-md border border-[#E2E8F0] bg-white px-2 py-1 text-[12.5px] text-[#1E293B]"
+                value={autoSelectTolerance}
+                onChange={e => setAutoSelectTolerance(e.target.value)}
+                title="현재 장바구니 단가가 엑셀의 기준 단가보다 이 금액을 초과하여 높을 때 경고합니다 (확장 프로그램 팝업에서도 동일하게 설정됩니다)"
+              >
+                {TOLERANCE_OPTIONS.map(v => (
+                  <option key={v} value={v}>{v === 0 ? '설정 안함 (0원)' : `${v.toLocaleString()}원`}</option>
+                ))}
+              </select>
+            </div>
+            <p className="mt-1 text-[11.5px] text-[#64748B]">
+              예: 기준 단가 10,000원, 한도 500원 → 현재 단가 10,400원은 통과, 10,501원은 경고. 확장 프로그램 팝업에서도 독립적으로 설정할 수 있습니다.
+            </p>
           </div>
 
           <div className="rounded-lg border border-[#E2E8F0] px-4 py-3">
@@ -193,48 +307,6 @@ export default function SettingsModal() {
               />
               <span className="text-[12px] text-[#64748B]">일</span>
             </div>
-          </div>
-
-          <div className="rounded-lg border border-[#E2E8F0] px-4 py-3">
-            <div className="text-[13.5px] text-[#1E293B]">🛒 쇼핑몰 규칙 업데이트 (GitHub)</div>
-            <input
-              type="text"
-              value={rulesUpdateUrl || ''}
-              onChange={e => setRulesUpdateUrl(e.target.value)}
-              placeholder="https://raw.githubusercontent.com/사용자/저장소/main/rules.json"
-              className="mt-2 w-full rounded-md border border-[#E2E8F0] bg-white px-2 py-1.5 text-[12px] text-[#1E293B]"
-            />
-            <p className="mt-1 text-[11.5px] text-[#64748B]">
-              깃허브에 올린 규칙 JSON(규칙 객체 배열)을 내려받아 <b>같은 id의 내장 규칙을 최신 내용으로 덮어씁니다</b> — 네이버·쿠팡 장바구니 등 모든 규칙 가능. 규칙이 없는 쇼핑몰이 개편되면 개발자에게 새 규칙을 요청하세요.
-            </p>
-            <button
-              className="mt-2 rounded-md bg-[#5B4DFB] px-4 py-2 text-[13px] font-bold text-white hover:bg-[#4C3DE6]"
-              onClick={() => checkRuleUpdates(false)}
-            >
-              ⬇ 업데이트 확인
-            </button>
-            {ruleUpdateStatus && ruleUpdateStatus.at && (
-              <div
-                className={`mt-2 rounded-lg px-3 py-2 text-[12px] ${
-                  !ruleUpdateStatus.ok
-                    ? 'border border-red-200 bg-red-50 text-red-700'
-                    : ruleUpdateStatus.upToDate
-                      ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-                      : 'border border-[#DDD9FC] bg-[#EEEDFE] text-[#4C3DE6]'
-                }`}
-              >
-                {!ruleUpdateStatus.ok ? (
-                  <>⚠ 확인 실패 — {ruleUpdateStatus.message}</>
-                ) : ruleUpdateStatus.upToDate ? (
-                  <>✅ 모든 쇼핑몰 규칙이 최신입니다 <span className="text-[11px] opacity-70">(확인: {ruleUpdateStatus.at})</span></>
-                ) : (
-                  <>
-                    ⬆ 갱신 가능: {(ruleUpdateStatus.updated || []).concat(ruleUpdateStatus.created || []).join(', ')}
-                    <span className="ml-1 text-[11px] opacity-70">(확인: {ruleUpdateStatus.at} — [업데이트 확인]을 눌러 적용)</span>
-                  </>
-                )}
-              </div>
-            )}
           </div>
 
           <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">

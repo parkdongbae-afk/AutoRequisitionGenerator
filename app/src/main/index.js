@@ -7,7 +7,7 @@ import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
 import { loadDocument, getDoc, removeDoc, reextract, updateRows, listDocIds, rewriteCssUrls } from './lib/docstore.js'
 import { allRules, saveUserRule, deleteUserRule, ruleById, renameRule, builtin, builtinRulesVersion } from './lib/rules.js'
-import { readExcelRows, appendRows, createNewWorkbook, loadExcelFull } from './lib/excel.js'
+import { readExcelRows, appendRows, createNewWorkbook, loadExcelFull, writeAdminSheet } from './lib/excel.js'
 import { startReceiver } from './lib/receiver.js'
 import { PICKER_SCRIPT } from './lib/picker.js'
 import { BROWSER_DATA, findBookmarkFiles, addBookmarkToFront, readCaptureBookmarkCount, isCaptureBookmarkAtFront, listBrowserProfiles, ensureBookmarksFile } from './lib/bookmarks.js'
@@ -15,7 +15,7 @@ import { buildBookmarklet } from './lib/bookmarklet.js'
 import { buildMhtmlFromHtml } from './lib/mhtmlsave.js'
 import { parseMhtml, smartDecode } from './lib/mhtml.js'
 import { parseBudgetCard } from './lib/budgetcard.js'
-import { resolveRepoRoot, runAdminFlow, adminSelfTest, listMalls, deleteMall, readRulesVersion } from './lib/admin.js'
+import { resolveRepoRoot, runAdminFlow, adminSelfTest, listMalls, deleteMall, readRulesVersion, registerBuiltinRules } from './lib/admin.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -28,6 +28,9 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow = null
 let requisitionWindow = null
+
+// 앱 버전 — SUMMARY.MD 버전 체계를 따른다(package.json 버전은 업데이트가 누락되어 왔다)
+const APP_VERSION = '1.47.9'
 
 // 캡처 문서를 모든 창(메인+품의 개요 창)에 전달 — 별도 창에서도 실시간 반영
 function broadcastDoc(doc) {
@@ -772,10 +775,15 @@ function registerIpc() {
     }
   })
 
-  ipcMain.handle('save-excel-as', async (_e, rows) => {
+  ipcMain.handle('save-excel-as', async (_e, rows, opts = {}) => {
+    const s = getSettings()
+    // 교원 이름이 있으면 기본 파일명을 '{이름}-품목내역(통합).xls'로 제안(AUTO_SELECT.MD §4.1)
+    const teacher = String((opts && opts.teacherName) || s.teacherName || '')
+    const baseDir = s.excelPath ? path.dirname(s.excelPath) : path.dirname(defaultXlsPath())
+    const defaultPath = teacher ? path.join(baseDir, `${teacher}-품목내역(통합).xls`) : (s.excelPath || defaultXlsPath())
     const r = await dialog.showSaveDialog(mainWindow, {
       title: '품목내역 저장 위치 선택',
-      defaultPath: getSettings().excelPath || defaultXlsPath(),
+      defaultPath,
       filters: [
         { name: 'Excel (*.xls)', extensions: ['xls'] },
         { name: 'Excel (*.xlsx)', extensions: ['xlsx'] }
@@ -793,8 +801,14 @@ function registerIpc() {
         createNewWorkbook(p)
       }
       const res = appendRows(p, rows, { backup: false })
+      let admin = null
+      try {
+        admin = writeAdminSheet(p, { rows, teacherName: teacher, appVersion: APP_VERSION })
+      } catch (e) {
+        admin = { error: String(e.message || e) }
+      }
       setSetting('excelPath', p)
-      return { ok: true, path: p, replaced: true, ...res }
+      return { ok: true, path: p, replaced: true, ...res, admin }
     } catch (e) {
       return { error: String(e.message || e), path: p }
     }
@@ -1267,6 +1281,60 @@ function registerIpc() {
     }
   })
 
+  function copyDirRecursive(src, dst) {
+    fs.mkdirSync(dst, { recursive: true })
+    for (const f of fs.readdirSync(src)) {
+      const s = path.join(src, f)
+      const d = path.join(dst, f)
+      if (fs.statSync(s).isDirectory()) copyDirRecursive(s, d)
+      else fs.copyFileSync(s, d)
+    }
+  }
+
+  // 물품 자동 선택 익스텐션 설치(AUTO_SELECT.MD §6, §10) — 기존 설치 도구(extension_auto의
+  // ExtensionDeveloperModeManager)를 재사용하고, config.json의 extension_path를 자동 선택
+  // 확장 폴더로 미리 지정해 도구 실행 후 버튼만으로 설치되게 한다.
+  ipcMain.handle('run-autoselect-install', () => {
+    try {
+      const toolSrc = app.isPackaged
+        ? path.join(process.resourcesPath, 'extension_auto')
+        : path.join(app.getAppPath(), '..', 'extension_auto')
+      const extSrc = app.isPackaged
+        ? path.join(process.resourcesPath, 'extension-autoselect')
+        : path.join(app.getAppPath(), 'extension-autoselect')
+      if (!fs.existsSync(path.join(toolSrc, 'install_and_run.bat'))) {
+        return { error: '설치 도구 폴더(extension_auto)를 찾지 못했습니다: ' + toolSrc }
+      }
+      if (!fs.existsSync(path.join(extSrc, 'manifest.json'))) {
+        return { error: '물품 자동 선택 확장 폴더(extension-autoselect)를 찾지 못했습니다: ' + extSrc }
+      }
+      const toolDir = path.join(app.getPath('userData'), 'autoselect-tool')
+      const extDir = path.join(app.getPath('userData'), 'extension-autoselect')
+      fs.rmSync(toolDir, { recursive: true, force: true })
+      fs.mkdirSync(toolDir, { recursive: true })
+      for (const f of fs.readdirSync(toolSrc)) {
+        const src = path.join(toolSrc, f)
+        if (fs.statSync(src).isFile()) fs.copyFileSync(src, path.join(toolDir, f))
+      }
+      fs.rmSync(extDir, { recursive: true, force: true })
+      copyDirRecursive(extSrc, extDir)
+      try {
+        const mgrDir = path.join(process.env.APPDATA || path.join(app.getPath('userData'), '..'), 'ExtensionDeveloperModeManager')
+        fs.mkdirSync(mgrDir, { recursive: true })
+        const cfgPath = path.join(mgrDir, 'config.json')
+        let cfg = {}
+        try { cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8')) } catch {}
+        cfg.extension_path = extDir
+        fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2), 'utf-8')
+      } catch {}
+      const child = spawn('cmd.exe', ['/c', 'install_and_run.bat'], { cwd: toolDir, detached: true, stdio: 'ignore' })
+      child.unref()
+      return { ok: true, extDir }
+    } catch (e) {
+      return { error: String(e.message || e) }
+    }
+  })
+
   ipcMain.handle('open-extension-folder', () => {
     const dir = extensionFolder()
     clipboard.writeText(dir)
@@ -1323,6 +1391,46 @@ function registerIpc() {
       const msg = String(e.message || e)
       log('❌ ' + msg, 'err')
       return { ok: false, error: msg }
+    }
+  })
+
+  // AI 생성 규칙 중 rules.js builtin 배열에 없는 것을 자동 등록(관리자 모달 버튼)
+  ipcMain.handle('admin-register-builtin', () => {    const wc = mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null
+    const log = (line, level = 'info') => {
+      try { if (wc) wc.send('admin-log', { line, level }) } catch {}
+    }
+    try {
+      const res = registerBuiltinRules()
+      if (res.ok && res.added.length) log('✅ builtin 등록: ' + res.added.join(', '), 'step')
+      else if (res.ok) log(res.message || '미등록 규칙이 없습니다', 'info')
+      else log('❌ ' + res.error, 'err')
+      return res
+    } catch (e) {
+      const msg = String(e.message || e)
+      log('❌ ' + msg, 'err')
+      return { ok: false, error: msg }
+    }
+  })
+
+  // Gemini API 키·모델 연결 확인(관리자 모달 [🔗 연결] 버튼) — models 엔드포인트로 키·모델 유효성 검사
+  ipcMain.handle('admin-test-gemini', async (_e, opts) => {
+    const key = String((opts && opts.apiKey) || '').trim()
+    const model = String((opts && opts.model) || '').trim()
+    if (!key) return { ok: false, message: 'API 키가 비어 있습니다' }
+    if (!model) return { ok: false, message: '모델이 선택되지 않았습니다' }
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}?key=${encodeURIComponent(key)}`
+      const res = await net.fetch(url, { method: 'GET' })
+      const body = await res.json().catch(() => ({}))
+      if (res.ok) return { ok: true, message: body.displayName || model }
+      const msg = (body && body.error && body.error.message) || `HTTP ${res.status}`
+      if (res.status === 400 && /API key not valid/i.test(msg)) return { ok: false, message: 'API 키가 올바르지 않습니다' }
+      if (res.status === 403) return { ok: false, message: '접근이 거부되었습니다(키 권한·지역 제한) — ' + msg.slice(0, 120) }
+      if (res.status === 404) return { ok: false, message: `모델(${model})을 이 키에서 찾을 수 없습니다 — 다른 모델을 선택해 보세요` }
+      if (res.status === 429) return { ok: true, message: '키는 유효합니다(현재 요청 한도 초과)' }
+      return { ok: false, message: msg.slice(0, 160) }
+    } catch (e) {
+      return { ok: false, message: '네트워크 오류: ' + String(e.message || e) }
     }
   })
 

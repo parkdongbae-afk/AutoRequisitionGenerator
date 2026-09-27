@@ -105,6 +105,33 @@ export function reflectCheckStates(html) {
   })
 }
 
+// 상품 URL 절대화 — 캡처 문서의 원본 URL을 베이스로 상대 링크를 절대 URL로 바꾼다.
+// 자동 선택(장바구니 V체크) 엑셀의 A열(상품 URL)에 저장되는 값이다.
+function absoluteUrl(baseUrl, u) {
+  if (!u) return null
+  try {
+    const abs = new URL(u, baseUrl || undefined).href
+    return /^https?:/i.test(abs) ? abs : null
+  } catch { return null }
+}
+
+function rowFromItem(id, baseUrl, it) {
+  return {
+    docId: id,
+    name: it.name,
+    spec: it.isShipping ? '' : (it.spec != null ? it.spec : deriveSpec(it.name, it.option)),
+    image: it.isShipping ? null : resolveImageUrl(baseUrl.parts, id, baseUrl.url, it.image),
+    unit: it.isShipping ? '식' : '개',
+    qty: it.qty,
+    unitPrice: it.unitPrice,
+    roundedPrice: roundUpToTen(it.unitPrice),
+    isShipping: !!it.isShipping,
+    productUrl: it.isShipping ? null : absoluteUrl(baseUrl.url, it.url),
+    option: it.isShipping ? '' : String(it.option || ''),
+    productKey: it.isShipping ? null : (it.productKey || null)
+  }
+}
+
 export function loadDocument(filePath, { preferRuleId = null, sourceUrl = null } = {}) {
   const buf = fs.readFileSync(filePath)
   let parts
@@ -155,17 +182,7 @@ export function loadDocument(filePath, { preferRuleId = null, sourceUrl = null }
     }
   }
 
-  const rows = items.map(it => ({
-    docId: id,
-    name: it.name,
-    spec: it.isShipping ? '' : (it.spec != null ? it.spec : deriveSpec(it.name, it.option)),
-    image: it.isShipping ? null : resolveImageUrl(parts, id, effectiveUrl, it.image),
-    unit: it.isShipping ? '식' : '개',
-    qty: it.qty,
-    unitPrice: it.unitPrice,
-    roundedPrice: roundUpToTen(it.unitPrice),
-    isShipping: !!it.isShipping
-  }))
+  const rows = items.map(it => rowFromItem(id, { parts, url: effectiveUrl }, it))
   if (shippingFee && shippingFee > 0) {
     rows.push({
       docId: id,
@@ -234,17 +251,7 @@ export function reextract(id, rule) {
   const doc = docs.get(id)
   if (!doc) return null
   const res = extractItems(doc.rawHtml, rule)
-  doc.rows = res.items.map(it => ({
-    docId: id,
-    name: it.name,
-    spec: it.isShipping ? '' : (it.spec != null ? it.spec : deriveSpec(it.name, it.option)),
-    image: it.isShipping ? null : resolveImageUrl(doc.parts, doc.id, doc.sourceUrl, it.image),
-    unit: it.isShipping ? '식' : '개',
-    qty: it.qty,
-    unitPrice: it.unitPrice,
-    roundedPrice: roundUpToTen(it.unitPrice),
-    isShipping: !!it.isShipping
-  }))
+  doc.rows = res.items.map(it => rowFromItem(id, { parts: doc.parts, url: doc.sourceUrl }, it))
   if (res.shippingFee && res.shippingFee > 0) {
     doc.rows.push({
       docId: id,

@@ -611,3 +611,46 @@ export function adminSelfTest() {
     rulesJsonSynced: onDisk === JSON.stringify({ version: doc.version, generatedAt: doc.generatedAt, count: doc.count, rules: doc.rules }, null, 2)
   }
 }
+
+// AI 생성 규칙 중 rules.js builtin 배열에 없는 것을 자동 등록한다(관리자 모달 [builtin 등록] 버튼).
+// import는 meta.json import 앞에, 배열 항목은 배열 끝에 추가하고 -cart 규칙이 베이스
+// 규칙보다 먼저 오도록 긴 id 순으로 정렬한다(도메인 매칭 우선순위 유지).
+export function registerBuiltinRules() {
+  const repoRoot = resolveRepoRoot()
+  if (!repoRoot) return { ok: false, error: '저장소 루트를 찾지 못했습니다 (rules.json + .git 보유 폴더 필요)' }
+  const srcDir = rulesSourceDir(repoRoot)
+  const rulesJsPath = path.join(repoRoot, 'app', 'src', 'main', 'lib', 'rules.js')
+  if (!fs.existsSync(rulesJsPath)) return { ok: false, error: 'rules.js를 찾지 못했습니다: ' + rulesJsPath }
+  const src = fs.readFileSync(rulesJsPath, 'utf-8')
+  const importedFiles = new Set()
+  for (const m of src.matchAll(/import\s+\w+\s+from\s+'\.\/rules\/([^']+)'/g)) importedFiles.add(m[1])
+  const files = fs.readdirSync(srcDir).filter(f => f.endsWith('.json') && f !== 'meta.json')
+  const missing = files
+    .filter(f => !importedFiles.has(f))
+    .map(f => {
+      let id = f.replace(/\.json$/, '')
+      try { id = JSON.parse(fs.readFileSync(path.join(srcDir, f), 'utf-8')).id || id } catch {}
+      return { file: f, id }
+    })
+  if (!missing.length) return { ok: true, added: [], message: '미등록 규칙이 없습니다 — 모든 규칙이 builtin에 등록되어 있습니다' }
+  const toVar = (id) => {
+    const v = String(id).replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase()).replace(/[^A-Za-z0-9]/g, '')
+    return /^[A-Za-z]/.test(v) ? v : 'r' + v
+  }
+  missing.sort((a, b) => b.id.length - a.id.length)
+  const varByFile = new Map()
+  for (const m of missing) {
+    const v = toVar(m.id)
+    if (new RegExp('\\b' + v + '\\b').test(src)) return { ok: false, error: '변수 이름 충돌: ' + v + ' (' + m.id + ') — rules.js에서 수동 등록해 주세요' }
+    varByFile.set(m.file, v)
+  }
+  const importLines = missing.map(m => 'import ' + varByFile.get(m.file) + ' from \'./rules/' + m.file + '\'').join('\n')
+  const entries = missing.map(m => varByFile.get(m.file)).join(', ')
+  let next = src
+  const metaImport = "import meta from './rules/meta.json'"
+  if (!next.includes(metaImport)) return { ok: false, error: 'rules.js에서 meta.json import를 찾지 못했습니다' }
+  next = next.replace(metaImport, importLines + '\n' + metaImport)
+  next = next.replace(/const builtin = \[([\s\S]*?)\n\]/, (m, inner) => 'const builtin = [' + inner.replace(/\s+$/, '') + ',\n  ' + entries + '\n]')
+  fs.writeFileSync(rulesJsPath, next, 'utf-8')
+  return { ok: true, added: missing.map(m => m.id) }
+}

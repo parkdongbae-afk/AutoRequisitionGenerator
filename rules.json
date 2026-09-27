@@ -1,6 +1,6 @@
 {
-  "version": "1.0.4",
-  "generatedAt": "2026-09-26T05:08:42.387Z",
+  "version": "1.0.6",
+  "generatedAt": "2026-09-27T03:14:34.739Z",
   "count": 34,
   "rules": [
     {
@@ -228,6 +228,10 @@
         "shopping.naver.com/cart"
       ],
       "rowSelector": "div[class^=product--]:has(button[role=checkbox][aria-checked=true])",
+      "productKey": {
+        "sel": "[data-shp-contents-type=chnl_prod_no]",
+        "attr": "data-shp-contents-id"
+      },
       "units": {
         "sel": "div[class^=product_item--]"
       },
@@ -686,6 +690,10 @@
       "checkedOnly": {
         "sel": "input[type=checkbox]"
       },
+      "selectedState": {
+        "attr": "data-selected",
+        "value": "true"
+      },
       "priceIs": "lineTotal",
       "fields": {
         "name": {
@@ -959,14 +967,13 @@
       "id": "aliexpress-cart",
       "name": "aliexpress 장바구니",
       "match": [
-        "aliexpress.com"
+        "aliexpress.com/p/shoppingcart"
       ],
       "rowSelector": "div.cart-product-wrap-group-new:has(input.comet-v2-checkbox-input[checked])",
       "checkedOnly": {
         "sel": "input.comet-v2-checkbox-input",
         "legacySel": "label.comet-v2-checkbox-checked"
       },
-      "priceIs": "lineTotal",
       "specFromOption": true,
       "fields": {
         "name": {
@@ -991,7 +998,7 @@
         "sel": "div.cart-product-ship-freight",
         "regex": "([\\d,]+)"
       },
-      "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25)"
+      "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25). 2026-09-27 수정: match를 /p/shoppingcart 경로로 좁힘(주문서 규칙과 도메인 중복으로 주문서가 카트 규칙에 선매칭되던 것), priceIs lineTotal 제거(화면 표시 가격이 단가 — 사용자 확인), 상품 키는 URL /item/<번호> 경로에서 추출(extract.js extractProductKey)"
     },
     {
       "id": "aliexpress",
@@ -1000,7 +1007,7 @@
         "aliexpress.com"
       ],
       "rowSelector": ".pl-product, .group-product--s-product--2GsgTja",
-      "priceIs": "lineTotal",
+      "nameFallback": "이름 미표시 상품",
       "fields": {
         "name": {
           "sel": "[data-pl='pl-product-title'], .group-product--s-product-img--j4ADxvF + span + div + div + div"
@@ -1019,10 +1026,11 @@
       },
       "shipping": {
         "mode": "selector",
-        "sel": "[data-pl='pl-shipping-fee'], .group-ship-options--cost-label--2nUGmAX",
+        "perFee": true,
+        "sel": "[data-pl='pl-shipping-fee']",
         "regex": "([\\d,]+)"
       },
-      "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25)"
+      "notes": "관리자 도구 자동 생성 (Gemini gemini-3.1-flash-lite, 2026-09-25). 2026-09-27 수정: priceIs lineTotal 제거(주문서 표시 가격이 단가 — 정답 1900/2400 확인), 배송비를 perFee로 전환(판매자별 3000/4573 각각 1행 — 총 배송비 7573 합산 폐지), group-product 행(상품 더 보기 캐러셀)은 DOM에 이름이 없어 nameFallback으로 행 생성 — 이름은 사용자가 표에서 직접 수정"
     }
   ]
 }

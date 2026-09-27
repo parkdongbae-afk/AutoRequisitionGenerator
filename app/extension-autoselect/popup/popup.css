@@ -1,0 +1,111 @@
+:root {
+  --ok: #1a7f37;
+  --warn: #b45309;
+  --info: #475569;
+  --line: #e2e8f0;
+  --bg: #f8fafc;
+}
+
+body {
+  /* 앱 모달과 같은 zoom 확대 — 요청(기본 1.5에서 20% 축소)에 따라 1.2배 */
+  zoom: 1.2;
+  width: 390px;
+  margin: 0;
+  padding: 12px;
+  font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font-size: 13px;
+  color: #0f172a;
+  background: var(--bg);
+}
+
+header h1 { margin: 0 0 4px; font-size: 16px; }
+.mall-status { color: var(--info); font-size: 12px; margin-bottom: 8px; }
+.mall-status.ok { color: var(--ok); font-weight: 600; }
+.mall-status.bad { color: #b91c1c; }
+
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.card.row { display: flex; align-items: center; gap: 8px; }
+.card.row label { font-weight: 600; }
+.card.row select { flex: 1; }
+
+#dropZone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 14px 10px;
+  text-align: center;
+  color: var(--info);
+}
+#dropZone.dragover { border-color: #2563eb; background: #eff6ff; }
+.drop-main { margin: 0 0 4px; font-weight: 600; color: #334155; }
+.drop-sub { margin: 0; }
+
+.link-btn {
+  border: none; background: none; color: #2563eb;
+  text-decoration: underline; cursor: pointer; font-size: 13px; padding: 0;
+}
+
+#fileInfo { margin-top: 8px; color: #334155; }
+.msg { margin-top: 8px; color: #b91c1c; word-break: keep-all; }
+.msg.warn { color: var(--warn); }
+.hidden { display: none !important; }
+
+button.primary {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+button.primary:disabled { background: #94a3b8; cursor: not-allowed; }
+button.primary:not(:disabled):hover { background: #1d4ed8; }
+
+.summary { font-weight: 700; margin-bottom: 6px; word-break: keep-all; }
+.other-mall { color: var(--info); font-size: 12px; margin-bottom: 6px; word-break: keep-all; }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.tabs button {
+  flex: 1; padding: 6px 0; border: 1px solid var(--line); border-radius: 6px;
+  background: #fff; cursor: pointer; font-size: 12px;
+}
+.tabs button.active { background: #2563eb; color: #fff; border-color: #2563eb; font-weight: 700; }
+
+#resultList { list-style: none; margin: 0 0 8px; padding: 0; max-height: 260px; overflow-y: auto; }
+#resultList li {
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 8px; margin-bottom: 6px; background: #fff;
+}
+#resultList li.issue { border-left: 4px solid var(--warn); }
+#resultList li.ok { border-left: 4px solid var(--ok); }
+.r-head { display: flex; align-items: baseline; gap: 6px; }
+.r-icon { flex: none; }
+.r-name { font-weight: 600; word-break: break-all; }
+.r-option { color: var(--info); font-size: 12px; margin: 2px 0; word-break: break-all; }
+.r-diff { font-size: 12px; color: var(--warn); word-break: keep-all; }
+.r-note { font-size: 11px; color: var(--info); word-break: keep-all; }
+.r-copy {
+  margin-top: 4px; padding: 4px 8px; font-size: 12px;
+  border: 1px solid var(--line); border-radius: 6px; background: #f1f5f9; cursor: pointer;
+}
+.r-copy:hover { background: #e2e8f0; }
+
+#copyAllBtn {
+  width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px;
+  background: #fff; font-weight: 600; cursor: pointer;
+}
+#copyAllBtn:hover { background: #f1f5f9; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
+  background: #0f172a; color: #fff; padding: 8px 16px; border-radius: 999px;
+  font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
