@@ -59,6 +59,19 @@ export default function SettingsModal() {
     loadRulesVersion()
   }, [])
 
+  // 서버 버전이 내장 버전보다 앞서면(또는 규칙 차이가 있으면) 배너를 주황색으로 표시
+  const verNums = (v) => String(v || '').split('.').map(n => parseInt(n, 10) || 0)
+  const isNewerVersion = (a, b) => {
+    const x = verNums(a), y = verNums(b)
+    for (let i = 0; i < Math.max(x.length, y.length); i++) {
+      const d = (x[i] || 0) - (y[i] || 0)
+      if (d) return d > 0
+    }
+    return false
+  }
+  const serverNewer = !!(ruleUpdateStatus && ruleUpdateStatus.ok && ruleUpdateStatus.remoteVersion && rulesVersion && rulesVersion.version &&
+    (!ruleUpdateStatus.upToDate || isNewerVersion(ruleUpdateStatus.remoteVersion, rulesVersion.version)))
+
   useEffect(() => {
     // 설정을 열면 저장된 주소로 최신 상태를 자동 확인해 표시한다(조용히 — 결과만 띄움)
     if (rulesUpdateUrl) checkRuleUpdates(true)
@@ -90,9 +103,11 @@ export default function SettingsModal() {
         </div>
 
         <div className="space-y-3 px-4 py-4">
-          <div className="rounded-xl border-2 border-[#DDD9FC] bg-[#EEEDFE] px-4 py-3 text-center">
-            <div className="text-[11.5px] font-semibold text-[#64748B]">📦 쇼핑몰 규칙 버전</div>
-            <div className="mt-0.5 text-[26px] font-black leading-tight text-[#5B4DFB]">
+          <div className={`rounded-xl border-2 px-4 py-3 text-center ${serverNewer ? 'border-[#FDBA74] bg-[#FFF7ED]' : 'border-[#DDD9FC] bg-[#EEEDFE]'}`}>
+            <div className={`text-[11.5px] font-semibold ${serverNewer ? 'text-[#C2410C]' : 'text-[#64748B]'}`}>
+              📦 쇼핑몰 규칙 버전{serverNewer ? ' — 업데이트 가능' : ''}
+            </div>
+            <div className={`mt-0.5 text-[26px] font-black leading-tight ${serverNewer ? 'text-[#EA580C]' : 'text-[#5B4DFB]'}`}>
               {rulesVersion && rulesVersion.version ? `v${rulesVersion.version}` : (rulesVersion ? '구 형식 (버전 없음)' : '버전 정보 없음')}
             </div>
             {rulesVersion && rulesVersion.generatedAt && (
@@ -106,6 +121,9 @@ export default function SettingsModal() {
             )}
             {ruleUpdateStatus && ruleUpdateStatus.remoteVersion && (
               <div className="mt-1 text-[11px] text-[#64748B]">서버 최신 버전: v{ruleUpdateStatus.remoteVersion}</div>
+            )}
+            {serverNewer && (
+              <div className="mt-1 text-[11.5px] font-bold text-[#EA580C]">⬆ 서버에 새 규칙이 있습니다 — 아래 [⬇ 업데이트 확인]을 눌러 적용하세요</div>
             )}
           </div>
 

@@ -384,6 +384,13 @@ export const useStore = create((set, get) => ({
     const at = new Date().toLocaleString('ko-KR', { hour12: false })
     if (!res || !res.ok) {
       const status = { at, ok: false, message: (res && res.error) || '확인 실패' }
+      // 조용한 자동 확인(설정을 열 때)의 실패는 이전 성공 상태를 덮어쓰지 않는다 —
+      // 오프라인 환경에서도 마지막으로 확인한 서버 버전 정보를 유지한다
+      const prev = get().ruleUpdateStatus
+      if (silent && prev && prev.ok && prev.remoteVersion) {
+        set({ ruleUpdateStatus: prev })
+        return
+      }
       set({ ruleUpdateStatus: status })
       window.api.setSetting('ruleUpdateLastCheck', status)
       if (!silent) get().toast(`규칙 업데이트 실패: ${status.message}`, 'err')

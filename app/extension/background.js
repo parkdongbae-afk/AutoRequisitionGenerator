@@ -133,7 +133,7 @@ function syncCheckStates() {
     // 실패해 saveAsMHTML 폴백으로 저장될 때도 문서에 남는다
     try {
       document.querySelectorAll('meta[name="arge-channel"],meta[name="arge-ext-version"]').forEach(e => e.remove())
-      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.3">')
+      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.7">')
     } catch (e) {}
     document.querySelectorAll('input[type=checkbox]').forEach(el => {
       el.setAttribute('data-arge-checked', el.checked ? 'true' : 'false')
@@ -153,6 +153,93 @@ function syncCheckStates() {
 // 모든 행이 렌더된다 — 축소로 해결한다. 과거 병행하던 "자동 스크롤 + 체크박스 앵커 행 수집·
 // 스티치(data-arge-rows)"는 사용자 요구(2026-09-25)로 전 몰에서 제거했다 — 장바구니 화면이
 // 스스로 아래로 내려가는 것이 사용자에게 보였고, 축소만으로 행 누락이 없어 불필요해졌다.
+// 알리익스프레스 주문서(/p/trade/confirm)의 "상품 더 보기(2)" 캐러셀은 접힌 상태에서는
+// 가격·수량만 렌더되고 상품명이 DOM에 없다 — 캡처 직전 링크를 클릭해 슬라이드 드로어를 열고
+// 드로어 항목(같은 상품 이미지 사용)에서 상품명을 읽어 스와이프 행에 주입한다(실패 시 무해).
+function expandAliGroupProducts() {
+  try {
+    var clicked = 0;
+    var links = document.querySelectorAll('span, a, div');
+    for (var i = 0; i < links.length; i++) {
+      var t = (links[i].textContent || '').replace(/\s+/g, ' ').trim();
+      if (/^상품 더 보기\(\d+\)$/.test(t) && links[i].children.length === 0) {
+        links[i].click();
+        clicked++;
+      }
+    }
+    return clicked;
+  } catch (e) { return 0; }
+}
+
+function injectAliGroupNames() {
+  try {
+    var rows = document.querySelectorAll('[class^=group-product--s-product]');
+    var byImg = {};
+    var anyRow = false;
+    rows.forEach(function (r) {
+      anyRow = true;
+      var img = r.querySelector('img[src]');
+      if (!img) return;
+      var key = (img.getAttribute('src') || '').split('/').pop().split('?')[0];
+      if (key && !byImg[key]) byImg[key] = r;
+    });
+    if (!anyRow) return 0;
+    var injected = 0;
+    var seen = {};
+    document.querySelectorAll('img[src]').forEach(function (img) {
+      var key = (img.getAttribute('src') || '').split('/').pop().split('?')[0];
+      var row = byImg[key];
+      if (!row || seen[key] || row.contains(img)) return;
+      var anc = img.parentElement, entry = null;
+      for (var d = 0; d < 10 && anc; d++) {
+        if (row.contains(anc)) break;
+        var t = (anc.textContent || '').replace(/\s+/g, ' ').trim();
+        if (t.length > 25) { entry = anc; break; }
+        anc = anc.parentElement;
+      }
+      if (!entry || row.contains(entry) || entry.contains(row)) return;
+      var raw = (entry.textContent || '').replace(/\s+/g, ' ');
+      var cleaned = raw.replace(/₩[\d,]+/g, '|').replace(/배송[^|]{0,60}|무료 배송|삭제|상품 더 보기\(\d+\)/g, '|');
+      var parts = cleaned.split('|').map(function (s) { return s.trim(); }).filter(function (s) { return s.length >= 8; });
+      if (!parts.length) return;
+      var name = parts.sort(function (a, b) { return b.length - a.length; })[0].slice(0, 120);
+      if (row.querySelector('.arge-item-name')) return;
+      var div = document.createElement('div');
+      div.className = 'arge-item-name';
+      div.style.cssText = 'font-weight:600;font-size:13px;color:#191919;padding:2px 0;word-break:break-all;';
+      div.textContent = name;
+      row.insertBefore(div, row.firstChild);
+      seen[key] = true;
+      injected++;
+    });
+    return injected;
+  } catch (e) { return 0; }
+}
+
+// 드로어를 열면 화면 전체를 덮는 반투명 검정 스크림이 함께 캡처된다 — 미리보기에서
+// 실제보다 훨씬 어둡게 보이는 원인이므로 캡처 직전 배경을 투명하게 만든다(드로어는 유지).
+function clearAliDrawerScrim() {
+  try {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var hit = function (el) {
+      var r = el.getBoundingClientRect();
+      return r.width >= vw * 0.6 && r.height >= vh * 0.4;
+    };
+    // 1) 검정 반투명 배경을 가진 전체 덮개(계산 스타일 기준)
+    document.querySelectorAll('div, section, span').forEach(function (el) {
+      var cs = getComputedStyle(el);
+      var m = /rgba?\(\s*0\s*,\s*0\s*,\s*0\s*,\s*(0?\.\d+|1)\s*\)/.exec(cs.backgroundColor || '');
+      var blackBg = m && parseFloat(m[1]) >= 0.05;
+      var blackOpaque = /^rgb\(\s*0\s*,\s*0\s*,\s*0\s*\)$/.test(cs.backgroundColor || '') && parseFloat(cs.opacity) < 1;
+      if ((blackBg || blackOpaque) && hit(el)) el.style.backgroundColor = 'transparent';
+    });
+    // 2) 드로어 마스크류 클래스는 사이트 CSS의 반투명 검정이므로 직접 투명화
+    document.querySelectorAll('[class*=drawer-mask], [class*=-mask], [class*=overlay], [class*=backdrop]').forEach(function (el) {
+      if (hit(el)) el.style.backgroundColor = 'transparent';
+    });
+  } catch (e) {}
+}
+
 async function captureLiveHtml() {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms))
   const adopt = () => {
@@ -195,7 +282,7 @@ async function captureLiveHtml() {
   const channelMeta = () => {
     try {
       document.querySelectorAll('meta[name="arge-channel"],meta[name="arge-ext-version"]').forEach(e => e.remove())
-      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.3">')
+      ;(document.head || document.documentElement).insertAdjacentHTML('afterbegin', '<meta name="arge-channel" content="extension"><meta name="arge-ext-version" content="1.6.7">')
     } catch (e) {}
   }
   channelMeta()
@@ -290,6 +377,17 @@ async function sendCurrentTab(tab) {
     const url = tab.url || ''
     const isNaverCart = (() => { try { return /(^|\.)shopping\.naver\.com$/i.test(new URL(url).hostname) && /^\/cart\b/.test(new URL(url).pathname) } catch (e) { return false } })()
     const isCoupang = (() => { try { return /(^|\.)coupang\.com$/i.test(new URL(url).hostname) } catch (e) { return false } })()
+    const isAliOrder = (() => { try { return /(^|\.)aliexpress\.com$/i.test(new URL(url).hostname) && /^\/p\/trade\/confirm/.test(new URL(url).pathname) } catch (e) { return false } })()
+    if (isAliOrder) {
+      // 접힌 '상품 더 보기' 캐러셀에 상품명 주입(위 함수) — 실패해도 캡처는 계속된다
+      try {
+        await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: expandAliGroupProducts })
+        await new Promise(r => setTimeout(r, 1500))
+        await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: injectAliGroupNames })
+        await new Promise(r => setTimeout(r, 300))
+        await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: clearAliDrawerScrim })
+      } catch (e) {}
+    }
     if (isNaverCart || isCoupang) {
       let prevZoom = null
       try {

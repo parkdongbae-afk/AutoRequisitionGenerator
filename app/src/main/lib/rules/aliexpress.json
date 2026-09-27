@@ -8,7 +8,7 @@
   "nameFallback": "이름 미표시 상품",
   "fields": {
     "name": {
-      "sel": "[data-pl='pl-product-title'], .group-product--s-product-img--j4ADxvF + span + div + div + div"
+      "sel": "[data-pl='pl-product-title'], .arge-item-name, .group-product--s-product-img--j4ADxvF + span + div + div + div"
     },
     "qty": {
       "sel": ".comet-input-number-input",

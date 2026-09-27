@@ -1,6 +1,6 @@
 {
-  "version": "1.0.6",
-  "generatedAt": "2026-09-27T03:14:34.739Z",
+  "version": "1.0.7",
+  "generatedAt": "2026-09-27T04:15:46.048Z",
   "count": 34,
   "rules": [
     {
@@ -1010,7 +1010,7 @@
       "nameFallback": "이름 미표시 상품",
       "fields": {
         "name": {
-          "sel": "[data-pl='pl-product-title'], .group-product--s-product-img--j4ADxvF + span + div + div + div"
+          "sel": "[data-pl='pl-product-title'], .arge-item-name, .group-product--s-product-img--j4ADxvF + span + div + div + div"
         },
         "qty": {
           "sel": ".comet-input-number-input",

@@ -30,7 +30,7 @@ let mainWindow = null
 let requisitionWindow = null
 
 // 앱 버전 — SUMMARY.MD 버전 체계를 따른다(package.json 버전은 업데이트가 누락되어 왔다)
-const APP_VERSION = '1.47.9'
+const APP_VERSION = '1.47.12'
 
 // 캡처 문서를 모든 창(메인+품의 개요 창)에 전달 — 별도 창에서도 실시간 반영
 function broadcastDoc(doc) {
@@ -61,13 +61,23 @@ function extensionFolder() {
     const dst = path.join(app.getPath('userData'), 'extension')
     try {
       fs.mkdirSync(dst, { recursive: true })
-      for (const f of fs.readdirSync(src)) {
-        fs.copyFileSync(path.join(src, f), path.join(dst, f))
-      }
+      // icons/ 같은 하위 폴더까지 복사해야 매니페스트의 아이콘 경로가 유지된다
+      copyTree(src, dst)
     } catch {}
     return dst
   }
   return path.join(app.getAppPath(), 'extension')
+}
+
+// 하위 폴더 포함 재귀 복사(extensionFolder·run-extension-v2·자동 선택 설치 공용)
+function copyTree(src, dst) {
+  fs.mkdirSync(dst, { recursive: true })
+  for (const f of fs.readdirSync(src)) {
+    const s = path.join(src, f)
+    const d = path.join(dst, f)
+    if (fs.statSync(s).isDirectory()) copyTree(s, d)
+    else fs.copyFileSync(s, d)
+  }
 }
 
 function manualFile() {
@@ -1255,10 +1265,7 @@ function registerIpc() {
       // 네이버 장바구니 오탐 거부) — 설치 도구 폴더의 확장 코드는 항상 현재 앱의 최신본으로 덮어쓴다
       try {
         const curExt = extensionFolder()
-        for (const f of fs.readdirSync(curExt)) {
-          const src = path.join(curExt, f)
-          if (fs.statSync(src).isFile()) fs.copyFileSync(src, path.join(v2Dir, f))
-        }
+        copyTree(curExt, v2Dir)
       } catch {}
       // 설치 도구(ExtensionDeveloperModeManager)는 마지막 선택 경로를 config.json에 기억한다 —
       // 캡처 확장 코드가 있는 앱 데이터 폴더(%APPDATA%\자동 품의 요구 생성기\extension)를 미리
