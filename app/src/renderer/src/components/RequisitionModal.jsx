@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { useStore } from '../store'
+import { useStore, roundUnitPrice } from '../store'
 import {
   REQUISITION_TYPES, typeById, fillTemplate, removeHeadingLine, applyLineShift,
   accountDisplay, inferPurpose, findPurposeCandidates, GIBON_FALLBACK, EXAMPLES, REFERENCE_SOURCE
@@ -126,7 +126,7 @@ function ReferenceModal({ onClose }) {
 export default function RequisitionPage() {
   const toast = useStore(s => s.toast)
   const docs = useStore(s => s.docs)
-  const priceMarkup = useStore(s => s.priceMarkup)
+  const roundMode = useStore(s => s.roundMode)
 
   const [typeId, setTypeId] = useState('buy')
   const [title, setTitle] = useState('')
@@ -157,17 +157,16 @@ export default function RequisitionPage() {
     return () => { alive = false }
   }, [])
 
-  // 메인 프로그램 연동 — 총액(단가 인상 % 반영·배송비 포함)과 품목 수(배송비 포함 전체 행, 메인 품목 수와 동일)
+  // 메인 프로그램 연동 — 총액(백원/천원 올림 선택 반영·배송비 포함)과 품목 수(배송비 포함 전체 행, 메인 품목 수와 동일)
   const mainData = useMemo(() => {
-    const pct = Number(priceMarkup) || 0
     const allRows = docs.flatMap(d => d.rows)
     const total = allRows.reduce((m, r) => {
-      const unit = r.isShipping ? (r.roundedPrice || 0) : Math.round((r.roundedPrice || 0) * (1 + pct / 100))
+      const unit = r.isShipping ? (r.roundedPrice || 0) : roundUnitPrice(r.roundedPrice || 0, roundMode)
       return m + (r.qty || 0) * unit
     }, 0)
     const firstItemRow = allRows.find(r => !r.isShipping)
     return { total, firstItem: firstItemRow ? firstItemRow.name : '', count: allRows.length }
-  }, [docs, priceMarkup])
+  }, [docs, roundMode])
 
   // 라. 산출내역 건수 = 품목 목록 − 1 (예: 목록 5건 → "000외 4건")
   const fillCount = Math.max(0, mainData.count - 1)

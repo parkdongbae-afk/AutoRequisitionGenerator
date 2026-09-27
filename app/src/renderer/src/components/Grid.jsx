@@ -76,16 +76,10 @@ export default function Grid() {
   const deleteDuplicateRows = useStore(s => s.deleteDuplicateRows)
   const toast = useStore(s => s.toast)
   const closeDoc = useStore(s => s.closeDoc)
-  const priceMarkup = useStore(s => s.priceMarkup)
-  const pct = Number(priceMarkup) || 0
 
-  // 단가 인상 % 즉시 반영(2026-09-26 사용자 요구) — 배송비 행은 제외.
-  // 인상 중에는 입력한 금액이 표시 금액이 되도록 기본단가 = 입력 ÷ (1 + 인상률)로 저장한다.
-  const marked = (r) => {
-    const base = r.roundedPrice || 0
-    if (r.isShipping || !pct) return base
-    return Math.round(base * (1 + pct / 100))
-  }
+  // 단가 인상(%) 기능은 v1.48.0에서 올림 드롭다운으로 대체되어 제거됨 — 표에는 추출 시
+  // 적용된 10원 단위 올림 단가가 그대로 표시되고, 백원/천원 올림은 엑셀 저장 시 반영된다
+  const marked = (r) => r.roundedPrice || 0
 
   const [colWidths, setColWidths] = useState(DEFAULT_WIDTHS)
   // F8 — 상품 URL·옵션 열 토글(개발/검수 편의, 설정에 저장하지 않는다 — AUTO_SELECT.MD §4.3)
@@ -217,7 +211,24 @@ export default function Grid() {
           ＋ 행 추가
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className="relative min-h-0 flex-1 overflow-auto">
+        {/* 빈 상태 — 표 상단이 아니라 컨테이너 정중앙에 배치(이미지+안내 글자) */}
+        {allRows.length === 0 && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 text-[#64748B]" style={{ fontSize: '13px' }}>
+            <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true">
+              <rect x="8" y="16" width="34" height="44" rx="6" fill="#EEEDFE" />
+              <rect x="14" y="26" width="22" height="4" rx="2" fill="#C9C3FC" />
+              <rect x="14" y="35" width="22" height="4" rx="2" fill="#C9C3FC" />
+              <rect x="14" y="44" width="14" height="4" rx="2" fill="#DDD9FC" />
+              <path d="M46 38l10-8 10 8v22a4 4 0 0 1-4 4H50a4 4 0 0 1-4-4V38z" fill="#5B4DFB" opacity="0.9" />
+              <rect x="58" y="30" width="30" height="36" rx="5" fill="#DDD9FC" />
+              <rect x="63" y="38" width="20" height="3.5" rx="1.75" fill="#fff" opacity="0.9" />
+              <rect x="63" y="45" width="20" height="3.5" rx="1.75" fill="#fff" opacity="0.7" />
+              <rect x="63" y="52" width="12" height="3.5" rx="1.75" fill="#fff" opacity="0.7" />
+            </svg>
+            추출된 품목이 없습니다. MHTML을 로드하면 자동으로 표시됩니다.
+          </div>
+        )}
         <table className="border-collapse" style={{ width: totalW, fontSize: `${fontPx}px`, tableLayout: 'fixed' }}>
           <colgroup>
             {widths.map((w, i) => <col key={i} style={{ width: w }} />)}
@@ -239,26 +250,6 @@ export default function Grid() {
             </tr>
           </thead>
           <tbody>
-            {allRows.length === 0 && (
-              <tr>
-                <td colSpan={headers.length} className="px-3 py-10 text-center">
-                  <div className="flex flex-col items-center gap-2 text-[#64748B]">
-                    <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true">
-                      <rect x="8" y="16" width="34" height="44" rx="6" fill="#EEEDFE" />
-                      <rect x="14" y="26" width="22" height="4" rx="2" fill="#C9C3FC" />
-                      <rect x="14" y="35" width="22" height="4" rx="2" fill="#C9C3FC" />
-                      <rect x="14" y="44" width="14" height="4" rx="2" fill="#DDD9FC" />
-                      <path d="M46 38l10-8 10 8v22a4 4 0 0 1-4 4H50a4 4 0 0 1-4-4V38z" fill="#5B4DFB" opacity="0.9" />
-                      <rect x="58" y="30" width="30" height="36" rx="5" fill="#DDD9FC" />
-                      <rect x="63" y="38" width="20" height="3.5" rx="1.75" fill="#fff" opacity="0.9" />
-                      <rect x="63" y="45" width="20" height="3.5" rx="1.75" fill="#fff" opacity="0.7" />
-                      <rect x="63" y="52" width="12" height="3.5" rx="1.75" fill="#fff" opacity="0.7" />
-                    </svg>
-                    추출된 품목이 없습니다. MHTML을 로드하면 자동으로 표시됩니다.
-                  </div>
-                </td>
-              </tr>
-            )}
             {allRows.map((r, idx) => {
               const hl = r.docId === selectedDocId
               const span = rowSpanByIndex[idx]
@@ -309,8 +300,7 @@ export default function Grid() {
                     <EditableCell
                       {...cellProps(r, 'price', v => {
                         const num = parseInt(String(v).replace(/[^\d]/g, ''), 10) || 0
-                        const base = (pct > 0 && !r.isShipping) ? Math.round(num / (1 + pct / 100)) : num
-                        updateRow(r.docId, r.key, 'roundedPrice', base)
+                        updateRow(r.docId, r.key, 'roundedPrice', num)
                       }, true)}
                     />
                   </td>

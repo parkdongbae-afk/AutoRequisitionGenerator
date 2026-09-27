@@ -1027,7 +1027,7 @@ def find_extension_folder_dialog(
                 return candidates[0][1], ""
         except Exception as exc:
             last_error = str(exc)
-        time.sleep(0.35)
+        time.sleep(0.12)
 
     return None, last_error or "익스텐션 폴더 선택 창을 찾지 못했습니다."
 
@@ -1097,7 +1097,7 @@ def choose_extension_folder(dialog: Any, extension_path: Path) -> tuple[bool, st
 
         try:
             folder_edit.set_edit_text(target_path)
-            time.sleep(0.35)
+            time.sleep(0.1)
             direct_input_done = True
         except Exception as exc:
             direct_errors.append(f"set_edit_text: {exc}")
@@ -1109,7 +1109,7 @@ def choose_extension_folder(dialog: Any, extension_path: Path) -> tuple[bool, st
                     with_spaces=True,
                     pause=0.01,
                 )
-                time.sleep(0.35)
+                time.sleep(0.1)
                 direct_input_done = True
             except Exception as fallback_exc:
                 direct_errors.append(f"직접 입력: {fallback_exc}")
@@ -1122,14 +1122,14 @@ def choose_extension_folder(dialog: Any, extension_path: Path) -> tuple[bool, st
             try:
                 dialog.set_focus()
                 send_keys("^l")
-                time.sleep(0.25)
+                time.sleep(0.1)
                 send_keys(
                     escape_send_keys_text(target_path),
                     with_spaces=True,
                     pause=0.01,
                 )
                 send_keys("{ENTER}")
-                time.sleep(0.8)
+                time.sleep(0.3)
                 direct_input_done = True
                 folder_edit, select_button = folder_dialog_controls(dialog)
             except Exception as exc:
@@ -1652,6 +1652,8 @@ class App(tk.Tk):
         self.geometry("940x900")
         self.minsize(880, 780)
         self.maxsize(1100, 1000)
+        # 시작 시 작업 표시줄로 최소화 — 사용자가 필요할 때 작업 표시줄에서 복원
+        self.iconify()
         self.configure(bg="#F2F4F7")
 
         self.setup_windows_fonts()
@@ -2927,6 +2929,8 @@ class App(tk.Tk):
         self.status_text.set(
             f"익스텐션 설치 완료 · 성공 {successes}개 · 실패 {len(failures)}개"
         )
+        # 설치 완료 후 도구 창 자동 닫기(사용자 요구 v1.48.1) — 브라우저에서 바로 확인 가능
+        self.after(800, self.destroy)
 
     def apply_actual_state(self) -> None:
         profiles = self.selected_profiles()

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, protocol, shell, net, clipboard, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, shell, net, clipboard, screen, nativeTheme } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
@@ -30,7 +30,11 @@ let mainWindow = null
 let requisitionWindow = null
 
 // 앱 버전 — SUMMARY.MD 버전 체계를 따른다(package.json 버전은 업데이트가 누락되어 왔다)
-const APP_VERSION = '1.47.12'
+const APP_VERSION = '1.48.1'
+
+// 뷰어를 항상 라이트로 고정 — Windows 다크모드에서 미리보기(쇼핑몰 CSS의
+// prefers-color-scheme 다크 전환)가 검게 렌더되는 것을 막는다(v1.47.14)
+nativeTheme.themeSource = 'light'
 
 // 캡처 문서를 모든 창(메인+품의 개요 창)에 전달 — 별도 창에서도 실시간 반영
 function broadcastDoc(doc) {
@@ -204,6 +208,9 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
+
+  // 시작 시 최대화(v1.48.0) — 표와 미리보기를 넓게 쓰기 위한 기본 창 상태
+  mainWindow.maximize()
 
   mainWindow.webContents.setVisualZoomLevelLimits(1, 1)
   mainWindow.webContents.on('zoom-changed', (_e, dir) => {

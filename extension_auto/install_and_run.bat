@@ -17,7 +17,8 @@ if errorlevel 1 (
     if errorlevel 1 goto :error
 )
 
-%PYTHON% extension_developer_mode_manager.py
+rem 도구 창·콘솔을 작업 표시줄에서 최소화 상태로 시작(v1.48.1)
+start "ExtTool" /min /wait %PYTHON% extension_developer_mode_manager.py
 if errorlevel 1 pause
 exit /b 0
 

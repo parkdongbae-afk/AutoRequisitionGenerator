@@ -11,6 +11,8 @@ export default function Header() {
   const setRulesModal = useStore(s => s.setRulesModal)
   const setSettingsModal = useStore(s => s.setSettingsModal)
   const showRuleAdd = useStore(s => s.showRuleAdd)
+  const showExcelLoad = useStore(s => s.showExcelLoad)
+  const showRulesManage = useStore(s => s.showRulesManage)
   const showOpenFolder = useStore(s => s.showOpenFolder)
   const showOpenFiles = useStore(s => s.showOpenFiles)
   const showBookmarkAdd = useStore(s => s.showBookmarkAdd)
@@ -30,16 +32,12 @@ export default function Header() {
       </h1>
       {showOpenFolder && <button className={btn} onClick={openFolder}>MHTML 폴더 열기</button>}
       {showOpenFiles && <button className={btn} onClick={openFiles}>MHTML 파일 열기</button>}
-      <button className={btn} onClick={() => loadExcelFlow()}>기존 엑셀 불러오기</button>
+      {showExcelLoad && <button className={btn} onClick={() => loadExcelFlow()}>기존 엑셀 불러오기</button>}
       {showRuleAdd && <button className={btn} onClick={() => startMapping()}>새 쇼핑몰 규칙 추가</button>}
       <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
         {showHalfButton && (
           <button
-            className={`rounded-lg px-3 py-1.5 text-[12.5px] font-bold transition-colors duration-150 ${
-              halfMode
-                ? 'bg-[#5B4DFB] text-white hover:bg-[#4C3DE6]'
-                : 'border border-[#E2E8F0] bg-[#F8FAFC] text-[#334155] hover:border-[#CBD5E1] hover:bg-[#F1F5F9]'
-            }`}
+            className="rounded-lg bg-[#FEF3C7] px-3 py-1.5 text-[12.5px] font-bold text-[#B45309] transition-colors duration-150 hover:bg-[#FDE68A] active:bg-[#FCD34D]"
             onClick={() => {
               const next = !halfMode
               setHalfMode(next)
@@ -61,20 +59,22 @@ export default function Header() {
         )}
         {showExtensionAdd && (
           <button
-            className="rounded-lg bg-[#EEEDFE] px-3 py-1.5 text-[12.5px] font-bold text-[#5B4DFB] transition-colors duration-150 hover:bg-[#E0DCFD] active:bg-[#D5CFFC]"
+            className="rounded-lg bg-[#FEF3C7] px-3 py-1.5 text-[12.5px] font-bold text-[#B45309] transition-colors duration-150 hover:bg-[#FDE68A] active:bg-[#FCD34D]"
             onClick={runExtensionV2Flow}
             title="확장 프로그램 개발자 모드 및 자동 설치 도구를 바로 실행합니다"
           >
             🧩 익스텐션 추가
           </button>
         )}
-        <button
-          className={mini}
-          onClick={() => setRulesModal(true)}
-          title="사용자가 만든 쇼핑몰 규칙 관리/삭제"
-        >
-          🗑 규칙 관리
-        </button>
+        {showRulesManage && (
+          <button
+            className={mini}
+            onClick={() => setRulesModal(true)}
+            title="사용자가 만든 쇼핑몰 규칙 관리/삭제"
+          >
+            🗑 규칙 관리
+          </button>
+        )}
         <button
           className="rounded-md px-2.5 py-1 text-[12.5px] font-bold text-[#64748B] transition-colors duration-150 hover:bg-[#F1F5F9] hover:text-[#1E293B]"
           onClick={() => setSettingsModal(true)}

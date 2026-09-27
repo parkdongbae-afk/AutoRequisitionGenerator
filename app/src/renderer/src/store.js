@@ -20,7 +20,6 @@ const RULE_REJECT_MESSAGES = {
   'auction-cart': '옥션 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
   'alphamall-cart': '알파몰 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
   'yes24-cart': '예스24 카트에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
-  'aliexpress-cart': '알리익스프레스 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.',
   officedepot: '오피스디포 장바구니에서 V체크된 상품이 없습니다.\nV체크 후 품의캡쳐를 눌러주세요.'
 }
 
@@ -37,6 +36,14 @@ const countMismatchNotice = m =>
 function withKeys(doc) {
   doc.rows = (doc.rows || []).map(r => ({ ...r, key: nextRowKey() }))
   return doc
+}
+
+// 단가 올림 처리 — ceil10: 기본(10원 단위, 추출 시 적용값 그대로), ceil100: 백원, ceil1000: 천원
+export function roundUnitPrice(price, mode) {
+  const p = Number(price) || 0
+  if (mode === 'ceil100') return Math.ceil(p / 100) * 100
+  if (mode === 'ceil1000') return Math.ceil(p / 1000) * 1000
+  return p
 }
 
 export const useStore = create((set, get) => ({
@@ -62,11 +69,14 @@ export const useStore = create((set, get) => ({
   showRequisition: true,
   halfMode: false,
   showRuleAdd: false,
+  showExcelLoad: false,
+  showRulesManage: false,
+  adminShowStatusInfo: false,
+  roundMode: 'ceil10',
   zoomSensitivity: 1.7,
   gridFontScale: 1.5,
   startupStatus: null,
   bookmarkProgress: null,
-  priceMarkup: 0,
   excelHighlight: null,
   splitRatio: 2 / 3,
   inboxRetentionDays: 5,
@@ -121,6 +131,33 @@ export const useStore = create((set, get) => ({
     set({ showRuleAdd: !!v })
     window.api.setSetting('showRuleAdd', !!v)
   },
+  setShowExcelLoad(v) {
+    set({ showExcelLoad: !!v })
+    window.api.setSetting('showExcelLoad', !!v)
+  },
+  setShowRulesManage(v) {
+    set({ showRulesManage: !!v })
+    window.api.setSetting('showRulesManage', !!v)
+  },
+  setAdminShowStatusInfo(v) {
+    set({ adminShowStatusInfo: !!v })
+    window.api.setSetting('adminShowStatusInfo', !!v)
+  },
+  setRoundMode(v) {
+    const mode = ['ceil10', 'ceil100', 'ceil1000'].includes(v) ? v : 'ceil10'
+    set({ roundMode: mode })
+    window.api.setSetting('roundMode', mode)
+    // 올림(10원) 선택 시 아무 액션 없음 — 백원/천원은 적용 시 총액을 메시지로 안내
+    if (mode === 'ceil10') return
+    const label = mode === 'ceil100' ? '백원 단위 올림' : '천원 단위 올림'
+    const step = mode === 'ceil100' ? 100 : 1000
+    const docs = get().docs
+    const total = docs.reduce((n, d) => n + d.rows.reduce((m, r) => {
+      const unit = r.isShipping ? (r.roundedPrice || 0) : Math.ceil((r.roundedPrice || 0) / step) * step
+      return m + (r.qty || 0) * unit
+    }, 0), 0)
+    window.api.alertBox(`${label} 적용 시 총액: ${total.toLocaleString()}원\n\n반영은 엑셀에 저장시 반영 됩니다.`)
+  },
   setShowOpenFolder(v) {
     set({ showOpenFolder: !!v })
     window.api.setSetting('showOpenFolder', !!v)
@@ -154,7 +191,6 @@ export const useStore = create((set, get) => ({
     set({ gridFontScale: n })
     window.api.setSetting('gridFontScale', n)
   },
-  setPriceMarkup(v) { set({ priceMarkup: Math.max(0, Number(v) || 0) }) },
   setSplitRatio(v) {
     set({ splitRatio: Math.min(0.85, Math.max(0.3, v)) })
   },
@@ -318,12 +354,10 @@ export const useStore = create((set, get) => ({
   },
 
   async doSaveExcelAs() {
-    const { docs, priceMarkup, teacherName } = get()
-    const pct = Number(priceMarkup) || 0
+    const { docs, roundMode, teacherName } = get()
     const rows = docs.flatMap(d => d.rows.map(r => {
-      const price = (!r.isShipping && pct > 0)
-        ? Math.round((r.roundedPrice || 0) * (1 + pct / 100))
-        : r.roundedPrice
+      // 백원/천원 단위 올림 선택 시 상품 예상단가를 올림해 저장(배송비는 제외), 올림(기본)은 그대로
+      const price = r.isShipping ? (r.roundedPrice || 0) : roundUnitPrice(r.roundedPrice || 0, roundMode)
       return {
         name: r.name, spec: r.spec, unit: r.unit, qty: r.qty, price, isShipping: !!r.isShipping,
         productUrl: r.productUrl || '', option: r.option || '', productKey: r.productKey || null,
@@ -344,7 +378,8 @@ export const useStore = create((set, get) => ({
     if (res.admin && res.admin.error) {
       get().toast(`행정실용 시트 생성 실패: ${res.admin.error} (품목내역은 저장됨)`, 'warn')
     }
-    get().toast(`${res.appended}행 저장 완료 (파일을 현재 표 내용으로 교체${pct > 0 ? ` · 예상단가 ${pct}% 인상, 배송비 제외` : ''}${res.admin && res.admin.rowCount ? ` · 행정실용 시트 ${res.admin.rowCount}건` : ''}) → ${res.path}`, 'ok')
+    const roundLabel = roundMode === 'ceil100' ? ' · 백원 단위 올림' : roundMode === 'ceil1000' ? ' · 천원 단위 올림' : ''
+    get().toast(`${res.appended}행 저장 완료 (파일을 현재 표 내용으로 교체${roundLabel} · 배송비 제외${res.admin && res.admin.rowCount ? ` · 행정실용 시트 ${res.admin.rowCount}건` : ''}) → ${res.path}`, 'ok')
     return res
   },
 
@@ -876,6 +911,18 @@ export const useStore = create((set, get) => ({
     }
     if (settings && settings.showRuleAdd === true) {
       set({ showRuleAdd: true })
+    }
+    if (settings && settings.showExcelLoad === true) {
+      set({ showExcelLoad: true })
+    }
+    if (settings && settings.showRulesManage === true) {
+      set({ showRulesManage: true })
+    }
+    if (settings && settings.adminShowStatusInfo === true) {
+      set({ adminShowStatusInfo: true })
+    }
+    if (settings && ['ceil10', 'ceil100', 'ceil1000'].includes(settings.roundMode)) {
+      set({ roundMode: settings.roundMode })
     }
     if (settings && settings.showOpenFolder === true) {
       set({ showOpenFolder: true })

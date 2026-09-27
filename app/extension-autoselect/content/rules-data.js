@@ -1,7 +1,7 @@
 /* GENERATED FILE — 자동 생성됨. 손으로 수정하지 마세요.
  * 원본: app/src/main/lib/rules/*.json 의 장바구니 캡처 규칙
  * 재생성: app/ 폴더에서 `node analysis/make-autoselect-rules.js`
- * 생성 시각: 2026-09-27T03:14:34.820Z
+ * 생성 시각: 2026-09-27T08:29:24.414Z
  */
 (function (root) {
   'use strict';
@@ -50,60 +50,6 @@
     "qtyInputSel": null,
     "shipping": {
       "mode": "none"
-    }
-  },
-  {
-    "id": "aliexpress-cart",
-    "name": "aliexpress 장바구니",
-    "domains": [
-      "aliexpress.com"
-    ],
-    "matchPatterns": [
-      "*://*.aliexpress.com/p/shoppingcart*"
-    ],
-    "filterDomains": [
-      "aliexpress.com"
-    ],
-    "rowSelector": "div.cart-product-wrap-group-new:has(input.comet-v2-checkbox-input[checked])",
-    "rowBase": "div.cart-product-wrap-group-new",
-    "checkbox": {
-      "sel": "input.comet-v2-checkbox-input",
-      "stateMode": "checked"
-    },
-    "productKey": null,
-    "selectedState": null,
-    "fields": {
-      "name": {
-        "sel": "a.cart-product-name-title",
-        "attr": "title"
-      },
-      "qty": {
-        "sel": "input.comet-v2-input-number-input",
-        "attr": "value"
-      },
-      "price": {
-        "sel": "div.cart-product-price-activity",
-        "regex": "([\\d,]+)"
-      },
-      "option": {
-        "sel": "div.skuStr",
-        "attr": "title"
-      }
-    },
-    "units": null,
-    "checkedOnly": {
-      "sel": "input.comet-v2-checkbox-input",
-      "legacySel": "label.comet-v2-checkbox-checked"
-    },
-    "priceIs": null,
-    "specFromOption": true,
-    "verifyCount": null,
-    "qtyFromUnit": null,
-    "qtyInputSel": null,
-    "shipping": {
-      "mode": "perItem",
-      "sel": "div.cart-product-ship-freight",
-      "regex": "([\\d,]+)"
     }
   },
   {
@@ -772,7 +718,6 @@
   var HOST_PATTERNS = [
   "*://*.11st.co.kr/cart*",
   "*://*.aladin.co.kr/*",
-  "*://*.aliexpress.com/p/shoppingcart*",
   "*://*.alpha.co.kr/order/cart*",
   "*://*.cart.auction.co.kr/*",
   "*://*.cart.gmarket.co.kr/*",

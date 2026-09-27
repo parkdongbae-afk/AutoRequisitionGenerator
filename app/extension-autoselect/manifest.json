@@ -24,7 +24,6 @@
   "host_permissions": [
     "*://*.11st.co.kr/cart*",
     "*://*.aladin.co.kr/*",
-    "*://*.aliexpress.com/p/shoppingcart*",
     "*://*.alpha.co.kr/order/cart*",
     "*://*.cart.auction.co.kr/*",
     "*://*.cart.gmarket.co.kr/*",
@@ -44,7 +43,6 @@
       "matches": [
         "*://*.11st.co.kr/cart*",
         "*://*.aladin.co.kr/*",
-        "*://*.aliexpress.com/p/shoppingcart*",
         "*://*.alpha.co.kr/order/cart*",
         "*://*.cart.auction.co.kr/*",
         "*://*.cart.gmarket.co.kr/*",

@@ -66,6 +66,8 @@ export default function AdminModal() {
   const setShowOpenFolder = useStore(s => s.setShowOpenFolder)
   const showOpenFiles = useStore(s => s.showOpenFiles)
   const setShowOpenFiles = useStore(s => s.setShowOpenFiles)
+  const adminShowStatusInfo = useStore(s => s.adminShowStatusInfo)
+  const setAdminShowStatusInfo = useStore(s => s.setAdminShowStatusInfo)
 
   const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState(DEFAULT_MODEL)
@@ -442,6 +444,19 @@ export default function AdminModal() {
               className="h-5 w-5 shrink-0 accent-blue-600"
               checked={!!showOpenFiles}
               onChange={e => setShowOpenFiles(e.target.checked)}
+            />
+          </label>
+
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <span className="text-[13.5px] text-[#1E293B]">
+              상태바 좌측 정보 표시 (MHTML·엑셀 경로)
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">메인 화면 좌측 하단의 MHTML 개수와 엑셀 경로 표시를 켜거나 끕니다 (기본: 끄기)</span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 shrink-0 accent-blue-600"
+              checked={!!adminShowStatusInfo}
+              onChange={e => setAdminShowStatusInfo(e.target.checked)}
             />
           </label>
 

@@ -45,6 +45,10 @@ export default function SettingsModal() {
   const setShowHalfButton = useStore(s => s.setShowHalfButton)
   const showRequisition = useStore(s => s.showRequisition)
   const setShowRequisition = useStore(s => s.setShowRequisition)
+  const showExcelLoad = useStore(s => s.showExcelLoad)
+  const setShowExcelLoad = useStore(s => s.setShowExcelLoad)
+  const showRulesManage = useStore(s => s.showRulesManage)
+  const setShowRulesManage = useStore(s => s.setShowRulesManage)
   const teacherName = useStore(s => s.teacherName)
   const setTeacherName = useStore(s => s.setTeacherName)
   const autoSelectTolerance = useStore(s => s.autoSelectTolerance)
@@ -368,8 +372,8 @@ export default function SettingsModal() {
 
           <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
             <span className="text-[13.5px] text-[#1E293B]">
-              요구서 작성 버튼 표시
-              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 하단 우측의 "요구서 작성" 버튼을 켜거나 끕니다 (기본: 켜기) — 누르면 품의 개요 작성 프로그램이 열립니다</span>
+              품의 내용 버튼 표시
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 하단 우측의 "품의 내용" 버튼을 켜거나 끕니다 (기본: 켜기) — 누르면 품의 개요 작성 프로그램이 열립니다</span>
             </span>
             <input
               type="checkbox"
@@ -389,6 +393,32 @@ export default function SettingsModal() {
               className="h-5 w-5 shrink-0 accent-blue-600"
               checked={!!showRuleAdd}
               onChange={e => setShowRuleAdd(e.target.checked)}
+            />
+          </label>
+
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <span className="text-[13.5px] text-[#1E293B]">
+              기존 엑셀 불러오기 버튼 표시
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단 좌측의 "기존 엑셀 불러오기" 버튼을 켜거나 끕니다 (기본: 끄기)</span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 shrink-0 accent-blue-600"
+              checked={!!showExcelLoad}
+              onChange={e => setShowExcelLoad(e.target.checked)}
+            />
+          </label>
+
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
+            <span className="text-[13.5px] text-[#1E293B]">
+              규칙 관리 버튼 표시
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단 우측의 "🗑 규칙 관리" 버튼을 켜거나 끕니다 (기본: 끄기)</span>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 shrink-0 accent-blue-600"
+              checked={!!showRulesManage}
+              onChange={e => setShowRulesManage(e.target.checked)}
             />
           </label>
 

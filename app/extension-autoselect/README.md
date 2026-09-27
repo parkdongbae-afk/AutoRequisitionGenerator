@@ -17,12 +17,11 @@
 3. **압축해제된 확장 프로그램을 로드** → 이 폴더(`app/extension-autoselect`) 선택
 4. 학교 공용 계정으로 쇼핑몰에 로그인 후 장바구니를 열고 툴바의 **물품 자동 선택** 아이콘 클릭
 
-## 지원 쇼핑몰 (장바구니 규칙 15종 — rules-data.js 자동 생성)
+## 지원 쇼핑몰 (장바구니 규칙 14종 — rules-data.js 자동 생성)
 
 | 쇼핑몰 | 규칙 ID | 도메인 |
 |---|---|---|
 | 알라딘 | aladin | aladin.co.kr |
-| aliexpress | aliexpress-cart | aliexpress.com |
 | 알파몰 | alphamall-cart | alpha.co.kr/order/cart |
 | 옥션 | auction-cart | cart.auction.co.kr |
 | 쿠팡 | coupang | coupang.com |
@@ -38,6 +37,7 @@
 | 예스24 | yes24-cart | yes24.com/dMyCart/CartMain |
 
 > e마트몰(ssg.com) 장바구니는 주문서 전용 지원으로 자동 선택 대상에서 제외됩니다.
+> 알리익스프레스는 교육청 사용 불가로 v1.48.0부터 지원이 제외되었습니다.
 
 ## 구성
 
