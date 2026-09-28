@@ -1,11 +1,13 @@
 # 프로젝트 작업 요약 (다른 세션 인계용)
 
-**작성일:** 2026-09-28 | **현재 버전:** v1.49.3 | **작업 폴더:** `C:\Users\dongbae\Desktop\Automatic_generation_of_approval_requests_html`
+**작성일:** 2026-09-28 | **현재 버전:** v1.49.5 | **작업 폴더:** `C:\Users\dongbae\Desktop\Automatic_generation_of_approval_requests_html`
 
-## 1-A. 최신 변경 (v1.49.3)
+## 1-A. 최신 변경 (v1.49.5)
 
 | 기능 | 내용 |
 |---|---|
+| [🔗 물품 자동 선택 다른 쇼핑몰 링크를 홈페이지로 변경 (v1.49.5)] 확장 1.2.1. v1.49.4의 장바구니 직접 링크가 쿠팡에서 **404 실측**(`/np/cart` 페이지 없음 — 몰별 개편으로 카트 경로가 자주 바뀜) → core.js CART_URLS(14몰 카트 경로)를 **MALL_HOME_URLS(14몰 홈페이지)**로 교체, 링크 클릭 시 새 탭으로 그 쇼핑몰 홈페이지를 연다(표시 문구 "쿠팡 장바구니 3건(누르면 바로 이동)"은 유지, 반환 필드 cartUrl→homeUrl). test-autoselect-core.js 기대값 갱신 102건 ALL PASS. 검증: 빌드 OK + E2E 19샘플 err 0 + rendererErrs [] + footer v1.49.5 + %APPDATA% 설치 사본 동기화(1.2.1) | ✅ v1.49.5 |
+| [🛒 물품 자동 선택 결과 안내 개선 — 확인 필요 빨간 강조 + 다른 쇼핑몰별 장바구니 링크 (v1.49.4)] 확장 1.2.0. ① **요약 줄 강조** — "총 N건 중 M건 선택 완료 / K건 확인 필요"에서 K>0이면 **"K건 확인 필요"를 빨간색(#dc2626) 진하게** 표시(popup.js renderResults innerHTML — 숫자만 삽입) ② **다른 쇼핑몰 품목 그룹화 안내** — 기존 "다른 쇼핑몰 품목 N건은 해당 쇼핑몰 장바구니에서 실행해 주세요." 한 줄을 쇼핑몰별로 분해: 엑셀 쇼핑몰 열(F열=캡처 시 규칙 이름)이 지원 몰 이름(14종 rules-data)과 **정확히 일치**하면 "**쿠팡 장바구니 3건(누르면 바로 이동)**" 형태의 링크 표시 → 클릭 시 `chrome.tabs.create`로 **현재 브라우저 새 탭**에 그 몰 장바구니 열기(core.js CART_URLS 14몰 매핑), 일치하지 않으면(주문서 규칙명 "11번가"·"네이버쇼핑"·"알라딘 주문서" 또는 미지원 몰) "**11번가 주문서 5건(자동선택 필요 없음)**" 링크 없이 표기 — core.js에 순수 함수 groupOtherRows 추가 + 단위 테스트 10건(test-autoselect-core.js 102건 ALL PASS). 검증: 빌드 OK + E2E 19샘플 err 0 + rendererErrs [] + footer v1.49.4 + %APPDATA% 설치 사본 동기화(1.2.0) | ✅ v1.49.4 |
 | [📖 관리자 매뉴얼에 "쇼핑몰 개편 시 관리자 대응 절차" 신설 (v1.49.3)] make-admin-manual-pdf.js에 §7 신설 — ①증상으로 원인 구분(거부 팝업=미매칭/일부 오류=부분 변경/전 몰 실패=채널 문제) ②증상 접수·범위 확인 ③문제 캡처+정답 엑셀 확보 ④test-rule.js로 깨진 지점 확인 ⑤규칙 재생성(F9 도구 또는 셀렉터 직접 수정) ⑥검증(test-cart-stamped·test-cart-fix·test-feedback) ⑦builtin 등록·우선순위(id-cart 특화 규칙을 일반 규칙보다 앞) ⑧Git 배포→교원 [⬇ 업데이트 확인] ⑨교원 안내 ⑩SUMMARY/RPD 기록 + 빨간 주의 박스(규칙 삭제·파서 코드 수정은 새 exe 배포 필요, rules.json 신형식은 새 exe 배포 후 푸시). 부록은 §8로 재번호. 문서 정합성: UIUX·AUTO_SELECT·README·REPORT.MD의 낡은 버튼명(북마크바 추가·익스텐션 추가·물품 자동 선택 익스텐션 추가)을 현행 라벨로 갱신. 검증: 빌드 OK + E2E 19샘플 err 0 + rendererErrs [] + footer v1.49.3 + admin-manual.pdf 4페이지 렌더 확인 | ✅ v1.49.3 |
 | [🏷 용어 정리 2건 + 시작 프로그램 표시 이름 수정 (v1.49.2)] ① 메인 상단 [🧩 익스텐션 추가] → **[🧩 확장 프로그램 추가]**(설정 토글 "확장 프로그램 추가 버튼 표시"·북마크릿 설치 페이지 안내 문구 동반 갱신) ② 설정의 [물품 자동 선택 익스텐션 추가] → **[물품 자동 선택 확장 프로그램 추가]** ③ **시작 프로그램 표시 이름 수정** — Windows 작업관리자 시작프로그램 이름은 exe FileDescription(= package.json description)을 따르는데 긴 설명 문장이 표시되던 것 → description을 "자동 품의 요구 생성기"로 수정(배포 exe FileDescription 실측 확인) ④ 교사용 매뉴얼 갱신 — [🧩 확장 프로그램 추가]·[⭐ 북마크릿 추가]·[품의 개요 작성] 현행 라벨 반영(v1.48.x~v1.49.x에 미갱신됐던 6곳 포함) 후 manual.pdf 재생성. 검증: 빌드 OK + E2E 19샘플 err 0 + rendererErrs [] + footer v1.49.2 + FileDescription="자동 품의 요구 생성기" 확인 | ✅ v1.49.2 |
 | [🎨 물품 자동 선택 확장 아이콘 교체 (v1.49.1)] 사용자 제공 원본 이미지(icons/물품 자동 선택/물품자동선택.png, 515×512)를 System.Drawing 고품질 바이큐빅으로 512 정방형 크롭 → icon16/48/128 재생성(기존 파일은 22×26 등 잘못된 크기의 섬네일이었음). 자동 선택 확장 1.1.1(manifest 버전 bump). app 소스·%APPDATA% 설치 사본 동시 교체 — 브라우저에서 아이콘 갱신은 확장 재설치 또는 브라우저 재시작 필요 | ✅ v1.49.1 |

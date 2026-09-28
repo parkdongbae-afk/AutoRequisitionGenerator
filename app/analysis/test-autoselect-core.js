@@ -308,6 +308,50 @@ function eq(name, actual, expected) {
   check('키전용: 안내문에 빈 URL 줄 없음', !msg.includes('- 상품 URL: '), msg);
 })();
 
+// ---------- 9. 다른 쇼핑몰 품목 그룹화 ----------
+// 엑셀 쇼핑몰 열(캡처 시 규칙 이름)이 지원 몰 이름과 정확히 일치하면 장바구니 링크,
+// 아니면 주문서 등 다른 화면에서 온 물품으로 링크 없이 안내한다.
+(function testGroupOtherRows() {
+  const malls = [
+    { id: 'coupang', name: '쿠팡' },
+    { id: 'gmarket-cart', name: 'G마켓 장바구니' },
+    { id: 'st11-cart', name: '11번가 장바구니' }
+  ];
+  const otherRows = [
+    { mall: '쿠팡' }, { mall: '쿠팡' }, { mall: '쿠팡' },
+    { mall: '11번가' }, { mall: '11번가' },
+    { mall: 'G마켓 장바구니' },
+    { mall: '무신사' },
+    { mall: '' }
+  ];
+  const groups = Core.groupOtherRows(otherRows, malls);
+  eq('그룹: 그룹 수', groups.length, 5);
+
+  const coupang = groups.find((g) => g.kind === 'cart' && g.label === '쿠팡');
+  check('그룹: 쿠팡 → cart 링크', !!coupang, JSON.stringify(groups));
+  eq('그룹: 쿠팡 건수', coupang && coupang.count, 3);
+  eq('그룹: 쿠팡 홈페이지 URL', coupang && coupang.homeUrl, 'https://www.coupang.com');
+
+  const st11 = groups.find((g) => g.kind === 'order' && g.label === '11번가');
+  check('그룹: 11번가(주문서 규칙명) → 링크 없음', !!st11 && !st11.homeUrl, JSON.stringify(groups));
+  eq('그룹: 11번가 건수', st11 && st11.count, 2);
+
+  // 카트 규칙 이름("11번가 장바구니")은 정확 일치 시 링크 대상이 된다
+  const gmarket = groups.find((g) => g.kind === 'cart' && g.label === 'G마켓');
+  check('그룹: G마켓 장바구니 → cart 링크', !!gmarket && !!gmarket.homeUrl, JSON.stringify(groups));
+
+  const musinsa = groups.find((g) => g.label === '무신사');
+  check('그룹: 미지원 몰 → 링크 없음', !!musinsa && musinsa.kind === 'order', JSON.stringify(groups));
+
+  const empty = Core.groupOtherRows([], malls);
+  eq('그룹: 빈 목록', empty.length, 0);
+
+  // 같은 라벨은 하나의 그룹으로 합쳐진다(첫 등장 순서 유지)
+  const dup = Core.groupOtherRows([{ mall: '쿠팡' }, { mall: '11번가' }, { mall: '쿠팡' }], malls);
+  eq('그룹: 동일 라벨 병합', dup.length, 2);
+  eq('그룹: 병합 후 쿠팡 건수', dup[0].count, 2);
+})();
+
 // ---------- 결과 ----------
 console.log('passed: ' + passCount + ', failed: ' + failCount);
 if (failCount > 0) {

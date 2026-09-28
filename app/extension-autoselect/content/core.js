@@ -143,6 +143,52 @@
     return { mallRows: mallRows, otherRows: otherRows };
   }
 
+  // 자동 선택 지원 몰의 홈페이지 주소 — 다른 쇼핑몰 품목 안내에서 바로 이동 링크로 연다.
+  // 카트 페이지는 몰별 개편으로 경로가 자주 깨지므로(쿠팡 /np/cart 404 실측) 홈페이지로 연다.
+  var MALL_HOME_URLS = {
+    'aladin': 'https://www.aladin.co.kr',
+    'alphamall-cart': 'https://www.alpha.co.kr',
+    'auction-cart': 'https://www.auction.co.kr',
+    'coupang': 'https://www.coupang.com',
+    'daisomall': 'https://www.daisomall.co.kr',
+    'dreamdepot': 'https://www.dreamdepot.co.kr',
+    'gmarket-cart': 'https://www.gmarket.co.kr',
+    'icecream-cart': 'https://www.i-screammall.co.kr',
+    'kyobo-cart': 'https://www.kyobobook.co.kr',
+    'naver-cart': 'https://shopping.naver.com',
+    'officedepot': 'https://www.officedepot.co.kr',
+    'st11-cart': 'https://www.11st.co.kr',
+    'teachermall-cart': 'https://www.teacherville.co.kr',
+    'yes24-cart': 'https://www.yes24.com'
+  };
+
+  /*
+   * 다른 쇼핑몰 품목 그룹화(팝업 안내용).
+   * 엑셀 쇼핑몰 열(캡처 시 규칙 이름)이 기준 — 규칙 이름이 자동 선택 지원 몰과
+   * "정확히" 일치하면 그 몰에서 실행 가능(홈페이지 링크 제공), 아니면 주문서 등
+   * 다른 화면에서 온 물품이므로 링크 없이 안내만 한다.
+   *   cart : { kind:'cart', label:'쿠팡',  count:3, homeUrl:'https://www.coupang.com' } → "쿠팡 장바구니 3건(누르면 바로 이동)"
+   *   order: { kind:'order', label:'11번가', count:5 }                          → "11번가 주문서 5건(자동선택 필요 없음)"
+   */
+  function groupOtherRows(otherRows, malls) {
+    var byLabel = {}, order = [];
+    (otherRows || []).forEach(function (row) {
+      var label = String(row.mall || '').trim() || '쇼핑몰 미확인';
+      if (!byLabel[label]) { byLabel[label] = { label: label, count: 0 }; order.push(byLabel[label]); }
+      byLabel[label].count++;
+    });
+    return order.map(function (g) {
+      var mall = null;
+      for (var i = 0; i < (malls || []).length; i++) {
+        if (String(malls[i].name || '').trim() === g.label) { mall = malls[i]; break; }
+      }
+      if (mall && MALL_HOME_URLS[mall.id]) {
+        return { kind: 'cart', label: String(mall.name || '').replace(/ 장바구니$/, ''), count: g.count, homeUrl: MALL_HOME_URLS[mall.id], mallId: mall.id };
+      }
+      return { kind: 'order', label: g.label, count: g.count };
+    });
+  }
+
   // ---- 매칭 ----
   // excelRow: {rowId, url, qty, option, basePrice, name, mall, productKey, seller}
   // cartItem: {cartRowId, productUrl, productKey, name, option, quantity, price, priceIs, checked}
@@ -387,6 +433,7 @@
     findMall: findMall,
     rowBelongsToMall: rowBelongsToMall,
     filterRowsForMall: filterRowsForMall,
+    groupOtherRows: groupOtherRows,
     prepareCartItem: prepareCartItem,
     resolveMatch: resolveMatch,
     validateMatched: validateMatched,

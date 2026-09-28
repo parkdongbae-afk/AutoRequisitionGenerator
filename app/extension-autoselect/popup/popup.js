@@ -180,8 +180,12 @@ function issueSummary(r) {
 
 function renderResults() {
   const s = $('summary');
-  s.textContent = '총 ' + state.total + '건 중 ' + state.selected + '건 선택 완료 / ' +
-    state.results.filter((r) => r.status === 'ISSUE').length + '건 확인 필요';
+  const issueCount = state.results.filter((r) => r.status === 'ISSUE').length;
+  // 확인 필요 품목이 있으면 해당 부분만 빨간색 진하게 표시(숫자만 넣으므로 innerHTML 안전)
+  s.innerHTML = '총 ' + state.total + '건 중 ' + state.selected + '건 선택 완료 / ' +
+    (issueCount > 0
+      ? '<strong class="need-check">' + issueCount + '건 확인 필요</strong>'
+      : issueCount + '건 확인 필요');
 
   const list = $('resultList');
   list.innerHTML = '';
@@ -257,17 +261,41 @@ function run() {
       state.selected = res.selected;
       state.total = res.total;
       showValidate('', false);
-      const info = $('otherMallInfo');
-      if (filtered.otherRows.length) {
-        info.textContent = '다른 쇼핑몰 품목 ' + filtered.otherRows.length + '건은 해당 쇼핑몰 장바구니에서 실행해 주세요.';
-        show(info, true);
-      } else {
-        show(info, false);
-      }
+      renderOtherMallInfo(filtered.otherRows);
       setFilter('all');
       renderResults();
     });
   });
+}
+
+// 다른 쇼핑몰 품목 안내 — 쇼핑몰별로 묶어 표시한다.
+//  · 자동 선택 지원 몰(규칙 이름 정확 일치): "쿠팡 장바구니 3건(누르면 바로 이동)" — 클릭 시 새 탭으로 그 쇼핑몰 홈페이지 열기
+//  · 그 외(주문서 등): "11번가 주문서 5건(자동선택 필요 없음)" — 링크 없음
+function renderOtherMallInfo(otherRows) {
+  const info = $('otherMallInfo');
+  const groups = Core.groupOtherRows(otherRows, Rules.malls);
+  if (!groups.length) { show(info, false); return; }
+  info.innerHTML = '';
+  for (const g of groups) {
+    const line = document.createElement('div');
+    if (g.kind === 'cart') {
+      const a = document.createElement('a');
+      a.href = g.homeUrl;
+      a.className = 'mall-link';
+      a.textContent = g.label + ' 장바구니 ' + g.count + '건(누르면 바로 이동)';
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        chrome.tabs.create({ url: g.homeUrl, active: true });
+      });
+      line.appendChild(a);
+    } else {
+      line.className = 'mall-plain';
+      line.textContent = (g.label.endsWith('주문서') ? g.label : g.label + ' 주문서') +
+        ' ' + g.count + '건(자동선택 필요 없음)';
+    }
+    info.appendChild(line);
+  }
+  show(info, true);
 }
 
 function setFilter(f) {
