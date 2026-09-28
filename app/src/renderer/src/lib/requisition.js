@@ -23,7 +23,7 @@ const TEMPLATES = {
     '  가. 내역:',
     '  나. 용도:',
     '  다. 소요예산: 금○,○○○원',
-    '  라. 산출내역: △△외 ○건(품의명세서 참조)',
+    '  라. 산출내역: △△ 외 ○건(품의명세서 참조)',
     '',
     '붙임  지출(지급)품의서 1부.  끝.'
   ].join('\n'),
@@ -127,10 +127,10 @@ export function fillTemplate(typeId, { title, detail, purpose, total, firstItem,
       if (line.startsWith('  가. 내역:') && d) return `  가. 내역: ${d}`
       if (line.startsWith('  나. 용도:') && purpose) return `  나. 용도: ${purpose}`
       if (line.startsWith('  다. 소요예산:') && hasAmt) return `  다. 소요예산: 금${amountText}`
-      if (line.startsWith('  라. 산출내역:') && item) return `  라. 산출내역: ${item}외 ${n}건(품의명세서 참조)`
+      if (line.startsWith('  라. 산출내역:') && item) return `  라. 산출내역: ${item} 외 ${n}건(품의명세서 참조)`
     } else if (typeId === 'allowance') {
       if (line.startsWith('  다. 소요예산:') && hasAmt) return `  다. 소요예산: 금${amountText}`
-      if (line.startsWith('  라. 산출내역:') && item) return `  라. 산출내역: ${item}외 ${n}명(수당지급명세서 참조)`
+      if (line.startsWith('  라. 산출내역:') && item) return `  라. 산출내역: ${item} 외 ${n}명(수당지급명세서 참조)`
     } else if (typeId === 'council') {
       if (line.startsWith('  마. 소요예산:') && hasAmt) return `  마. 소요예산: 금${amountText}`
       if (line.startsWith('  바. 산출내역:') && hasAmt) return `  바. 산출내역: ${amt.toLocaleString()}원 * ${n}명`
@@ -188,7 +188,7 @@ export const EXAMPLES = {
     '  가. 내역: 교육운영비 - 행사용품구입',
     '  나. 용도: 입학식 행사 운영을 위한 물품 구매',
     '  다. 소요예산: 금396,000원(금삼십구만육천원)',
-    '  라. 산출내역: △△외 ○건(품의명세서 참조)',
+    '  라. 산출내역: △△ 외 ○건(품의명세서 참조)',
     '',
     '붙임 지출(지급)품의서 1부. 끝.'
   ].join('\n'),

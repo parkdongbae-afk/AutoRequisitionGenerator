@@ -298,7 +298,7 @@ export default function Grid() {
                         {r.copyUrl && (
                           <button
                             className="rounded bg-[#DCFCE7] px-1.5 py-0.5 text-[10px] font-semibold text-green-700 transition-colors duration-100 hover:bg-green-500 hover:text-white"
-                            title="품의캡처한 주문서 화면의 브라우저 주소를 클립보드에 복사합니다"
+                            title={'품의캡처한 주문서 화면의 브라우저 주소를 클립보드에 복사합니다\n주소복사 버튼이 나타나는 쇼핑몰(주문서): G마켓, 네이버쇼핑, 교보문고, 예스24, 옥션, 다이소몰, 드림디포, e마트몰, 엘레파츠'}
                             onClick={e => {
                               e.stopPropagation()
                               window.api.copyText(r.copyUrl)

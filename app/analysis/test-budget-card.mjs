@@ -63,18 +63,18 @@ const buyText = fillTemplate('buy', { ...FILL, purpose: inferPurpose('buy', FILL
 check('물품: 2번째 줄 제목 치환', buyText.includes('2. 청소 및 위생용품 관련 물품을 아래와 같이 구입하고자 합니다.'))
 check('물품: 가. 내역 치환', buyText.includes('  가. 내역: 일반수용비 - 위생방역용품구입'))
 check('물품: 다. 소요예산 금액+한글', buyText.includes('  다. 소요예산: 금396,000원(금삼십구만육천원)'))
-check('물품: 라. 산출내역 품목+건수', buyText.includes('  라. 산출내역: 마미손 고무장갑외 9건(품의명세서 참조)'))
+  check('물품: 라. 산출내역 품목+건수', buyText.includes('  라. 산출내역: 마미손 고무장갑 외 9건(품의명세서 참조)'))
 check('물품: 붙임 줄 유지', buyText.includes('붙임  지출(지급)품의서 1부.  끝.'))
 
 const dataNone = fillTemplate('buy', { title: '', detail: '', total: 0, firstItem: '', count: 0 })
 check('데이터 부재 시 placeholder 유지(금○,○○○원)', dataNone.includes('  다. 소요예산: 금○,○○○원'))
-check('데이터 부재 시 placeholder 유지(△△외 ○건)', dataNone.includes('  라. 산출내역: △△외 ○건(품의명세서 참조)'))
+  check('데이터 부재 시 placeholder 유지(△△ 외 ○건)', dataNone.includes('  라. 산출내역: △△ 외 ○건(품의명세서 참조)'))
 check('데이터 부재 시 제목 ○○○ 유지', dataNone.includes('2. ○○○ 관련 물품을'))
 
 const allowText = fillTemplate('allowance', { title: '방과후학교 지도강사', detail: '', total: 360000, firstItem: '홍길동', count: 3 })
 check('수당: 2번째 줄 제목 치환', allowText.includes('2. 방과후학교 지도강사 관련 수당을 아래와 같이 지급하고자 합니다.'))
 check('수당: 다. 소요예산 금360,000원(금삼십육만원)', allowText.includes('  다. 소요예산: 금360,000원(금삼십육만원)'))
-check('수당: 라. 산출내역 명수', allowText.includes('  라. 산출내역: 홍길동외 3명(수당지급명세서 참조)'))
+  check('수당: 라. 산출내역 명수', allowText.includes('  라. 산출내역: 홍길동 외 3명(수당지급명세서 참조)'))
 check('수당: 지급조서 별첨 갱신 문구', allowText.includes('※ 사업완료에 따른 지급조서 별첨 (행정용이며 교원은 삭제)'))
 check('수당: 붙임 앞 빈 줄 유지', allowText.includes('\n\n붙임  지출(지급)품의서 1부.  끝.'))
 

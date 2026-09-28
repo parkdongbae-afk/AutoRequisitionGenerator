@@ -136,7 +136,6 @@ export default function RequisitionPage() {
   const [iIdx, setIIdx] = useState(0)
   const [aIdx, setAIdx] = useState(0)
   const [detail, setDetail] = useState('')
-  const [editing, setEditing] = useState(false)
   const [editorText, setEditorText] = useState('')
   const [daeHoRemoved, setDaeHoRemoved] = useState(false)
   const [showExamples, setShowExamples] = useState(false)
@@ -146,8 +145,9 @@ export default function RequisitionPage() {
   const [purposeMode, setPurposeMode] = useState('keyword')
   const [customPurpose, setCustomPurpose] = useState('')
   const [customPurposes, setCustomPurposes] = useState([])
-  // 사업관리카드 즐겨찾기(파일 경로 목록) — 클릭하면 언제든 바로 불러온다(v1.48.9)
-  const [favorites, setFavorites] = useState([])
+  // 사업관리카드 즐겨찾기(v1.48.10) — 파일이 아니라 "세부사업·세부항목·산출내역 선택"을 통째로
+  // 저장한다(제목 = 산출내역 표시값). 목록 클릭 한 번으로 3단이 함께 바뀐다
+  const [selFavorites, setSelFavorites] = useState([])
 
   const type = typeById(typeId)
 
@@ -197,6 +197,15 @@ export default function RequisitionPage() {
   const items = (businesses[bIdx] && businesses[bIdx].items) || []
   const accounts = (items[iIdx] && items[iIdx].accounts) || []
 
+  // "가. 내역:"에 들어갈 문구 — 산출내역만이 아니라 세부사업-세부항목-산출내역 3단을 모두 반영한다
+  // (예: 교과활동지원-(목적)두드림학교운영-운영수당-상담프로그램 강사수당, v1.48.10)
+  const detailText = (bs, b, i, a) => {
+    const bu = bs && bs[b]
+    const it = bu && bu.items && bu.items[i]
+    const acc = it && it.accounts && it.accounts[a]
+    return acc ? `${bu.name}-${it.name}-${accountDisplay(acc)}` : ''
+  }
+
   const applyBudget = (res, sel) => {
     const bs = res.businesses || []
     setBudget({ fileName: res.fileName, path: res.path, businesses: bs })
@@ -211,10 +220,7 @@ export default function RequisitionPage() {
       }
     }
     setBIdx(b); setIIdx(i); setAIdx(a)
-    if (!editing) {
-      const it = (bs[b] && bs[b].items[i]) || null
-      setDetail(accountDisplay(it && it.accounts && it.accounts[a]))
-    }
+    setDetail(detailText(bs, b, i, a))
   }
 
   // 열릴 때 저장된 사업관리카드 자동 로드 — 세부사업/세부항목/산출내역이 즉시 채워짐
@@ -227,7 +233,7 @@ export default function RequisitionPage() {
         if (!alive) return
         setPurposeMode(settings && settings.reqPurposeMode === 'custom' ? 'custom' : 'keyword')
         setCustomPurposes(Array.isArray(settings && settings.customPurposes) ? settings.customPurposes : [])
-        setFavorites(Array.isArray(settings && settings.budgetCardFavorites) ? settings.budgetCardFavorites : [])
+        setSelFavorites(Array.isArray(settings && settings.budgetSelFavorites) ? settings.budgetSelFavorites : [])
         const p = settings && settings.budgetCardPath
         if (!p) return
         const res = await window.api.parseBudgetCard(p)
@@ -268,7 +274,7 @@ export default function RequisitionPage() {
 
   const selectAccount = (idx) => {
     setAIdx(idx)
-    if (!editing) setDetail(accountDisplay(accounts[idx]))
+    setDetail(detailText(businesses, bIdx, iIdx, idx))
     persistSel(bIdx, iIdx, idx)
   }
 
@@ -276,20 +282,14 @@ export default function RequisitionPage() {
     setBIdx(idx)
     setIIdx(0)
     setAIdx(0)
-    if (!editing) {
-      const it = (businesses[idx] && businesses[idx].items[0]) || null
-      setDetail(accountDisplay(it && it.accounts[0]))
-    }
+    setDetail(detailText(businesses, idx, 0, 0))
     persistSel(idx, 0, 0)
   }
 
   const selectItem = (idx) => {
     setIIdx(idx)
     setAIdx(0)
-    if (!editing) {
-      const it = items[idx] || null
-      setDetail(accountDisplay(it && it.accounts[0]))
-    }
+    setDetail(detailText(businesses, bIdx, idx, 0))
     persistSel(bIdx, idx, 0)
   }
 
@@ -317,58 +317,57 @@ export default function RequisitionPage() {
       } catch {}
       if (!go) return
     }
-    setEditing(false)
     applyBudget(res, null)
-    // 새 파일을 즉시 등록(자동 로드 카드로 지정) — 계층 선택은 새 파일 기준으로 초기화
     window.api.setSetting('budgetCardPath', res.path)
     window.api.setSetting('budgetCardSel', { b: 0, i: 0, a: 0 })
     setSavedPath(res.path)
     toast(`새 사업관리카드 등록 완료: ${res.fileName} — 세부사업·세부항목·산출내역 선택은 자동으로 기억됩니다`, 'ok', 6000)
   }
 
-  // 사업관리카드 즐겨찾기(v1.48.9) — 자동 로드 카드와 별개로 여러 파일을 저장해 두고 바로 불러온다
-  const addFavorite = () => {
+  // 산출내역 즐겨찾기(v1.48.10) — 세부사업·세부항목·산출내역 선택을 통째로 저장/복원.
+  // 다른 카드 파일의 즐겨찾기면 해당 파일을 먼저 불러온 뒤 계층을 적용한다
+  const addSelFavorite = () => {
     if (!budget || !budget.path) {
       toast('즐겨찾기에 추가할 카드가 없습니다 — 먼저 [📂 파일 찾기]로 파일을 선택하세요', 'warn')
       return
     }
-    if (favorites.includes(budget.path)) {
-      toast('이미 즐겨찾기에 등록된 카드입니다', 'warn')
+    const acc = accounts[aIdx]
+    if (!acc) {
+      toast('산출내역을 먼저 선택해 주세요', 'warn')
       return
     }
-    const next = [...favorites, budget.path]
-    setFavorites(next)
-    window.api.setSetting('budgetCardFavorites', next)
-    toast(`즐겨찾기 등록: ${budget.fileName}`, 'ok')
+    const entry = { path: budget.path, b: bIdx, i: iIdx, a: aIdx, title: accountDisplay(acc) }
+    const dup = selFavorites.some(f => f.path === entry.path && f.b === entry.b && f.i === entry.i && f.a === entry.a)
+    if (dup) {
+      toast('이미 즐겨찾기에 등록된 산출내역입니다', 'warn')
+      return
+    }
+    const next = [...selFavorites, entry]
+    setSelFavorites(next)
+    window.api.setSetting('budgetSelFavorites', next)
+    toast(`즐겨찾기 추가: ${entry.title}`, 'ok')
   }
 
-  const removeFavorite = (p) => {
-    const next = favorites.filter(x => x !== p)
-    setFavorites(next)
-    window.api.setSetting('budgetCardFavorites', next)
+  const removeSelFavorite = (f) => {
+    const next = selFavorites.filter(x => !(x.path === f.path && x.b === f.b && x.i === f.i && x.a === f.a))
+    setSelFavorites(next)
+    window.api.setSetting('budgetSelFavorites', next)
     toast('즐겨찾기에서 삭제했습니다', 'ok')
   }
 
-  const loadFavorite = async (p) => {
-    if (budget && budget.path === p) {
-      toast('이미 불러온 카드입니다', 'info')
-      return
-    }
+  const clickSelFavorite = async (f) => {
     try {
-      const res = await window.api.parseBudgetCard(p)
-      if (res.error) {
-        toast(`카드 불러오기 실패: ${res.error}`, 'err')
-        return
+      if (!budget || budget.path !== f.path) {
+        const res = await window.api.parseBudgetCard(f.path)
+        if (res.error) {
+          toast(`카드 불러오기 실패: ${res.error}`, 'err')
+          return
+        }
+        applyBudget(res, { b: f.b, i: f.i, a: f.a })
+      } else {
+        applyBudget(budget, { b: f.b, i: f.i, a: f.a })
       }
-      // 자동 로드(저장) 카드와 같은 파일이면 저장된 계층 선택도 함께 복원한다
-      let savedSel = null
-      if (p === savedPath) {
-        const s = await window.api.getSettings()
-        savedSel = (s && s.budgetCardSel) || null
-      }
-      setEditing(false)
-      applyBudget(res, savedSel)
-      toast(`사업관리카드 불러옴: ${res.fileName}${p === savedPath ? ' (저장된 계층 선택 복원)' : ''}`, 'ok')
+      toast(`세부사업·세부항목·산출내역 변경: ${f.title}`, 'ok')
     } catch (e) {
       toast(`카드 불러오기 실패: ${String((e && e.message) || e)}`, 'err')
     }
@@ -662,14 +661,6 @@ export default function RequisitionPage() {
                     📂 파일 찾기
                   </button>
                   <button
-                    className="shrink-0 rounded-md border border-[#FDE68A] bg-[#FEF3C7] px-3 py-1.5 text-[12.5px] font-bold text-[#B45309] transition-colors duration-150 hover:bg-[#FDE68A] disabled:cursor-not-allowed disabled:opacity-40"
-                    onClick={addFavorite}
-                    disabled={!budget}
-                    title="현재 사업관리카드를 즐겨찾기에 추가 — 아래 목록에서 클릭해 언제든 바로 불러올 수 있습니다"
-                  >
-                    ⭐ 즐겨찾기 추가
-                  </button>
-                  <button
                     className="shrink-0 rounded-md bg-[#5B4DFB] px-3 py-1.5 text-[12.5px] font-bold text-white hover:bg-[#4C3DE6] disabled:cursor-not-allowed disabled:opacity-40"
                     onClick={saveCard}
                     disabled={!budget}
@@ -708,34 +699,43 @@ export default function RequisitionPage() {
                       {accounts.map((a, i) => <option key={i} value={i}>{accountDisplay(a)}</option>)}
                     </select>
                   </label>
+                  <div className="mt-0.5">
+                    <button
+                      className="rounded-md border border-[#FDE68A] bg-[#FEF3C7] px-3 py-1 text-[12px] font-bold text-[#B45309] transition-colors duration-150 hover:bg-[#FDE68A]"
+                      onClick={addSelFavorite}
+                      title="지금 선택한 세부사업·세부항목·산출내역을 즐겨찾기에 추가 — 아래 목록에서 클릭 한 번으로 다시 불러옵니다"
+                    >
+                      ⭐ 즐겨찾기 추가
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {favorites.length > 0 && (
+              {selFavorites.length > 0 && (
                 <div className="mt-3 border-t border-[#F1F5F9] pt-3">
                   <div className="text-[12px] font-semibold text-[#B45309]">
-                    ⭐ 즐겨찾기한 사업관리카드 {favorites.length}건 — 클릭하면 바로 불러옵니다
+                    ⭐ 저장된 산출내역 즐겨찾기 {selFavorites.length}건 — 클릭하면 세부사업·세부항목·산출내역이 한 번에 바뀝니다
                   </div>
                   <div className="mt-1.5 flex flex-col gap-1">
-                    {favorites.map(p => {
-                      const active = budget && budget.path === p
+                    {selFavorites.map(f => {
+                      const active = budget && budget.path === f.path && bIdx === f.b && iIdx === f.i && aIdx === f.a
                       return (
-                        <div key={p} className="flex items-center gap-1">
+                        <div key={`${f.path}|${f.b}|${f.i}|${f.a}`} className="flex items-center gap-1">
                           <button
                             className={`flex-1 truncate rounded-md px-2.5 py-1 text-left text-[12px] transition-colors duration-150 ${
                               active
                                 ? 'bg-[#FEF3C7] font-bold text-[#B45309]'
                                 : 'border border-[#E2E8F0] bg-white text-[#334155] hover:bg-[#FFFBEB]'
                             }`}
-                            onClick={() => loadFavorite(p)}
-                            title={p}
+                            onClick={() => clickSelFavorite(f)}
+                            title={`${f.title}\n출처 카드: ${f.path.split(/[\\/]/).pop()}`}
                           >
-                            {active ? '✓ ' : '⭐ '}{p.split(/[\\/]/).pop()}
+                            {active ? '✓ ' : '⭐ '}{f.title}
                           </button>
                           <button
                             className="shrink-0 rounded px-1.5 py-1 text-[11px] text-[#94A3B8] transition-colors duration-150 hover:bg-[#FEE2E2] hover:text-red-600"
-                            onClick={() => removeFavorite(p)}
-                            title="즐겨찾기에서 삭제 (카드 파일 자체는 지워지지 않습니다)"
+                            onClick={() => removeSelFavorite(f)}
+                            title="즐겨찾기에서 삭제"
                           >
                             ✕
                           </button>
@@ -746,29 +746,6 @@ export default function RequisitionPage() {
                 </div>
               )}
 
-              <div className="mt-3 flex items-center gap-2 border-t border-[#F1F5F9] pt-3">
-                <span className="shrink-0 text-[12.5px] text-[#64748B]">[직접 수정 내역]:</span>
-                <input
-                  type="text"
-                  value={detail}
-                  readOnly={!editing}
-                  onChange={e => setDetail(e.target.value)}
-                  placeholder="일반수용비 - 안심번호서비스"
-                  className={`${inputCls} ${editing ? 'border-[#DDD9FC] bg-white' : 'bg-[#F8FAFC]'}`}
-                />
-                <button
-                  className={`shrink-0 rounded-md px-3 py-1.5 text-[12.5px] font-bold ${
-                    editing ? 'bg-[#5B4DFB] text-white hover:bg-[#4C3DE6]' : 'border border-[#E2E8F0] bg-white text-[#334155] hover:bg-[#F1F5F9]'
-                  }`}
-                  onClick={() => setEditing(v => !v)}
-                  title={editing ? '잠그고 드롭다운 선택값에 다시 연동' : '내역을 직접 입력할 수 있게 잠금 해제'}
-                >
-                  {editing ? '✅ 적용' : '✏️ 수정'}
-                </button>
-              </div>
-              {editing && (
-                <p className="mt-1 text-[11.5px] text-[#B45309]">직접 수정 중 — 입력값이 드롭다운 선택값보다 우선 적용됩니다. [✅ 적용]을 누르면 드롭다운에 다시 연동됩니다.</p>
-              )}
               </div>
             )}
 
