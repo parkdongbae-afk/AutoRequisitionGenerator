@@ -209,7 +209,7 @@ export default function SettingsModal() {
               onClick={runAutoselectInstall}
               disabled={autoSelectInstallStatus && autoSelectInstallStatus.running}
             >
-              {autoSelectInstallStatus && autoSelectInstallStatus.running ? '실행 중...' : '🧩 물품 자동 선택 익스텐션 추가'}
+              {autoSelectInstallStatus && autoSelectInstallStatus.running ? '실행 중...' : '🧩 물품 자동 선택 확장 프로그램 추가'}
             </button>
             {autoSelectInstallStatus && !autoSelectInstallStatus.running && (
               <p className={`mt-1.5 text-[11.5px] font-semibold ${autoSelectInstallStatus.ok ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -346,8 +346,8 @@ export default function SettingsModal() {
 
           <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
             <span className="text-[13.5px] text-[#1E293B]">
-              익스텐션 추가 버튼 표시
-              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단의 "🧩 익스텐션 추가" 버튼을 켜거나 끕니다 (기본: 켜기)</span>
+              확장 프로그램 추가 버튼 표시
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단의 "🧩 확장 프로그램 추가" 버튼을 켜거나 끕니다 (기본: 켜기)</span>
             </span>
             <input
               type="checkbox"

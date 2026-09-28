@@ -63,7 +63,7 @@ export default function Header() {
             onClick={runExtensionV2Flow}
             title="확장 프로그램 개발자 모드 및 자동 설치 도구를 바로 실행합니다"
           >
-            🧩 익스텐션 추가
+            🧩 확장 프로그램 추가
           </button>
         )}
         {showRulesManage && (

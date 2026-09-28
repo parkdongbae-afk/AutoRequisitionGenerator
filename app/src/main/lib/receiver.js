@@ -68,7 +68,7 @@ code{background:#e2e8f0;padding:2px 6px;border-radius:4px}
 <textarea readonly style="width:100%;height:110px;margin-top:8px;font-size:11px" onclick="this.select()">${manual}</textarea>
 </div>
 <h2>확장프로그램 방식(Edge·웨일·구버전 Chrome)</h2>
-<div class="step">품의 생성기 앱의 <b>[🧩 익스텐션 추가]</b> 버튼을 누르면 안내에 따라 자동 로드할 수 있습니다.</div>
+<div class="step">품의 생성기 앱의 <b>[🧩 확장 프로그램 추가]</b> 버튼을 누르면 안내에 따라 자동 로드할 수 있습니다.</div>
 </body></html>`
 }
 
