@@ -9,7 +9,7 @@ export default function BookmarkProgress() {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
       <div className="w-[360px] rounded-lg bg-white px-5 py-4 shadow-2xl">
-        <div className="mb-2 text-[13px] font-bold text-[#1E293B]">🛒 북마크바 추가 진행 중...</div>
+        <div className="mb-2 text-[13px] font-bold text-[#1E293B]">🛒 북마크릿 추가 진행 중...</div>
         <div className="mb-2 text-[12px] text-[#64748B]">
           {isClose
             ? `${p.browser} 브라우저를 안전하게 종료하는 중...`

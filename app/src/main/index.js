@@ -30,7 +30,7 @@ let mainWindow = null
 let requisitionWindow = null
 
 // 앱 버전 — SUMMARY.MD 버전 체계를 따른다(package.json 버전은 업데이트가 누락되어 왔다)
-const APP_VERSION = '1.48.10'
+const APP_VERSION = '1.49.1'
 
 // 뷰어를 항상 라이트로 고정 — Windows 다크모드에서 미리보기(쇼핑몰 CSS의
 // prefers-color-scheme 다크 전환)가 검게 렌더되는 것을 막는다(v1.47.14)
@@ -1185,7 +1185,7 @@ function registerIpc() {
       try {
         await dialog.showMessageBox(mainWindow, {
           type: 'info',
-          title: '북마크바 추가 완료',
+          title: '북마크릿 추가 완료',
           message: '북마크바 제일 앞에 🛒품의캡처를 넣었습니다.\n\n동기화(브라우저 로그인) 상태에서 북마크가 2개 이상 보이면\n북마크 관리자(Ctrl+Shift+O)에서 하나만 남기고 삭제해 주세요.\n한 번 삭제하면 동기화 계정 전체에 전파되어 다시 생기지 않습니다.'
         })
       } catch {}
@@ -1194,7 +1194,10 @@ function registerIpc() {
   })
 
 
-  ipcMain.handle('startup-status', async () => {
+  // 시작 프로그램 상태 조회 — status·register 핸들러가 공유한다.
+  // (v1.49.0 버그 수정: register가 ipcMain.invoke('startup-status')를 호출했는데
+  //  ipcMain에는 invoke가 없어 TypeError로 핸들러가 reject → 버튼이 조용히 무반응이었다)
+  const startupStatusNow = async () => {
     const r = await regRun(['query', RUN_KEY, '/v', RUN_NAME])
     const registered = r.ok && r.stdout.includes(RUN_NAME)
     let target = ''
@@ -1203,10 +1206,12 @@ function registerIpc() {
       if (m) target = m[1].trim()
     }
     return { registered, target }
-  })
+  }
+
+  ipcMain.handle('startup-status', () => startupStatusNow())
 
   ipcMain.handle('startup-register', async () => {
-    const cur = await ipcMain.invoke('startup-status')
+    const cur = await startupStatusNow()
     if (cur && cur.registered) return { ok: true, already: true }
     const r = await regRun(['add', RUN_KEY, '/v', RUN_NAME, '/t', 'REG_SZ', '/d', startupTarget(), '/f'])
     return r.ok ? { ok: true } : { ok: false, error: r.err }

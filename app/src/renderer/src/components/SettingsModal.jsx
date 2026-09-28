@@ -333,8 +333,8 @@ export default function SettingsModal() {
 
           <label className="flex items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-4 py-3">
             <span className="text-[13.5px] text-[#1E293B]">
-              북마크바 추가 버튼 표시
-              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단의 "⭐ 북마크바 추가" 버튼을 켜거나 끕니다 (기본: 켜기)</span>
+              북마크릿 추가 버튼 표시
+              <span className="mt-0.5 block text-[11.5px] text-[#64748B]">화면 상단의 "⭐ 북마크릿 추가" 버튼을 켜거나 끕니다 (기본: 켜기)</span>
             </span>
             <input
               type="checkbox"

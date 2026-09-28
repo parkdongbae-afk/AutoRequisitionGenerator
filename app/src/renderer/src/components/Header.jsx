@@ -52,9 +52,9 @@ export default function Header() {
           <button
             className="rounded-lg bg-[#FEF3C7] px-3 py-1.5 text-[12.5px] font-bold text-[#B45309] transition-colors duration-150 hover:bg-[#FDE68A] active:bg-[#FCD34D]"
             onClick={() => setBookmarkModal(true)}
-            title="Chrome/Edge/웨일 북마크바 제일 앞에 🛒품의캡처를 자동 추가합니다 (브라우저·프로필을 선택할 수 있습니다)"
+            title="Chrome/Edge/웨일 북마크바 제일 앞에 🛒품의캡처 북마크릿을 자동 추가합니다 (브라우저·프로필을 선택할 수 있습니다)"
           >
-            ⭐ 북마크바 추가
+            ⭐ 북마크릿 추가
           </button>
         )}
         {showExtensionAdd && (

@@ -52,7 +52,7 @@ export default function BookmarkProfileModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
       <div className="max-h-[86%] w-[560px] overflow-auto rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#E2E8F0] px-4 py-3">
-          <h2 className="text-[15px] font-bold text-[#1E293B]">⭐ 북마크바 추가 — 브라우저·프로필 선택</h2>
+          <h2 className="text-[15px] font-bold text-[#1E293B]">⭐ 북마크릿 추가 — 브라우저·프로필 선택</h2>
           <button className="rounded px-2 py-0.5 text-[13px] text-[#94A3B8] hover:bg-[#F1F5F9]" onClick={() => setBookmarkModal(false)}>✕ 닫기</button>
         </div>
         <div className="px-4 py-3">

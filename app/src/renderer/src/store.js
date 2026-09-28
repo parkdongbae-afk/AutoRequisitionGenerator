@@ -862,23 +862,33 @@ export const useStore = create((set, get) => ({
   },
 
   async registerStartup() {
-    const res = await window.api.startupRegister()
-    if (res && res.already) {
-      await window.api.alertBox('등록 되어 있습니다.')
-    } else if (res && res.error) {
-      get().toast(`시작 프로그램 등록 실패: ${res.error}`, 'err')
-    } else if (res && res.ok) {
-      get().toast('시작 프로그램에 등록되었습니다 — Windows 시작 시 자동 실행됩니다', 'ok')
+    try {
+      const res = await window.api.startupRegister()
+      if (res && res.already) {
+        await window.api.alertBox('등록 되어 있습니다.')
+      } else if (res && res.error) {
+        get().toast(`시작 프로그램 등록 실패: ${res.error}`, 'err')
+      } else if (res && res.ok) {
+        get().toast('시작 프로그램에 등록되었습니다 — Windows 시작 시 자동 실행됩니다', 'ok')
+      } else {
+        get().toast('시작 프로그램 등록 응답이 비정상입니다', 'err')
+      }
+    } catch (e) {
+      get().toast(`시작 프로그램 등록 실패: ${(e && e.message) || e}`, 'err')
     }
     get().checkStartupStatus()
   },
 
   async removeStartup() {
-    const res = await window.api.startupRemove()
-    if (res && res.error) {
-      get().toast(`시작 프로그램 삭제 실패: ${res.error}`, 'err')
-    } else if (res && res.ok) {
-      get().toast(res.none ? '등록된 시작 프로그램이 없습니다' : '시작 프로그램에서 삭제했습니다', 'info')
+    try {
+      const res = await window.api.startupRemove()
+      if (res && res.error) {
+        get().toast(`시작 프로그램 삭제 실패: ${res.error}`, 'err')
+      } else if (res && res.ok) {
+        get().toast(res.none ? '등록된 시작 프로그램이 없습니다' : '시작 프로그램에서 삭제했습니다', 'info')
+      }
+    } catch (e) {
+      get().toast(`시작 프로그램 삭제 실패: ${(e && e.message) || e}`, 'err')
     }
     get().checkStartupStatus()
   },

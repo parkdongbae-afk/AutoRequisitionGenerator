@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "물품 자동 선택",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "장바구니에서 품목내역(행정실용)과 일치하는 상품만 자동으로 선택(V체크)합니다. 엑셀 내용은 로컬에서만 읽습니다.",
   "icons": {
     "16": "icons/icon16.png",
