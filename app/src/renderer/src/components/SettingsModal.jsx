@@ -196,7 +196,7 @@ export default function SettingsModal() {
                 저장
               </button>
             </div>
-            <p className="mt-1 text-[11.5px] text-[#64748B]">엑셀 기본 파일명(예: 홍길동-품목내역(통합).xls)과 행정실 안내문에 사용됩니다.</p>
+            <p className="mt-1 text-[11.5px] text-[#64748B]">엑셀 기본 파일명(예: 홍길동-품목내역(통합)_09월26일.xls — 날짜는 저장일 자동 입력)과 행정실 안내문에 사용됩니다.</p>
           </div>
 
           <div className="rounded-lg border border-[#E2E8F0] px-4 py-3">

@@ -30,7 +30,7 @@ let mainWindow = null
 let requisitionWindow = null
 
 // 앱 버전 — SUMMARY.MD 버전 체계를 따른다(package.json 버전은 업데이트가 누락되어 왔다)
-const APP_VERSION = '1.48.7'
+const APP_VERSION = '1.48.8'
 
 // 뷰어를 항상 라이트로 고정 — Windows 다크모드에서 미리보기(쇼핑몰 CSS의
 // prefers-color-scheme 다크 전환)가 검게 렌더되는 것을 막는다(v1.47.14)
@@ -794,10 +794,13 @@ function registerIpc() {
 
   ipcMain.handle('save-excel-as', async (_e, rows, opts = {}) => {
     const s = getSettings()
-    // 교원 이름이 있으면 기본 파일명을 '{이름}-품목내역(통합).xls'로 제안(AUTO_SELECT.MD §4.1)
+    // 교원 이름이 있으면 기본 파일명을 '{이름}-품목내역(통합)_MM월DD일.xls'로 제안한다.
+    // (AUTO_SELECT.MD §4.1 + v1.48.8 저장일 접미 — 파일명에 날짜가 자동으로 붙어 저장본을 날짜별로 구분)
     const teacher = String((opts && opts.teacherName) || s.teacherName || '')
     const baseDir = s.excelPath ? path.dirname(s.excelPath) : path.dirname(defaultXlsPath())
-    const defaultPath = teacher ? path.join(baseDir, `${teacher}-품목내역(통합).xls`) : (s.excelPath || defaultXlsPath())
+    const now = new Date()
+    const dayStamp = `${String(now.getMonth() + 1).padStart(2, '0')}월${String(now.getDate()).padStart(2, '0')}일`
+    const defaultPath = teacher ? path.join(baseDir, `${teacher}-품목내역(통합)_${dayStamp}.xls`) : (s.excelPath || defaultXlsPath())
     const r = await dialog.showSaveDialog(mainWindow, {
       title: '품목내역 저장 위치 선택',
       defaultPath,

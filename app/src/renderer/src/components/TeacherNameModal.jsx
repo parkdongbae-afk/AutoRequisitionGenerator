@@ -37,7 +37,7 @@ export default function TeacherNameModal() {
           </label>
           {err && <p className="mt-1 text-[11.5px] font-semibold text-red-600">{err}</p>}
           <p className="mt-1.5 text-[11.5px] text-[#64748B]">
-            입력하신 성함은 엑셀 기본 파일명(예: 홍길동-품목내역(통합).xls)과 행정실용 시트 안내문에 사용됩니다. 설정에서 언제든 수정할 수 있습니다.
+            입력하신 성함은 엑셀 기본 파일명(예: 홍길동-품목내역(통합)_09월26일.xls — 날짜는 저장일 자동 입력)과 행정실용 시트 안내문에 사용됩니다. 설정에서 언제든 수정할 수 있습니다.
           </p>
           <div className="mt-4 flex justify-end gap-2">
             <button

@@ -7,6 +7,19 @@ const BASE_FONT = 12.5
 const DEFAULT_WIDTHS = [110, 56, 300, 110, 70, 64, 96, 104, 130, 280, 180, 44]
 // Tab/Shift+Tab 셀 이동이 순회하는 편집 가능 열(왼쪽→오른쪽)
 const EDITABLE_COLS = ['name', 'spec', 'unit', 'qty', 'price', 'note']
+
+// [주소복사] 버튼 대상 문서 판정(v1.48.8) — 주문서(주문 화면) 캡처에만 캡처 시점 브라우저 주소 복사를 제공한다.
+// 장바구니 규칙: -cart 접미사 + V체크 기반 카트 규칙(-cart 접미사가 없는 coupang·aladin·dreamdepot·
+// officedepot·daisomall·lottemart(제타 장바구니)·ic114 포함)
+// 제외 주문서(사용자 지정): 아이스크림몰·알라딘·11번가·알파몰·티처몰·오피스디포 주문서
+const CART_LIKE_RULE_IDS = new Set(['coupang', 'aladin', 'dreamdepot', 'officedepot', 'daisomall', 'lottemart', 'ic114'])
+const NO_ADDRESS_COPY_RULE_IDS = new Set(['icecreammall', 'aladin-order', '11st', 'alphamall', 'teachermall', 'officedepot-order'])
+function addressCopyUrl(doc) {
+  const id = String((doc && doc.ruleId) || '')
+  if (!doc || !doc.sourceUrl || !id) return null
+  if (id.endsWith('-cart') || CART_LIKE_RULE_IDS.has(id) || NO_ADDRESS_COPY_RULE_IDS.has(id)) return null
+  return doc.sourceUrl
+}
 const HEADERS = ['쇼핑몰', '순번', '품목명', '규격', '단위', '수량', '예상단가', '총액', '비고', '상품 URL', '옵션', '']
 // 표시 열 → colWidths 상태 인덱스 매핑 (F8 토글 시 9·10 열만 삽입/제거)
 const stateIdxsFor = (showUrl) => (showUrl ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 11])
@@ -120,7 +133,7 @@ export default function Grid() {
     window.addEventListener('mouseup', onUp)
   }
 
-  const allRows = docs.flatMap(d => d.rows.map(r => ({ ...r, docId: d.id, mallName: d.mallName })))
+  const allRows = docs.flatMap(d => d.rows.map(r => ({ ...r, docId: d.id, mallName: d.mallName, copyUrl: addressCopyUrl(d) })))
   // 중복 감지: 같은 쇼핑몰 + 같은 품목명/규격/수량/단가 — 같은 장바구니를
   // 2번 추출하면 행 전체가 이 그룹에 걸린다. 그룹의 삭제 버튼을 누르면 첫 1세트만 남긴다.
   // 배송비 행은 중복삭제 대상에서 제외한다(2026-09-25 사용자 요구)
@@ -270,17 +283,32 @@ export default function Grid() {
                       title={r.mallName}
                     >
                       <div className="break-keep leading-tight">{r.mallName}</div>
-                      <button
-                        className="mt-1 rounded bg-[#FEE2E2] px-1.5 py-0.5 text-[10px] font-semibold text-red-600 transition-colors duration-100 hover:bg-red-500 hover:text-white"
-                        title={`'${r.mallName}' 항목 전체 삭제 — 추출 표와 미리보기 탭이 함께 닫힙니다`}
-                        onClick={e => {
-                          e.stopPropagation()
-                          closeDoc(r.docId)
-                          toast(`'${r.mallName}' 항목 전체를 삭제했습니다 (미리보기 탭 포함)`, 'ok')
-                        }}
-                      >
-                        전체삭제
-                      </button>
+                      <div className="mt-1 flex flex-col items-center gap-1">
+                        <button
+                          className="rounded bg-[#FEE2E2] px-1.5 py-0.5 text-[10px] font-semibold text-red-600 transition-colors duration-100 hover:bg-red-500 hover:text-white"
+                          title={`'${r.mallName}' 항목 전체 삭제 — 추출 표와 미리보기 탭이 함께 닫힙니다`}
+                          onClick={e => {
+                            e.stopPropagation()
+                            closeDoc(r.docId)
+                            toast(`'${r.mallName}' 항목 전체를 삭제했습니다 (미리보기 탭 포함)`, 'ok')
+                          }}
+                        >
+                          전체삭제
+                        </button>
+                        {r.copyUrl && (
+                          <button
+                            className="rounded bg-[#DCFCE7] px-1.5 py-0.5 text-[10px] font-semibold text-green-700 transition-colors duration-100 hover:bg-green-500 hover:text-white"
+                            title="품의캡처한 주문서 화면의 브라우저 주소를 클립보드에 복사합니다"
+                            onClick={e => {
+                              e.stopPropagation()
+                              window.api.copyText(r.copyUrl)
+                              toast('캡처한 주소를 클립보드에 복사했습니다', 'ok')
+                            }}
+                          >
+                            주소복사
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                   <td className="px-1 py-1 text-center text-[#94A3B8]">{r.isShipping ? '🚚' : ++no}</td>
