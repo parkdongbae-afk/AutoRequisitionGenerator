@@ -30,7 +30,7 @@ let mainWindow = null
 let requisitionWindow = null
 
 // 앱 버전 — SUMMARY.MD 버전 체계를 따른다(package.json 버전은 업데이트가 누락되어 왔다)
-const APP_VERSION = '1.48.8'
+const APP_VERSION = '1.48.9'
 
 // 뷰어를 항상 라이트로 고정 — Windows 다크모드에서 미리보기(쇼핑몰 CSS의
 // prefers-color-scheme 다크 전환)가 검게 렌더되는 것을 막는다(v1.47.14)
@@ -734,6 +734,20 @@ function registerIpc() {
     return true
   })
 
+  // 확인/취소 메시지 창 — 렌더러에서 사용자 확인이 필요한 파괴적 동작(사업관리카드 교체 등)에 사용(v1.48.9)
+  ipcMain.handle('confirm-box', (_e, message, title) => {
+    const win = BrowserWindow.fromWebContents(_e.sender) || mainWindow
+    const r = dialog.showMessageBox(win, {
+      type: 'question',
+      buttons: ['확인', '취소'],
+      defaultId: 0,
+      cancelId: 1,
+      title: String(title || '확인'),
+      message: String(message || '')
+    })
+    return r.response === 0
+  })
+
   ipcMain.handle('read-excel', async (_e, filePath) => {
     const p = filePath || getSettings().excelPath || defaultXlsPath()
     if (!fs.existsSync(p)) return { error: `파일이 없습니다: ${p}`, path: p }
@@ -871,8 +885,11 @@ function registerIpc() {
   ipcMain.handle('set-setting', (_e, k, v) => setSetting(k, v))
 
   // 품의 개요 작성 프로그램(v1.40.0): K-에듀파인 사업관리카드(예산) 엑셀 선택 → 3단 계층 파싱
-  ipcMain.handle('pick-budget-card', async () => {
-    const r = await dialog.showOpenDialog(mainWindow, {
+  // 대화상자는 호출한 창(품의 개요 창)에 붙인다 — 메인 창 부모로 뜨면 닫힌 뒤 메인 창이
+  // 앞으로 올라와 품의 개요 창이 뒤로 숨는 "창이 닫힘"으로 보이는 사유(v1.48.9)
+  ipcMain.handle('pick-budget-card', async (_e) => {
+    const owner = BrowserWindow.fromWebContents(_e.sender) || mainWindow
+    const r = await dialog.showOpenDialog(owner, {
       title: '사업관리카드(예산) 엑셀 파일 선택',
       properties: ['openFile'],
       filters: [

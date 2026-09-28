@@ -141,6 +141,13 @@ export default function RequisitionPage() {
   const [daeHoRemoved, setDaeHoRemoved] = useState(false)
   const [showExamples, setShowExamples] = useState(false)
   const [showReference, setShowReference] = useState(false)
+  // 나. 용도 모드 — 'keyword'(키워드 찾기, 기본) | 'custom'(나만의 용도). 선택은 설정에 저장되어
+  // 창을 닫았다 다시 열어도 유지된다(v1.48.9)
+  const [purposeMode, setPurposeMode] = useState('keyword')
+  const [customPurpose, setCustomPurpose] = useState('')
+  const [customPurposes, setCustomPurposes] = useState([])
+  // 사업관리카드 즐겨찾기(파일 경로 목록) — 클릭하면 언제든 바로 불러온다(v1.48.9)
+  const [favorites, setFavorites] = useState([])
 
   const type = typeById(typeId)
 
@@ -178,9 +185,13 @@ export default function RequisitionPage() {
   )
   const [purposeIdx, setPurposeIdx] = useState(null)
   useEffect(() => { setPurposeIdx(null) }, [title, typeId])
-  const selPurpose = typeId === 'buy'
-    ? (purposeIdx !== null && candidates[purposeIdx] ? candidates[purposeIdx] : GIBON_FALLBACK.buy)
-    : ''
+  // 나. 용도 문구 — 키워드 모드는 후보 선택(미선택 시 기본 대체 문구), 나만의 용도 모드는
+  // 입력 즉시 Live Editor의 "나. 용도:"에 반영된다. 빈 입력은 기본 대체 문구로 폴백(v1.48.9)
+  const selPurpose = typeId !== 'buy'
+    ? ''
+    : purposeMode === 'custom'
+      ? (customPurpose.trim() || GIBON_FALLBACK.buy)
+      : (purposeIdx !== null && candidates[purposeIdx] ? candidates[purposeIdx] : GIBON_FALLBACK.buy)
 
   const businesses = (budget && budget.businesses) || []
   const items = (businesses[bIdx] && businesses[bIdx].items) || []
@@ -207,13 +218,18 @@ export default function RequisitionPage() {
   }
 
   // 열릴 때 저장된 사업관리카드 자동 로드 — 세부사업/세부항목/산출내역이 즉시 채워짐
+  // + 용도 모드·나만의 용도 목록·즐겨찾기 복원(v1.48.9)
   useEffect(() => {
     let alive = true
     ;(async () => {
       try {
         const settings = await window.api.getSettings()
+        if (!alive) return
+        setPurposeMode(settings && settings.reqPurposeMode === 'custom' ? 'custom' : 'keyword')
+        setCustomPurposes(Array.isArray(settings && settings.customPurposes) ? settings.customPurposes : [])
+        setFavorites(Array.isArray(settings && settings.budgetCardFavorites) ? settings.budgetCardFavorites : [])
         const p = settings && settings.budgetCardPath
-        if (!p || !alive) return
+        if (!p) return
         const res = await window.api.parseBudgetCard(p)
         if (!alive) return
         if (res.error) {
@@ -241,9 +257,19 @@ export default function RequisitionPage() {
     setEditorText(daeHoRemoved ? removeHeadingLine(text) : text)
   }, [typeId, title, detail, daeHoRemoved, selPurpose, mainData.total, mainData.firstItem, fillCount])
 
+  // 선택 계층 자동 기억(v1.48.9) — 저장(등록)된 카드의 계층 선택이 바뀔 때마다 settings에
+  // 저장해 다음 실행 시 같은 산출내역이 바로 나타난다. applyBudget의 인덱스 경계 검사로
+  // 파일이 바뀐 뒤의 복원 오류도 방어된다
+  const persistSel = (b, i, a) => {
+    if (budget && budget.path && budget.path === savedPath) {
+      window.api.setSetting('budgetCardSel', { b, i, a })
+    }
+  }
+
   const selectAccount = (idx) => {
     setAIdx(idx)
     if (!editing) setDetail(accountDisplay(accounts[idx]))
+    persistSel(bIdx, iIdx, idx)
   }
 
   const selectBusiness = (idx) => {
@@ -254,6 +280,7 @@ export default function RequisitionPage() {
       const it = (businesses[idx] && businesses[idx].items[0]) || null
       setDetail(accountDisplay(it && it.accounts[0]))
     }
+    persistSel(idx, 0, 0)
   }
 
   const selectItem = (idx) => {
@@ -263,18 +290,117 @@ export default function RequisitionPage() {
       const it = items[idx] || null
       setDetail(accountDisplay(it && it.accounts[0]))
     }
+    persistSel(bIdx, idx, 0)
   }
 
   const pickFile = async () => {
-    const res = await window.api.pickBudgetCard()
+    let res = null
+    try {
+      res = await window.api.pickBudgetCard()
+    } catch (e) {
+      toast(`파일 선택 창을 열 수 없습니다: ${String((e && e.message) || e)}`, 'err')
+      return
+    }
     if (!res || res.canceled) return
     if (res.error) {
       toast(`사업관리카드 읽기 실패: ${res.error}`, 'err')
       return
     }
+    // 카드 저장(등록) 상태에서 다른 파일을 고르면 기존 카드가 삭제된다는 사실을 먼저 안내한다(v1.48.9)
+    if (savedPath && res.path !== savedPath) {
+      let go = false
+      try {
+        go = await window.api.confirmBox(
+          `이미 저장된 사업관리카드가 삭제되고 새 파일로 교체됩니다.\n\n새 파일: ${res.fileName}\n\n계속하시겠습니까?`,
+          '사업관리카드 교체'
+        )
+      } catch {}
+      if (!go) return
+    }
     setEditing(false)
     applyBudget(res, null)
-    toast(`사업관리카드 로드: 세부사업 ${(res.businesses || []).length}건 (${res.fileName}) — [💾 카드 저장]으로 다음부터 자동 불러오기`, 'ok', 6000)
+    // 새 파일을 즉시 등록(자동 로드 카드로 지정) — 계층 선택은 새 파일 기준으로 초기화
+    window.api.setSetting('budgetCardPath', res.path)
+    window.api.setSetting('budgetCardSel', { b: 0, i: 0, a: 0 })
+    setSavedPath(res.path)
+    toast(`새 사업관리카드 등록 완료: ${res.fileName} — 세부사업·세부항목·산출내역 선택은 자동으로 기억됩니다`, 'ok', 6000)
+  }
+
+  // 사업관리카드 즐겨찾기(v1.48.9) — 자동 로드 카드와 별개로 여러 파일을 저장해 두고 바로 불러온다
+  const addFavorite = () => {
+    if (!budget || !budget.path) {
+      toast('즐겨찾기에 추가할 카드가 없습니다 — 먼저 [📂 파일 찾기]로 파일을 선택하세요', 'warn')
+      return
+    }
+    if (favorites.includes(budget.path)) {
+      toast('이미 즐겨찾기에 등록된 카드입니다', 'warn')
+      return
+    }
+    const next = [...favorites, budget.path]
+    setFavorites(next)
+    window.api.setSetting('budgetCardFavorites', next)
+    toast(`즐겨찾기 등록: ${budget.fileName}`, 'ok')
+  }
+
+  const removeFavorite = (p) => {
+    const next = favorites.filter(x => x !== p)
+    setFavorites(next)
+    window.api.setSetting('budgetCardFavorites', next)
+    toast('즐겨찾기에서 삭제했습니다', 'ok')
+  }
+
+  const loadFavorite = async (p) => {
+    if (budget && budget.path === p) {
+      toast('이미 불러온 카드입니다', 'info')
+      return
+    }
+    try {
+      const res = await window.api.parseBudgetCard(p)
+      if (res.error) {
+        toast(`카드 불러오기 실패: ${res.error}`, 'err')
+        return
+      }
+      // 자동 로드(저장) 카드와 같은 파일이면 저장된 계층 선택도 함께 복원한다
+      let savedSel = null
+      if (p === savedPath) {
+        const s = await window.api.getSettings()
+        savedSel = (s && s.budgetCardSel) || null
+      }
+      setEditing(false)
+      applyBudget(res, savedSel)
+      toast(`사업관리카드 불러옴: ${res.fileName}${p === savedPath ? ' (저장된 계층 선택 복원)' : ''}`, 'ok')
+    } catch (e) {
+      toast(`카드 불러오기 실패: ${String((e && e.message) || e)}`, 'err')
+    }
+  }
+
+  // 나만의 용도(v1.48.9) — 입력 즉시 나. 용도:에 반영 + 저장/삭제 목록 관리
+  const switchPurposeMode = (mode) => {
+    setPurposeMode(mode)
+    window.api.setSetting('reqPurposeMode', mode)
+  }
+
+  const saveCustomPurpose = () => {
+    const t = customPurpose.trim()
+    if (!t) {
+      toast('저장할 용도 문구를 입력해 주세요', 'warn')
+      return
+    }
+    if (customPurposes.includes(t)) {
+      toast('이미 저장된 문구입니다', 'warn')
+      return
+    }
+    const next = [...customPurposes, t]
+    setCustomPurposes(next)
+    window.api.setSetting('customPurposes', next)
+    toast('나만의 용도 저장 완료 — 아래 목록을 클릭하면 나. 용도:에 바로 적용됩니다', 'ok')
+  }
+
+  const deleteCustomPurpose = (t) => {
+    const next = customPurposes.filter(x => x !== t)
+    setCustomPurposes(next)
+    window.api.setSetting('customPurposes', next)
+    toast('저장된 용도를 삭제했습니다', 'ok')
   }
 
   const saveCard = () => {
@@ -404,11 +530,42 @@ export default function RequisitionPage() {
                 </button>
               </div>
               {typeId === 'buy' && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <button
+                    className={`rounded-md px-3 py-1 text-[12px] font-bold transition-colors duration-150 ${
+                      purposeMode === 'keyword'
+                        ? 'bg-[#5B4DFB] text-white hover:bg-[#4C3DE6]'
+                        : 'border border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F1F5F9]'
+                    }`}
+                    onClick={() => switchPurposeMode('keyword')}
+                    title="제목 키워드로 나. 용도: 문구 후보를 찾아 선택합니다 (기본 모드)"
+                  >
+                    🔍 키워드 찾기
+                  </button>
+                  <button
+                    className={`rounded-md px-3 py-1 text-[12px] font-bold transition-colors duration-150 ${
+                      purposeMode === 'custom'
+                        ? 'bg-[#5B4DFB] text-white hover:bg-[#4C3DE6]'
+                        : 'border border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F1F5F9]'
+                    }`}
+                    onClick={() => switchPurposeMode('custom')}
+                    title="직접 입력한 용도 문구를 나. 용도:에 바로 반영하고, 자주 쓰는 문구를 저장해 두고 클릭으로 적용합니다"
+                  >
+                    ✏️ 나만의 용도
+                  </button>
+                  <span className="text-[11px] text-[#94A3B8]">
+                    {purposeMode === 'keyword'
+                      ? '제목 키워드로 용도 후보를 찾아 선택합니다'
+                      : '직접 입력한 문구가 나. 용도:에 바로 반영됩니다 — 모드는 다음 실행에도 유지됩니다'}
+                  </span>
+                </div>
+              )}
+              {typeId === 'buy' && purposeMode === 'keyword' && (
                 <p className="mt-1.5 text-[11.5px] text-[#64748B]">
                   제목 키워드로 <b>나. 용도:</b> 문구 후보를 찾아 드립니다 — 아래 후보 중 선택하세요 (선택 전에는 기본 대체 문구가 들어갑니다)
                 </p>
               )}
-              {typeId === 'buy' && title.trim() !== '' && (
+              {typeId === 'buy' && purposeMode === 'keyword' && title.trim() !== '' && (
                 <div className="mt-2 rounded-lg border border-[#F1F5F9] bg-[#F8FAFC] px-3 py-2">
                   <div className="text-[11.5px] font-semibold text-[#4C3DE6]">
                     나. 용도 후보 {candidates.length}건 {candidates.length >= 10 ? '(최대 10건 표시)' : ''}
@@ -435,6 +592,59 @@ export default function RequisitionPage() {
                   )}
                 </div>
               )}
+              {typeId === 'buy' && purposeMode === 'custom' && (
+                <div className="mt-2 rounded-lg border border-[#F1F5F9] bg-[#F8FAFC] px-3 py-2">
+                  <div className="flex items-start gap-2">
+                    <textarea
+                      value={customPurpose}
+                      onChange={e => setCustomPurpose(e.target.value)}
+                      rows={2}
+                      placeholder="예: 체육대회 운영에 필요한 물품 구매"
+                      className={`${inputCls} flex-1 resize-y`}
+                      title="입력하는 즉시 아래 Live Editor의 나. 용도:에 반영됩니다"
+                    />
+                    <button
+                      className="shrink-0 rounded-md bg-[#5B4DFB] px-3 py-1.5 text-[12px] font-bold text-white hover:bg-[#4C3DE6]"
+                      onClick={saveCustomPurpose}
+                      title="입력한 문구를 아래 목록에 저장 — 다음에도 클릭 한 번으로 적용할 수 있습니다"
+                    >
+                      💾 저장
+                    </button>
+                  </div>
+                  <p className="mt-1 text-[11px] text-[#94A3B8]">입력하는 즉시 아래 Live Editor의 "2. 나. 용도:"에 반영됩니다. 빈 칸이면 기본 대체 문구가 사용됩니다.</p>
+                  {customPurposes.length > 0 && (
+                    <div className="mt-2 border-t border-[#E2E8F0] pt-2">
+                      <div className="text-[11.5px] font-semibold text-[#4C3DE6]">
+                        저장된 나만의 용도 {customPurposes.length}건 — 클릭하면 나. 용도:에 바로 적용됩니다
+                      </div>
+                      <div className="mt-1.5 flex flex-col gap-1">
+                        {customPurposes.map(t => (
+                          <div key={t} className="flex items-center gap-1">
+                            <button
+                              className={`flex-1 truncate rounded-md px-2.5 py-1 text-left text-[11.5px] transition-colors duration-150 ${
+                                customPurpose.trim() === t
+                                  ? 'bg-[#5B4DFB] font-bold text-white'
+                                  : 'border border-[#E2E8F0] bg-white text-[#334155] hover:border-[#DDD9FC] hover:bg-[#EEEDFE]'
+                              }`}
+                              onClick={() => { setCustomPurpose(t); toast('나. 용도:에 적용했습니다', 'ok') }}
+                              title="클릭하면 이 문구가 나. 용도:에 적용됩니다"
+                            >
+                              {customPurpose.trim() === t ? '✓ ' : ''}{t}
+                            </button>
+                            <button
+                              className="shrink-0 rounded px-1.5 py-1 text-[11px] text-[#94A3B8] transition-colors duration-150 hover:bg-[#FEE2E2] hover:text-red-600"
+                              onClick={() => deleteCustomPurpose(t)}
+                              title="저장된 용도에서 삭제"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {typeId === 'buy' && (
@@ -452,6 +662,14 @@ export default function RequisitionPage() {
                     📂 파일 찾기
                   </button>
                   <button
+                    className="shrink-0 rounded-md border border-[#FDE68A] bg-[#FEF3C7] px-3 py-1.5 text-[12.5px] font-bold text-[#B45309] transition-colors duration-150 hover:bg-[#FDE68A] disabled:cursor-not-allowed disabled:opacity-40"
+                    onClick={addFavorite}
+                    disabled={!budget}
+                    title="현재 사업관리카드를 즐겨찾기에 추가 — 아래 목록에서 클릭해 언제든 바로 불러올 수 있습니다"
+                  >
+                    ⭐ 즐겨찾기 추가
+                  </button>
+                  <button
                     className="shrink-0 rounded-md bg-[#5B4DFB] px-3 py-1.5 text-[12.5px] font-bold text-white hover:bg-[#4C3DE6] disabled:cursor-not-allowed disabled:opacity-40"
                     onClick={saveCard}
                     disabled={!budget}
@@ -461,6 +679,9 @@ export default function RequisitionPage() {
                   </button>
                 </div>
               </div>
+              <p className="mt-1.5 text-[11.5px] text-[#64748B]">
+                다운로드 방법 : [K-에듀파인]-&gt;[사업관리]-&gt;[사업관리카드]-&gt;[사업관리카드(담당)]-&gt;[조회]-&gt;[파일]
+              </p>
               {savedPath && (
                 <p className="mt-1.5 text-[11.5px] text-[#059669]">
                   ✅ 카드 저장됨 — 프로그램을 다시 열면 이 카드의 세부사업·세부항목·산출내역이 자동으로 나타납니다
@@ -487,6 +708,41 @@ export default function RequisitionPage() {
                       {accounts.map((a, i) => <option key={i} value={i}>{accountDisplay(a)}</option>)}
                     </select>
                   </label>
+                </div>
+              )}
+
+              {favorites.length > 0 && (
+                <div className="mt-3 border-t border-[#F1F5F9] pt-3">
+                  <div className="text-[12px] font-semibold text-[#B45309]">
+                    ⭐ 즐겨찾기한 사업관리카드 {favorites.length}건 — 클릭하면 바로 불러옵니다
+                  </div>
+                  <div className="mt-1.5 flex flex-col gap-1">
+                    {favorites.map(p => {
+                      const active = budget && budget.path === p
+                      return (
+                        <div key={p} className="flex items-center gap-1">
+                          <button
+                            className={`flex-1 truncate rounded-md px-2.5 py-1 text-left text-[12px] transition-colors duration-150 ${
+                              active
+                                ? 'bg-[#FEF3C7] font-bold text-[#B45309]'
+                                : 'border border-[#E2E8F0] bg-white text-[#334155] hover:bg-[#FFFBEB]'
+                            }`}
+                            onClick={() => loadFavorite(p)}
+                            title={p}
+                          >
+                            {active ? '✓ ' : '⭐ '}{p.split(/[\\/]/).pop()}
+                          </button>
+                          <button
+                            className="shrink-0 rounded px-1.5 py-1 text-[11px] text-[#94A3B8] transition-colors duration-150 hover:bg-[#FEE2E2] hover:text-red-600"
+                            onClick={() => removeFavorite(p)}
+                            title="즐겨찾기에서 삭제 (카드 파일 자체는 지워지지 않습니다)"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
 

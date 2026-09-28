@@ -15,6 +15,7 @@ const api = {
   renameRule: (id, name) => ipcRenderer.invoke('rename-rule', id, name),
   rejectDoc: (id) => ipcRenderer.invoke('reject-doc', id),
   alertBox: (message) => ipcRenderer.invoke('alert-box', message),
+  confirmBox: (message, title) => ipcRenderer.invoke('confirm-box', message, title),
   readExcel: (p) => ipcRenderer.invoke('read-excel', p),
   pickExcel: () => ipcRenderer.invoke('pick-excel'),
   loadExcelFull: (p) => ipcRenderer.invoke('load-excel-full', p),
