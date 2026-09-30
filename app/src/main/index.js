@@ -30,7 +30,7 @@ let mainWindow = null
 let requisitionWindow = null
 
 // 앱 버전 — SUMMARY.MD 버전 체계를 따른다(package.json 버전은 업데이트가 누락되어 왔다)
-const APP_VERSION = '1.49.6'
+const APP_VERSION = '1.49.7'
 
 // 뷰어를 항상 라이트로 고정 — Windows 다크모드에서 미리보기(쇼핑몰 CSS의
 // prefers-color-scheme 다크 전환)가 검게 렌더되는 것을 막는다(v1.47.14)
@@ -82,6 +82,43 @@ function copyTree(src, dst) {
     if (fs.statSync(s).isDirectory()) copyTree(s, d)
     else fs.copyFileSync(s, d)
   }
+}
+
+// extension_auto(확장 자동 설치 도구) 소스 위치. portable exe는 extraResources를
+// %TEMP%에 풀어 쓰는데, 실행 중 재실행으로 재추출이 겹치면 그 폴더가 순간적으로
+// 비워진다(v1.49.7 실측 — resources에 app.asar만 남음). userData 영구 캐시를
+// 유지해 resources가 비었을 때 폴백으로 쓴다.
+function extensionAutoSource() {
+  const packaged = app.isPackaged
+    ? path.join(process.resourcesPath, 'extension_auto')
+    : path.join(app.getAppPath(), '..', 'extension_auto')
+  if (fs.existsSync(path.join(packaged, 'install_and_run.bat'))) return packaged
+  const cache = path.join(app.getPath('userData'), 'extension_auto')
+  if (fs.existsSync(path.join(cache, 'install_and_run.bat'))) return cache
+  return null
+}
+
+// 시작 시 resources의 extension_auto를 userData 캐시로 동기화 — resources가 있을 때만 갱신
+function cacheExtensionAuto() {
+  if (!app.isPackaged) return
+  const src = path.join(process.resourcesPath, 'extension_auto')
+  if (!fs.existsSync(path.join(src, 'install_and_run.bat'))) return
+  const cache = path.join(app.getPath('userData'), 'extension_auto')
+  try {
+    fs.rmSync(cache, { recursive: true, force: true })
+    copyTree(src, cache)
+  } catch {}
+}
+
+// 물품 자동 선택 확장 소스 위치 — resources 사본이 없으면 userData 사본으로 폴백
+function autoSelectExtensionSource() {
+  const packaged = app.isPackaged
+    ? path.join(process.resourcesPath, 'extension-autoselect')
+    : path.join(app.getAppPath(), 'extension-autoselect')
+  if (fs.existsSync(path.join(packaged, 'manifest.json'))) return packaged
+  const cache = path.join(app.getPath('userData'), 'extension-autoselect')
+  if (fs.existsSync(path.join(cache, 'manifest.json'))) return cache
+  return null
 }
 
 function manualFile() {
@@ -1260,11 +1297,9 @@ function registerIpc() {
   // 사용자 데이터의 version2 폴더로 복제한 뒤 설치 도구를 띄운다
   ipcMain.handle('run-extension-v2', () => {
     try {
-      const sourceDir = app.isPackaged
-        ? path.join(process.resourcesPath, 'extension_auto')
-        : path.join(app.getAppPath(), '..', 'extension_auto')
-      if (!fs.existsSync(path.join(sourceDir, 'install_and_run.bat'))) {
-        return { error: 'extension_auto 폴더를 찾지 못했습니다: ' + sourceDir }
+      const sourceDir = extensionAutoSource()
+      if (!sourceDir) {
+        return { error: 'extension_auto 폴더를 찾지 못했습니다. 앱을 완전히 종료한 뒤 다시 실행해 주세요(임시 추출 폴더가 비어 있음).' }
       }
       const v2Dir = path.join(app.getPath('userData'), 'extension_v2')
       fs.rmSync(v2Dir, { recursive: true, force: true })
@@ -1324,17 +1359,13 @@ function registerIpc() {
   // 확장 폴더로 미리 지정해 도구 실행 후 버튼만으로 설치되게 한다.
   ipcMain.handle('run-autoselect-install', () => {
     try {
-      const toolSrc = app.isPackaged
-        ? path.join(process.resourcesPath, 'extension_auto')
-        : path.join(app.getAppPath(), '..', 'extension_auto')
-      const extSrc = app.isPackaged
-        ? path.join(process.resourcesPath, 'extension-autoselect')
-        : path.join(app.getAppPath(), 'extension-autoselect')
-      if (!fs.existsSync(path.join(toolSrc, 'install_and_run.bat'))) {
-        return { error: '설치 도구 폴더(extension_auto)를 찾지 못했습니다: ' + toolSrc }
+      const toolSrc = extensionAutoSource()
+      const extSrc = autoSelectExtensionSource()
+      if (!toolSrc) {
+        return { error: '설치 도구 폴더(extension_auto)를 찾지 못했습니다. 앱을 완전히 종료한 뒤 다시 실행해 주세요(임시 추출 폴더가 비어 있음).' }
       }
-      if (!fs.existsSync(path.join(extSrc, 'manifest.json'))) {
-        return { error: '물품 자동 선택 확장 폴더(extension-autoselect)를 찾지 못했습니다: ' + extSrc }
+      if (!extSrc) {
+        return { error: '물품 자동 선택 확장 폴더(extension-autoselect)를 찾지 못했습니다. 앱을 완전히 종료한 뒤 다시 실행해 주세요.' }
       }
       const toolDir = path.join(app.getPath('userData'), 'autoselect-tool')
       const extDir = path.join(app.getPath('userData'), 'extension-autoselect')
@@ -1344,8 +1375,11 @@ function registerIpc() {
         const src = path.join(toolSrc, f)
         if (fs.statSync(src).isFile()) fs.copyFileSync(src, path.join(toolDir, f))
       }
-      fs.rmSync(extDir, { recursive: true, force: true })
-      copyDirRecursive(extSrc, extDir)
+      // extSrc가 userData 사본으로 폴백된 경우 extDir과 같은 폴더라 삭제·복사하면 안 된다
+      if (path.resolve(extSrc) !== path.resolve(extDir)) {
+        fs.rmSync(extDir, { recursive: true, force: true })
+        copyDirRecursive(extSrc, extDir)
+      }
       // 도구가 시작 시 자동 선택 폴더를 미리 선택하도록 config를 먼저 기록한다
       try {
         const mgrDir = path.join(process.env.APPDATA || path.join(app.getPath('userData'), '..'), 'ExtensionDeveloperModeManager')
@@ -1669,6 +1703,7 @@ if (gotLock) {
 
   app.whenReady().then(async () => {
     protocol.handle('app-mhtml', (request) => serveDoc(request.url))
+    try { cacheExtensionAuto() } catch {}
     registerIpc()
     try { extensionFolder() } catch {}
     globalThis.__inboxDir = path.join(app.getPath('userData'), 'inbox')

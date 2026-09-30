@@ -603,9 +603,14 @@ Chrome/Edge/Whale의 확장 프로그램 설치 UI와 학교 보안 정책은 �
 
 1. `물품 자동 선택 확장 프로그램 추가` 클릭
 2. 패키징 앱이면 `resources/extension_auto`를 사용자 데이터 폴더로 복사/갱신
+   - portable exe는 extraResources를 `%TEMP%\<해시>`에 풀어 쓰는데, 앱 실행 중 exe를 다시
+     실행하면 재추출이 실행 중 인스턴스의 리소스 폴더를 삭제한다(v1.49.7 실측 — resources에
+     app.asar만 남음). 이때를 대비해 **시작 시 extension_auto를 사용자 데이터 폴더에 영구
+     캐시**하고, resources 사본이 없으면 캐시로 폴백한다(v1.49.7)
+   - 물품 자동 선택 확장 복사본(`resources/extension-autoselect`)도 같은 방식으로 폴백한다
 3. 개발 환경이면 프로젝트의 `extension_auto`를 사용
 4. 설치 도구의 설정 파일에 `extension_path`를 기록
-5. `install_and_run.bat` 또는 Python 실행기를 실행
+5. `install_and_run.bat` 또는 설치 도구 EXE(ExtensionDeveloperModeManager.exe)를 실행
 6. 결과 코드·로그 파일을 앱에 전달
 7. 성공/실패 안내 모달 표시
 
