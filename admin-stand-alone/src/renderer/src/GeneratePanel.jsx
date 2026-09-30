@@ -49,11 +49,32 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
 
   const pickSample = async (kind) => {
     const files = await window.ruleMgr.pickSamples()
-    if (files && files.length) setSamples(s => ({ ...s, [kind]: files.slice(0, 2) }))
+    if (files && files.length) {
+      setSamples(s => ({ ...s, [kind]: files.slice(0, 8).map(p => ({ path: p, answerPath: null, tag: '' })) }))
+    }
   }
   const pickAnswer = async () => {
     const files = await window.ruleMgr.pickAnswer()
     if (files && files.length) setAnswerExcel(files[0])
+  }
+
+  const [folderDir, setFolderDir] = useState('')
+  const [scanSummary, setScanSummary] = useState(null)
+  const importFolder = async () => {
+    const dir = await window.ruleMgr.pickDir()
+    if (!dir) return
+    setFolderDir(dir)
+    try {
+      const scan = await window.ruleMgr.generate.scanFolder(dir)
+      setScanSummary(scan.summary)
+      setSamples({
+        order: scan.captures.filter(c => c.kind === 'order'),
+        cart: scan.captures.filter(c => c.kind === 'cart')
+      })
+      if (scan.answers.length && !answerExcel) setAnswerExcel(scan.answers[0])
+    } catch (e) {
+      setMsg('폴더 불러오기 실패: ' + String(e.message || e))
+    }
   }
 
   const payload = () => ({
@@ -120,13 +141,29 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
             </label>
           ))}
         </span>
+        <label>캡처 폴더</label>
+        <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button onClick={importFolder} style={btnSm}>📂 폴더 불러오기</button>
+          <span style={{ fontSize: 11, color: '#64748b' }}>
+            {folderDir ? folderDir.split(/[\\/]/).pop() : '폴더 지정 시 장바구니·주문서·정답을 자동 분류 (파일명/폴더명: 장바구니·주문서, 무료·유료)'}
+          </span>
+        </span>
+        {scanSummary && (
+          <span style={{ fontSize: 11, color: '#4c3de6', gridColumn: '2' }}>
+            불러옴: 주문서 {scanSummary.order.free + scanSummary.order.paid + scanSummary.order.unknown}건
+            (무료 {scanSummary.order.free}/발생 {scanSummary.order.paid}) ·
+            장바구니 {scanSummary.cart.free + scanSummary.cart.paid + scanSummary.cart.unknown}건
+            (무료 {scanSummary.cart.free}/발생 {scanSummary.cart.paid}) · 정답 {scanSummary.answers}개
+            {scanSummary.truncated ? ' · 40개 초과 일부 생략' : ''}
+          </span>
+        )}
         {selectedKinds.map(k => (
           <React.Fragment key={k}>
             <label>{KIND_LABEL[k]} 샘플</label>
             <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <button onClick={() => pickSample(k)} style={btnSm}>파일 선택 (최대 2)</button>
+              <button onClick={() => pickSample(k)} style={btnSm}>파일 직접 선택</button>
               <span style={{ fontSize: 11, color: '#64748b' }}>
-                {samples[k].length ? samples[k].map(p => p.split(/[\\/]/).pop()).join(', ') : '없음'}
+                {samples[k].length ? samples[k].map(s => s.path.split(/[\\/]/).pop()).join(', ') : '없음'}
               </span>
             </span>
           </React.Fragment>
@@ -187,6 +224,13 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
               추출 {r.deterministic.itemCount}건{r.deterministic.itemCountExpected != null ? ` / 정답 ${r.deterministic.itemCountExpected}건` : ''}
               {' · '}합계 {Number(r.deterministic.subtotal || 0).toLocaleString('ko-KR')}원{r.deterministic.subtotalExpected != null ? ` / 정답 ${Number(r.deterministic.subtotalExpected).toLocaleString('ko-KR')}원` : ''}
               {r.deterministic.checkedOnlyValid === false && ' · checkedOnly 오류'}
+            </div>
+          )}
+          {r.deterministic && Array.isArray(r.deterministic.perSample) && r.deterministic.perSample.length > 0 && (
+            <div style={{ color: r.deterministic.perSample.every(p => p.countOk && p.totalOk) ? '#1a7f37' : '#dc2626', marginTop: 2, fontSize: 11 }}>
+              캡처별 대조: {r.deterministic.perSample.map(p =>
+                `${p.label} ${p.count}/${p.expectedCount}건 ${p.countOk && p.totalOk ? '✓' : '✗'}`
+              ).join(' · ')}
             </div>
           )}
           {r.rule && genDiffs[r.rule.id] && (

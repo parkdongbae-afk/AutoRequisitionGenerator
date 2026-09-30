@@ -21,6 +21,7 @@ import {
 import { verifyProject } from './services/verification-service.js'
 import { verifySamples } from './services/sample-verify-service.js'
 import { runShadowFixtures } from './services/shadow-fixtures.js'
+import { scanCaptureFolder, summarizeScan } from './services/sample-folder-service.js'
 import { gitStatus, gitDiff, gitStage, gitCommit as gitCommitFiles, gitPush, gitAheadBehind } from './services/git-service.js'
 import { createLogStore, maskSecrets } from './services/log-service.js'
 import {
@@ -259,6 +260,10 @@ if (!gotLock) {
         checkedOnlyExcuses: (settings.verify && settings.verify.checkedOnlyExcuses) || []
       })
     })
+    ipcMain.handle('generate:scan-folder', (_e, dir) => {
+      const scan = scanCaptureFolder(dir)
+      return { ...scan, summary: summarizeScan(scan) }
+    })
     ipcMain.handle('shadow:collect-fixtures', () => runShadowFixtures({
       callJev: args => jevService.judgeCandidate(args),
       persist: rec => appendShadowRecord(userDataDir, rec),
@@ -482,6 +487,9 @@ async function runE2E(outPath, userDataDir) {
 
     mark('mapping')
     // 5) 생성 파이프라인(§7.6 ↔ §14) — mock AI·Jev로 승인까지 + 임시 저장소 적용
+    //    폴더 불러오기와 동일한 다중 샘플·캡처별 정답 payload를 사용한다
+    const tmpHtml2 = join(app.getPath('temp'), `rule-mgr-e2e-free-${Date.now()}.html`)
+    fs.writeFileSync(tmpHtml2, FIXTURE_HTML)
     const tmpRepo = join(app.getPath('temp'), `rule-mgr-repo-${Date.now()}`)
     const XLSX = (await import('xlsx')).default
     const wb = XLSX.utils.book_new()
@@ -495,7 +503,10 @@ async function runE2E(outPath, userDataDir) {
     XLSX.writeFile(wb, tmpXls)
     const gen = await win.webContents.executeJavaScript(`window.ruleMgr.generate.start({
       mallName: "E2E몰", baseId: "e2emall", kinds: ["order"],
-      samplesByKind: { order: [${JSON.stringify(tmpHtml)}] },
+      samplesByKind: { order: [
+        { path: ${JSON.stringify(tmpHtml)}, answerPath: ${JSON.stringify(tmpXls)}, tag: "paid" },
+        { path: ${JSON.stringify(tmpHtml2)}, answerPath: ${JSON.stringify(tmpXls)}, tag: "free" }
+      ] },
       answerExcel: ${JSON.stringify(tmpXls)}, answerBasis: "order",
       mockAi: true, mockJev: true
     })`)
@@ -504,6 +515,8 @@ async function runE2E(outPath, userDataDir) {
       decision: gen && gen.results && gen.results[0] && gen.results[0].decision
     }
     if (gen && gen.results && gen.results[0] && gen.results[0].rule) {
+      result.generationCheck.perSampleCount = gen.results[0].deterministic &&
+        gen.results[0].deterministic.perSample && gen.results[0].deterministic.perSample.length
       const applied = await win.webContents.executeJavaScript(
         `window.ruleMgr.generate.apply(${JSON.stringify(tmpRepo)}, ${JSON.stringify(gen)}, { apply: true, rebuildBundle: false })`
       )
@@ -576,6 +589,7 @@ async function runE2E(outPath, userDataDir) {
       && result.mappingCheck.rowClick && result.mappingCheck.nameClick
       && result.mappingCheck.checkedClick && result.mappingCheck.assemble
       && result.generationCheck.status === 'approved'
+      && result.generationCheck.perSampleCount === 2
       && result.generationCheck.applied && result.generationInputGate
       && result.transactionCheck && result.transactionCheck.listed
       && result.transactionCheck.foundApplied && result.transactionCheck.rolledBack

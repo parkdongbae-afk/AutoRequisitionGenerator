@@ -84,6 +84,7 @@ export function verifyRule({ rule, samples, expected }) {
   let pricesPositive = true
   let uncheckedIncluded = false
   const allItems = []
+  const perSample = []
   let diag = { selectorMatchCounts: {}, suspiciousClassNames: [] }
 
   for (const s of samples) {
@@ -110,12 +111,38 @@ export function verifyRule({ rule, samples, expected }) {
     if (!diag.selectorMatchCounts.rowSelector) {
       try { diag = selectorDiagnostics(cheerioLoad(s.html), s.html, rule) } catch {}
     }
+
+    // 캡처별 정답 — 샘플에 expected가 있으면 그 샘플만의 건수·총액을 대조한다(§10-A.8 교차 검증)
+    const sampleExpectedItems = s.expected && Array.isArray(s.expected.items)
+      ? s.expected.items.filter(i => !i.isShipping)
+      : null
+    if (sampleExpectedItems) {
+      const cnt = res.items.length
+      const expCnt = sampleExpectedItems.length
+      const tot = res.items.reduce((sum, i) => sum + (Number(i.qty) || 1) * (Number(i.unitPrice) || 0), 0)
+      const expTot = sampleExpectedItems.reduce((sum, i) => sum + (Number(i.qty) || 1) * (Number(i.unitPrice) || 0), 0)
+      perSample.push({
+        label: s.label || '샘플',
+        count: cnt,
+        expectedCount: expCnt,
+        subtotal: tot,
+        expectedSubtotal: expTot,
+        countOk: cnt === expCnt,
+        totalOk: Math.abs(tot - expTot) <= Math.max(10, expTot * 0.02)
+      })
+    }
   }
 
-  const countMatches = itemCountExpected == null ? itemCount > 0 : itemCount === itemCountExpected
-  const totalWithinTolerance = subtotalExpected == null
-    ? itemCount > 0
-    : Math.abs(subtotal - subtotalExpected) <= Math.max(10, subtotalExpected * 0.02)
+  const hasPerSample = perSample.length > 0
+  const judgedAllOk = perSample.every(p => p.countOk && p.totalOk)
+  const countMatches = hasPerSample
+    ? itemCount > 0 && judgedAllOk
+    : itemCountExpected == null ? itemCount > 0 : itemCount === itemCountExpected
+  const totalWithinTolerance = hasPerSample
+    ? itemCount > 0 && judgedAllOk
+    : subtotalExpected == null
+      ? itemCount > 0
+      : Math.abs(subtotal - subtotalExpected) <= Math.max(10, subtotalExpected * 0.02)
 
   // 장바구니 규칙은 checkedOnly가 기본 필수(ADMIN_SATAD_ALONE.MD §2.2)
   const isCart = /-cart$/.test(String(rule.id)) || /장바구니/.test(String(rule.name))
@@ -137,6 +164,7 @@ export function verifyRule({ rule, samples, expected }) {
     subtotal,
     subtotalExpected,
     totalWithinTolerance,
+    perSample,
     shipping: null,
     shippingExpected: null,
     checkedOnlyValid,

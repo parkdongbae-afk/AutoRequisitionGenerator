@@ -53,8 +53,10 @@ const CANDIDATE_ANGLES = [
 export async function generateAndVerifyRule({
   mallName, kind, ruleId, samples, expected, expectAnswer = false,
   model, count = 3, repairRounds = 3, log = () => {},
-  callAi, callJev, promptBuilder, repairPromptBuilder
+  callAi, callJev, promptBuilder, repairPromptBuilder, promptSamples, promptAnswer
 }) {
+  const promptSampleList = promptSamples || samples
+  const promptAnswerObj = promptAnswer || expected
   const ai = callAi || (({ prompt }) => runOpenCodePrompt(prompt, { model }))
   const jev = callJev || (async (r) => { const { JevJudgeService } = await import('./jev-judge-service.js'); const s = new JevJudgeService(); return s.judgeCandidate(r) })
 
@@ -66,17 +68,17 @@ export async function generateAndVerifyRule({
   for (let i = 0; i < count; i++) {
     const angle = CANDIDATE_ANGLES[i % CANDIDATE_ANGLES.length]
     const prompt = promptBuilder
-      ? promptBuilder({ samples, answer: expected, angle, index: i })
+      ? promptBuilder({ samples: promptSampleList, answer: promptAnswerObj, angle, index: i })
       : [
       `당신은 쇼핑몰 캡처 화면에서 품목을 CSS 선택자로 추출하는 파싱 규칙 전문가입니다.`,
       `"${mallName}"(${kind === 'cart' ? '장바구니' : '주문서'}) 규칙 후보 #${i + 1}를 만들어 주세요. ${angle}`,
       `규칙 id는 "${ruleId}", name은 "${mallName}"으로 고정. 응답은 설명 없이 규칙 JSON 객체만.`,
       '',
       '## 입력 샘플',
-      ...samples.map((s, j) => `### 샘플 ${j + 1}\n\`\`\`html\n${s.html}\n\`\`\``),
+      ...promptSampleList.map((s, j) => `### 샘플 ${j + 1}\n\`\`\`html\n${s.html}\n\`\`\``),
       '',
       '## 정답 품목',
-      JSON.stringify(expected.items || [], null, 1)
+      JSON.stringify(promptAnswerObj.items || [], null, 1)
     ].join('\n')
     log(`후보 #${i + 1} 생성 중…`)
     let rule
@@ -86,7 +88,7 @@ export async function generateAndVerifyRule({
       log(`후보 #${i + 1} 생성 실패: ${String(e.message || e)}`, 'err')
       continue
     }
-    const ev = await evaluateCandidate({ rule, samples, expected, jev })
+    const ev = await evaluateCandidate({ rule, samples, expected: promptAnswerObj || expected, jev })
     results.push({ rule, deterministic: ev.deterministic, jev: ev.jevRes, decision: ev.decision })
   }
 
@@ -106,13 +108,13 @@ export async function generateAndVerifyRule({
   for (let round = 1; round <= repairRounds; round++) {
     log(`최적 후보(${current.decision.reason})를 GLM에 수정 요청합니다(${round}/${repairRounds})`, 'step')
     const repairPrompt = repairPromptBuilder
-      ? repairPromptBuilder({ samples, answer: expected, rule: current.rule, problems: [current.decision.reason], round })
+      ? repairPromptBuilder({ samples: promptSampleList, answer: promptAnswerObj, rule: current.rule, problems: [current.decision.reason], round })
       : [
       `아래 규칙으로 추출했더니 정답과 다릅니다. 문제: ${current.decision.reason}`,
       `수정된 규칙 JSON 객체만 응답하세요(id "${ruleId}" 고정).`,
       `## 기존 규칙`, '```json', JSON.stringify(current.rule, null, 1), '```',
       `## 실제 추출`, JSON.stringify({ itemCount: current.deterministic.itemCount, subtotal: current.deterministic.subtotal }, null, 1),
-      `## 정답`, JSON.stringify(expected.items || [], null, 1)
+      `## 정답`, JSON.stringify(promptAnswerObj.items || [], null, 1)
     ].join('\n')
     let rule
     try {
@@ -128,7 +130,7 @@ export async function generateAndVerifyRule({
       break
     }
     attempted.add(key)
-    const ev = await evaluateCandidate({ rule, samples, expected, jev })
+    const ev = await evaluateCandidate({ rule, samples, expected: promptAnswerObj || expected, jev })
     repairHistory.push({ round, action: ev.decision.action, reason: ev.decision.reason })
     if (ev.decision.action === 'reject') break
     if (ev.deterministic.countMatches && ev.deterministic.totalWithinTolerance) {

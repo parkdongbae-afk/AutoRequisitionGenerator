@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('ruleMgr', {
   generate: {
     start: payload => ipcRenderer.invoke('generate:start', payload),
     validate: payload => ipcRenderer.invoke('generate:validate', payload),
+    scanFolder: dir => ipcRenderer.invoke('generate:scan-folder', dir),
     apply: (repoRoot, generation, options) => ipcRenderer.invoke('generate:apply', { repoRoot, generation, options }),
     onProgress: cb => {
       const h = (_e, m) => cb(m)
