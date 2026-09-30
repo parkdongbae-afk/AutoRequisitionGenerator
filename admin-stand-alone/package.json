@@ -10,7 +10,8 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "start": "electron-vite preview",
-    "smoke": "electron-vite build && electron . --smoke"
+    "smoke": "electron-vite build && electron . --smoke",
+    "manual": "node analysis/make-manual-pdf.js"
   },
   "build": {
     "appId": "kr.school.shopping-mall-rule-manager",
@@ -33,6 +34,7 @@
     "electron": "33.2.1",
     "electron-builder": "^25.1.8",
     "electron-vite": "2.3.0",
+    "pdfkit": "^0.20.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "vite": "5.4.11"

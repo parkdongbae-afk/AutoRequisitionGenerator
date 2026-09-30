@@ -25,6 +25,9 @@ npx electron . --e2e --project="C:\경로\저장소"
 배포: `npx electron-builder --win portable` → `release\ShoppingMallRuleManager-Portable.exe`
 (패키지 exe는 `--project` 지정 E2E까지 자동 검증 완료)
 
+사용법 매뉴얼: [MANUAL.md](MANUAL.md) 원본 · `resources\쇼핑몰규칙관리자_사용설명서.pdf`
+(재생성: `npm run manual`)
+
 ## 현재 구현 (v0.6.0)
 
 - **샘플 추출 검증**(§7.7 후반): 캡처 폴더(하위 포함, 최대 60개)를 훑어 문서↔규칙 매칭
