@@ -19,7 +19,9 @@ import {
   assembleMappingRule, previewMappingExtraction, isSampleFile
 } from './services/mapping-service.js'
 import { verifyProject } from './services/verification-service.js'
+import { verifySamples } from './services/sample-verify-service.js'
 import { runShadowFixtures } from './services/shadow-fixtures.js'
+import { gitStatus, gitDiff, gitStage, gitCommit as gitCommitFiles, gitPush, gitAheadBehind } from './services/git-service.js'
 import {
   prepareGenerationRequest, runGeneration, applyGenerationResult
 } from './services/generation-service.js'
@@ -166,7 +168,7 @@ if (!gotLock) {
     })
     ipcMain.handle('rules:builtin', () => registerBuiltinRules())
     ipcMain.handle('rules:rebuild-json', (_e, bump) => rebuildRulesJson(resolveRepoRoot(), { bump: !!bump }))
-    ipcMain.handle('git:commit', (_e, { repoRoot, files, message, push }) => gitCommit(repoRoot, files, message, { push, log: m => console.log('[git]', m) }))
+    ipcMain.handle('git:commit-rules', (_e, { repoRoot, files, message, push }) => gitCommit(repoRoot, files, message, { push, log: m => console.log('[git]', m) }))
 
     // 파일 선택 — picker가 발급한 경로만 renderer로 전달한다(§19.3)
     ipcMain.handle('pick:samples', async (_e, kind) => {
@@ -233,6 +235,22 @@ if (!gotLock) {
       persist: rec => appendShadowRecord(userDataDir, rec),
       onProgress: m => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m) }
     }))
+
+    // 샘플 추출 검증(§7.7) + Git 배포(§7.8) — push 실패는 파일 적용 실패가 아니다(§17.5)
+    ipcMain.handle('verify:samples', (_e, dir) => verifySamples(project ? project.repoRoot : resolveRepoRoot(), dir, {
+      onProgress: m => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m) }
+    }))
+    ipcMain.handle('pick:dir', async () => {
+      const r = await dialog.showOpenDialog(mainWindow, { title: '캡처 폴더 선택', properties: ['openDirectory'] })
+      return r.canceled || !r.filePaths.length ? null : r.filePaths[0]
+    })
+    const repoOf = () => (project ? project.repoRoot : resolveRepoRoot())
+    ipcMain.handle('git:status', () => gitStatus(repoOf()))
+    ipcMain.handle('git:diff', (_e, paths) => gitDiff(repoOf(), paths))
+    ipcMain.handle('git:stage', (_e, paths) => gitStage(repoOf(), paths))
+    ipcMain.handle('git:commit', (_e, message) => gitCommitFiles(repoOf(), message))
+    ipcMain.handle('git:push', (_e, opts) => gitPush(repoOf(), opts))
+    ipcMain.handle('git:ahead', () => gitAheadBehind(repoOf()))
 
     createWindow()
 
@@ -316,14 +334,22 @@ function mockJev() {
 }
 
 async function runE2E(outPath, userDataDir) {
-  const result = { ok: false, rendererErrors: [] }
+  const result = { ok: false, rendererErrors: [], breadcrumbs: [] }
   const win = createWindow({ show: false })
+  const mark = name => {
+    result.breadcrumbs.push(name)
+    try { fs.writeFileSync(outPath, JSON.stringify(result, null, 1), 'utf-8') } catch {}
+  }
   try {
-    await new Promise(res => win.webContents.once('did-finish-load', res))
+    mark('start')
+    await new Promise(res => {
+      if (!win.webContents.isLoading()) return res()
+      win.webContents.once('did-finish-load', res)
+    })
+    mark('loaded')
     win.webContents.on('console-message', (_e, _lv, msg, line, sourceId) => {
       if (/error/i.test(String(msg))) result.rendererErrors.push(`${String(msg).slice(0, 200)} @ ${String(sourceId || '').split(/[\\/]/).pop()}:${line}`)
     })
-
     // 1) 프로젝트 탐지·규칙 목록·bundle 버전(§8·§23.4)
     result.projectCheck = !!(await win.webContents.executeJavaScript('window.ruleMgr.projectDetect()'))
     if (result.projectCheck) {
@@ -333,6 +359,7 @@ async function runE2E(outPath, userDataDir) {
       )
     }
 
+    mark('project')
     // 2) 설정 + safeStorage Key 왕복(JEV.MD §2.3)
     result.settingsCheck = !!(await win.webContents.executeJavaScript(
       'window.ruleMgr.settings.set({ generation: { model: "e2e" } }).then(s => s.generation.model === "e2e")'
@@ -346,11 +373,13 @@ async function runE2E(outPath, userDataDir) {
       await win.webContents.executeJavaScript('window.ruleMgr.settings.clearJevKey()')
     }
 
+    mark('settings')
     // 3) Jev 상태·Shadow 통계(§19)
     result.jevCheck = !!(await win.webContents.executeJavaScript(
       'window.ruleMgr.jev.getStatus().then(s => typeof s.configured === "boolean" && s.stats && s.autoApprove && s.autoApprove.allowed === false)'
     ))
 
+    mark('jev')
     // 4) 클릭 매핑(§12) — 픽스처 파일 → 프로토콜 서빙 → 피커 클릭 → 규칙 조립
     const tmpHtml = join(app.getPath('temp'), `rule-mgr-e2e-${Date.now()}.html`)
     fs.writeFileSync(tmpHtml, FIXTURE_HTML)
@@ -394,6 +423,7 @@ async function runE2E(outPath, userDataDir) {
       result.mappingCheck.previewCount = preview && preview.count
     }
 
+    mark('mapping')
     // 5) 생성 파이프라인(§7.6 ↔ §14) — mock AI·Jev로 승인까지 + 임시 저장소 적용
     const tmpRepo = join(app.getPath('temp'), `rule-mgr-repo-${Date.now()}`)
     const XLSX = (await import('xlsx')).default
@@ -453,6 +483,25 @@ async function runE2E(outPath, userDataDir) {
           'window.ruleMgr.shadowCollectFixtures().then(r => r.total === 72 && r.recorded === 0 && r.errors === 72)'
         ))
       }
+
+      mark('generate')
+    mark('git')
+    // Git 읽기 전용(§7.8) — 변경 없음(변이 작업은 E2E에서 수행하지 않는다)
+      result.gitCheck = !!(await win.webContents.executeJavaScript(
+        'window.ruleMgr.git.status().then(s => window.ruleMgr.git.ahead().then(ab => typeof s.branch === "string" && Array.isArray(s.files) && typeof ab.ahead === "number"))'
+      ))
+
+      // 샘플 추출 검증(§7.7) — 저장소의 Check/ 캡처 폴더가 있으면 실제로 돌려본다
+      const checkDir = join(resolveRepoRoot(), 'Check')
+      if (fs.existsSync(checkDir)) {
+        mark('sampleverify-start')
+        const sv = verifySamples(resolveRepoRoot(), checkDir)
+        mark('sampleverify-end')
+        result.sampleVerifyCheck = sv.scanned > 0 && Array.isArray(sv.results) && sv.results.every(x => x.verdict)
+        result.sampleVerifySummary = sv.summary
+      } else {
+        result.sampleVerifyCheck = 'skipped-no-check-dir'
+      }
     }
     // 입력 검증 차단(§7.6 — 샘플 없으면 실행 차단)
     result.generationInputGate = await win.webContents.executeJavaScript(
@@ -471,6 +520,7 @@ async function runE2E(outPath, userDataDir) {
       && result.transactionCheck.filesGone
       && result.deleteCheck && result.deleteCheck.deleted && result.deleteCheck.status === 'applied'
       && result.verificationCheck && result.shadowFixtureCheck
+      && result.gitCheck && result.sampleVerifyCheck
   } catch (e) {
     result.fatal = String(e && e.message || e)
   }

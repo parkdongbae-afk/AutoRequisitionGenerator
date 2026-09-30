@@ -12,13 +12,23 @@ contextBridge.exposeInMainWorld('ruleMgr', {
   rulesDeletePreview: (repoRoot, id) => ipcRenderer.invoke('rules:delete-preview', repoRoot, id),
   rulesBuiltin: () => ipcRenderer.invoke('rules:builtin'),
   rulesRebuildJson: bump => ipcRenderer.invoke('rules:rebuild-json', bump),
-  gitCommit: (repoRoot, files, message, push) => ipcRenderer.invoke('git:commit', { repoRoot, files, message, push }),
+  gitCommit: (repoRoot, files, message, push) => ipcRenderer.invoke('git:commit-rules', { repoRoot, files, message, push }),
   tx: {
     list: () => ipcRenderer.invoke('tx:list'),
     rollback: id => ipcRenderer.invoke('tx:rollback', id)
   },
   verifyAll: () => ipcRenderer.invoke('verify:all'),
+  verifySamples: dir => ipcRenderer.invoke('verify:samples', dir),
+  pickDir: () => ipcRenderer.invoke('pick:dir'),
   shadowCollectFixtures: () => ipcRenderer.invoke('shadow:collect-fixtures'),
+  git: {
+    status: () => ipcRenderer.invoke('git:status'),
+    diff: paths => ipcRenderer.invoke('git:diff', paths),
+    stage: paths => ipcRenderer.invoke('git:stage', paths),
+    commit: message => ipcRenderer.invoke('git:commit', message),
+    push: opts => ipcRenderer.invoke('git:push', opts),
+    ahead: () => ipcRenderer.invoke('git:ahead')
+  },
   pickSamples: () => ipcRenderer.invoke('pick:samples', 'sample'),
   pickAnswer: () => ipcRenderer.invoke('pick:samples', 'answer'),
   settings: {

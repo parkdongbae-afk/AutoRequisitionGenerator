@@ -3,6 +3,7 @@ import GeneratePanel from './GeneratePanel.jsx'
 import MappingPanel from './MappingPanel.jsx'
 import DiffView from './DiffView.jsx'
 import VerificationPanel from './VerificationPanel.jsx'
+import GitPanel from './GitPanel.jsx'
 import { diffLines, diffSummary } from '../../shared/line-diff.js'
 import { subscribe, getState, startMapping } from './mapping-state.js'
 
@@ -177,7 +178,7 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'Malgun Gothic, sans-serif', padding: 20, color: '#0f172a' }}>
-      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.5.0</span></h1>
+      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.6.0</span></h1>
       <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 13 }}>
         ADMIN_SATAD_ALONE.MD 기준 — 사용자용 앱과 독립 실행(별도 userData·잠금·포트)
       </p>
@@ -235,6 +236,7 @@ export default function App() {
       )}
 
       {project && <VerificationPanel rules={rules} onDone={loadProject} />}
+      {project && project.git && <GitPanel onDone={loadTxs} />}
 
       {editing && (
         <section style={{ border: '2px solid #DDD9FC', borderRadius: 10, padding: 14, marginBottom: 14 }}>

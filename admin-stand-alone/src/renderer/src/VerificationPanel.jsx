@@ -13,6 +13,20 @@ export default function VerificationPanel({ rules, onDone }) {
   const [cmpA, setCmpA] = useState('')
   const [cmpB, setCmpB] = useState('')
   const [cmpData, setCmpData] = useState(null)
+  const [sampleDir, setSampleDir] = useState('')
+  const [sampleRes, setSampleRes] = useState(null)
+
+  const runSamples = async () => {
+    if (!sampleDir) return
+    setRunning(true)
+    setSampleRes(null)
+    try {
+      setSampleRes(await window.ruleMgr.verifySamples(sampleDir))
+    } catch (e) {
+      setSampleRes({ results: [{ file: '-', verdict: 'ERROR', problems: [String(e.message || e)] }], summary: { ERROR: 1, WARNING: 0, INFO: 0, PASS: 0, ok: false }, scanned: 0 })
+    }
+    setRunning(false)
+  }
 
   const runVerify = async () => {
     setRunning(true)
@@ -42,6 +56,7 @@ export default function VerificationPanel({ rules, onDone }) {
         <h2 style={{ fontSize: 15, margin: 0 }}>🧪 검증 센터 · 규칙 비교</h2>
         <span style={{ marginLeft: 'auto' }} />
         <button onClick={() => setTab('verify')} style={tabBtn(tab === 'verify')}>§7.7 전체 검증</button>
+        <button onClick={() => setTab('samples')} style={tabBtn(tab === 'samples')}>§7.7 샘플 추출</button>
         <button onClick={() => setTab('compare')} style={tabBtn(tab === 'compare')}>§7.4 규칙 비교</button>
       </div>
 
@@ -75,6 +90,42 @@ export default function VerificationPanel({ rules, onDone }) {
                       <td style={{ padding: 3, width: 170, color: '#64748b' }}>{r.ruleId || '(프로젝트)'}</td>
                       <td style={{ padding: 3, width: 170, color: '#94a3b8' }}>{r.code}</td>
                       <td style={{ padding: 3 }}>{r.message}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+        </div>
+      )}
+
+      {tab === 'samples' && (
+        <div style={{ marginTop: 8, fontSize: 12 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button onClick={async () => { const d = await window.ruleMgr.pickDir(); if (d) setSampleDir(d) }} style={btnSm}>캡처 폴더 선택…</button>
+            <span style={{ color: '#64748b', fontSize: 11 }}>{sampleDir || '폴더를 선택하세요 (하위 폴더 포함, 최대 60개)'}</span>
+            <button onClick={runSamples} disabled={running || !sampleDir} style={{ ...btnPrimary, opacity: running || !sampleDir ? 0.5 : 1 }}>
+              {running ? '검증 중…' : '▶ 샘플 추출 검증'}
+            </button>
+          </div>
+          {sampleRes && (
+            <>
+              <p style={{ margin: '8px 0 4px' }}>
+                스캔 {sampleRes.scanned}건 · {['ERROR', 'WARNING', 'INFO', 'PASS'].map(s => (
+                  <span key={s} style={{ color: SEV_COLOR[s], marginRight: 10 }}>{s} {sampleRes.summary[s] || 0}</span>
+                ))}
+                <span style={{ color: sampleRes.summary.ok ? '#1a7f37' : '#dc2626', fontWeight: 700 }}>
+                  {sampleRes.summary.ok ? '정답 대조 통과' : 'ERROR 있음'}
+                </span>
+              </p>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, marginTop: 4 }}>
+                <tbody>
+                  {sampleRes.results.map((r, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: 3, width: 60, color: SEV_COLOR[r.verdict], fontWeight: 700 }}>{r.verdict}</td>
+                      <td style={{ padding: 3, width: 200 }}>{r.file}</td>
+                      <td style={{ padding: 3, width: 140, color: '#64748b' }}>{r.ruleId || '—'}{r.itemCount != null ? ` · ${r.itemCount}건${r.expectedCount != null ? `/${r.expectedCount}` : ''}` : ''}</td>
+                      <td style={{ padding: 3 }}>{(r.problems || []).join(' · ') || '정답 대조 통과'}</td>
                     </tr>
                   ))}
                 </tbody>
