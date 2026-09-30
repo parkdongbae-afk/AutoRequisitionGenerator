@@ -46,6 +46,18 @@ const CANDIDATE_ANGLES = [
   '클래스명이 자주 바뀌는 쇼핑몰에 대비해 id·data 속성·역할 기반 선택자를 우선하세요.'
 ]
 
+// 수정 프롬프트용 실측 데이터 — AI가 "뭐가 틀렸는지"를 볼 수 있게 추출 결과와 선택자 매칭 수를 정리한다
+function extractionDetails(d) {
+  const base = d.perSample && d.perSample.length
+    ? d.perSample.map(p => ({ sample: p.label, count: p.count, expected: p.expectedCount, subtotal: p.subtotal, expectedSubtotal: p.expectedSubtotal }))
+    : [{ count: d.itemCount, expected: d.itemCountExpected, subtotal: d.subtotal, expectedSubtotal: d.subtotalExpected }]
+  return base.concat([
+    { extractedNames: (d.extraction.items || []).map(i => `${i.name} x${i.qty} @${i.unitPrice}`).slice(0, 12) },
+    { selectorMatchCounts: d.diagnostics && d.diagnostics.selectorMatchCounts },
+    { suspiciousClassNames: (d.diagnostics && d.diagnostics.suspiciousClassNames) || [] }
+  ])
+}
+
 /*
  * 후보 3개 생성 → 로컬 검증 → Jev 판정 → 승인/수정 결정(§14).
  * deps.callAi({prompt}) / deps.callJev({rule, extraction, expected, diagnostics}) 주입 가능.
@@ -107,13 +119,14 @@ export async function generateAndVerifyRule({
   let current = repairable
   for (let round = 1; round <= repairRounds; round++) {
     log(`최적 후보(${current.decision.reason})를 GLM에 수정 요청합니다(${round}/${repairRounds})`, 'step')
+    const details = extractionDetails(current.deterministic)
     const repairPrompt = repairPromptBuilder
-      ? repairPromptBuilder({ samples: promptSampleList, answer: promptAnswerObj, rule: current.rule, problems: [current.decision.reason], round })
+      ? repairPromptBuilder({ samples: promptSampleList, answer: promptAnswerObj, rule: current.rule, problems: [current.decision.reason], details, round })
       : [
       `아래 규칙으로 추출했더니 정답과 다릅니다. 문제: ${current.decision.reason}`,
       `수정된 규칙 JSON 객체만 응답하세요(id "${ruleId}" 고정).`,
       `## 기존 규칙`, '```json', JSON.stringify(current.rule, null, 1), '```',
-      `## 실제 추출`, JSON.stringify({ itemCount: current.deterministic.itemCount, subtotal: current.deterministic.subtotal }, null, 1),
+      `## 실제 추출(실측)`, JSON.stringify(details, null, 1),
       `## 정답`, JSON.stringify(promptAnswerObj.items || [], null, 1)
     ].join('\n')
     let rule

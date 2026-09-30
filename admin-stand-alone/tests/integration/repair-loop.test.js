@@ -83,5 +83,20 @@ const jevApprove = async () => ({ answers: { selector_stable: { probability: 0.9
   eq('수정 이력 3건', res.repairHistory.length, 3)
 }
 
+// 5. 수정 프롬프트에 실측 데이터(건수·선택자 매칭 수)가 실린다 — AI가 근거로 고치게
+{
+  const prompts = []
+  const res = await generateAndVerifyRule({
+    mallName: '테스트몰', kind: 'cart', ruleId: 'r5-cart', samples, expected,
+    count: 1, repairRounds: 1,
+    callAi: async ({ prompt }) => { prompts.push(prompt); return prompts.length === 1 ? badRuleJson : goodRuleJson },
+    callJev: jevApprove
+  })
+  const repairPrompt = prompts[1] || ''
+  eq('수정 후 성공', res.status, 'repaired')
+  eq('수정 프롬프트에 실측 건수 포함', repairPrompt.includes('"count": 0') && repairPrompt.includes('"expected": 1'), true)
+  eq('수정 프롬프트에 선택자 매칭 수 포함', repairPrompt.includes('selectorMatchCounts'), true)
+}
+
 console.log(fail === 0 ? 'ALL PASS' : `FAIL ${fail}건`)
 process.exit(fail ? 1 : 0)

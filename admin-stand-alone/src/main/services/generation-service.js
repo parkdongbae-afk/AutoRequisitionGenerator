@@ -164,10 +164,10 @@ export async function runGeneration(request, deps = {}) {
           samples: ctx.promptSamples || s, answer: ctx.promptAnswer || answer,
           repoRoot: repoRoot || undefined
         }),
-        repairPromptBuilder: ({ samples: s, answer, rule, problems }) => buildRepairPromptText({
+        repairPromptBuilder: ({ samples: s, answer, rule, problems, details }) => buildRepairPromptText({
           mallName: request.mallName, kind: ctx.kind, ruleId: ctx.ruleId,
           samples: ctx.promptSamples || s, answer: ctx.promptAnswer || answer, rule,
-          verification: { details: [], problems: problems || [] },
+          verification: { details: details || [], problems: problems || [] },
           repoRoot: repoRoot || undefined
         })
       })
