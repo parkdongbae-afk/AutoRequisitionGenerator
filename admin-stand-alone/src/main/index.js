@@ -8,7 +8,7 @@ import fs from 'node:fs'
 import { detectBridge } from './services/zai-tool-bridge.js'
 import { JevJudgeService } from './services/jev-judge-service.js'
 import { detectProjectRoot, projectInfo } from './services/project-service.js'
-import { rulesList, saveRule, deleteRule, registerBuiltinRules, rebuildRulesJson, resolveRepoRoot, gitCommit, listTransactions, rollbackTransaction } from './services/rules-service.js'
+import { rulesList, saveRule, deleteRuleTx, deleteRulePreview, registerBuiltinRules, rebuildRulesJson, resolveRepoRoot, gitCommit, listTransactions, rollbackTransaction } from './services/rules-service.js'
 import { appendShadowRecord, readShadowRecords } from './services/shadow-store.js'
 import {
   loadSettings, saveSettings, storeTypesafeKey, loadTypesafeKey, clearTypesafeKey,
@@ -158,7 +158,10 @@ if (!gotLock) {
       return fs.existsSync(p) ? fs.readFileSync(p, 'utf-8') : ''
     })
     ipcMain.handle('rules:save', (_e, repoRoot, rule) => saveRule(userDataDir, repoRoot, rule))
-    ipcMain.handle('rules:delete', (_e, id) => deleteRule({ id }, m => console.log('[delete]', m)))
+    ipcMain.handle('rules:delete-preview', (_e, repoRoot, id) => deleteRulePreview(repoRoot, id))
+    ipcMain.handle('rules:delete', (_e, id, repoRoot) => {
+      return deleteRuleTx(userDataDir, repoRoot || (project ? project.repoRoot : resolveRepoRoot()), id, { bump: false })
+    })
     ipcMain.handle('rules:builtin', () => registerBuiltinRules())
     ipcMain.handle('rules:rebuild-json', (_e, bump) => rebuildRulesJson(resolveRepoRoot(), { bump: !!bump }))
     ipcMain.handle('git:commit', (_e, { repoRoot, files, message, push }) => gitCommit(repoRoot, files, message, { push, log: m => console.log('[git]', m) }))
@@ -413,6 +416,13 @@ async function runE2E(outPath, userDataDir) {
         result.transactionCheck.rolledBack = rb.ok === true
         result.transactionCheck.filesGone = !fs.existsSync(join(tmpRepo, 'app', 'src', 'main', 'lib', 'rules', 'e2emall.json'))
       }
+      // 삭제 트랜잭션(§16) — 저장→삭제로 파일 제거와 이력 적재를 확인한다
+      await win.webContents.executeJavaScript(`window.ruleMgr.rulesSave(${JSON.stringify(tmpRepo)}, ${JSON.stringify({ id: 'delcheck', name: 'delcheck', match: ['x.com'], rowSelector: 'div', fields: { name: { sel: '.n' }, price: { sel: '.p' } } })})`)
+      const delRes = await win.webContents.executeJavaScript(`window.ruleMgr.rulesDelete("delcheck", ${JSON.stringify(tmpRepo)})`)
+      result.deleteCheck = {
+        deleted: !fs.existsSync(join(tmpRepo, 'app', 'src', 'main', 'lib', 'rules', 'delcheck.json')),
+        status: delRes && delRes.status
+      }
     }
     // 입력 검증 차단(§7.6 — 샘플 없으면 실행 차단)
     result.generationInputGate = await win.webContents.executeJavaScript(
@@ -429,6 +439,7 @@ async function runE2E(outPath, userDataDir) {
       && result.transactionCheck && result.transactionCheck.listed
       && result.transactionCheck.foundApplied && result.transactionCheck.rolledBack
       && result.transactionCheck.filesGone
+      && result.deleteCheck && result.deleteCheck.deleted && result.deleteCheck.status === 'applied'
   } catch (e) {
     result.fatal = String(e && e.message || e)
   }

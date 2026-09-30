@@ -52,7 +52,7 @@ const CANDIDATE_ANGLES = [
  */
 export async function generateAndVerifyRule({
   mallName, kind, ruleId, samples, expected, expectAnswer = false,
-  model, count = 3, repairRounds = 2, log = () => {},
+  model, count = 3, repairRounds = 3, log = () => {},
   callAi, callJev, promptBuilder, repairPromptBuilder
 }) {
   const ai = callAi || (({ prompt }) => runOpenCodePrompt(prompt, { model }))
@@ -86,46 +86,74 @@ export async function generateAndVerifyRule({
       log(`후보 #${i + 1} 생성 실패: ${String(e.message || e)}`, 'err')
       continue
     }
-    const deterministic = verifyRule({ rule, samples, expected })
-    if (!deterministic.schemaValid) {
-      results.push({ rule, deterministic, decision: { action: 'reject', reason: deterministic.errors[0] || '스키마 오류' } })
-      continue
-    }
-    if (!passesMinimumDeterministicGate(deterministic)) {
-      results.push({ rule, deterministic, decision: { action: 'repair', reason: deterministic.errors[0] || '로컬 검증 실패' } })
-      continue
-    }
-    let jevRes = null
-    try {
-      jevRes = await jev({ rule, extraction: deterministic.extraction, expected, diagnostics: deterministic.diagnostics })
-    } catch (e) {
-      results.push({ rule, deterministic, decision: { action: 'human_review', reason: 'Jev 연결 실패 — ' + String(e.message || e) } })
-      continue
-    }
-    results.push({ rule, deterministic, jev: jevRes, decision: decideRuleAction({ deterministic, jev: jevRes }) })
+    const ev = await evaluateCandidate({ rule, samples, expected, jev })
+    results.push({ rule, deterministic: ev.deterministic, jev: ev.jevRes, decision: ev.decision })
   }
 
   const approved = results.filter(r => r.decision.action === 'approve')
     .sort((a, b) => scoreCandidate(b.deterministic).score - scoreCandidate(a.deterministic).score)[0]
-  if (approved) return { status: 'approved', ...approved, results }
+  if (approved) return { status: 'approved', ...approved, results, repairHistory: [] }
 
   const repairable = results.filter(r => r.decision.action === 'repair')
     .sort((a, b) => scoreCandidate(b.deterministic).score - scoreCandidate(a.deterministic).score)[0]
-  if (!repairable || repairRounds <= 0) return { status: 'human_review', results }
+  if (!repairable || repairRounds <= 0) return { status: 'human_review', results, repairHistory: [] }
 
-  log(`최적 후보(${repairable.decision.reason})를 GLM에 수정 요청합니다`, 'step')
-  const repairPrompt = repairPromptBuilder
-    ? repairPromptBuilder({ samples, answer: expected, rule: repairable.rule, problems: [repairable.decision.reason] })
-    : [
-    `아래 규칙으로 추출했더니 정답과 다릅니다. 문제: ${repairable.decision.reason}`,
-    `수정된 규칙 JSON 객체만 응답하세요(id "${ruleId}" 고정).`,
-    `## 기존 규칙`, '```json', JSON.stringify(repairable.rule, null, 1), '```',
-    `## 실제 추출`, JSON.stringify({ itemCount: repairable.deterministic.itemCount, subtotal: repairable.deterministic.subtotal }, null, 1),
-    `## 정답`, JSON.stringify(expected.items || [], null, 1)
-  ].join('\n')
-  const rule = { ...base, ...extractJson(await ai({ prompt: repairPrompt })), id: ruleId, name: base.name }
+  // §11.3 — 최대 repairRounds회 자가 수정. 매 회차 재검증하고, 이전 회차와 동일 JSON이
+  // 반환되면 무한 반복 방지를 위해 중단한다. 정답 일치 수정분만 적용 후보가 된다.
+  const repairHistory = []
+  const attempted = new Set([JSON.stringify(repairable.rule)])
+  let current = repairable
+  for (let round = 1; round <= repairRounds; round++) {
+    log(`최적 후보(${current.decision.reason})를 GLM에 수정 요청합니다(${round}/${repairRounds})`, 'step')
+    const repairPrompt = repairPromptBuilder
+      ? repairPromptBuilder({ samples, answer: expected, rule: current.rule, problems: [current.decision.reason], round })
+      : [
+      `아래 규칙으로 추출했더니 정답과 다릅니다. 문제: ${current.decision.reason}`,
+      `수정된 규칙 JSON 객체만 응답하세요(id "${ruleId}" 고정).`,
+      `## 기존 규칙`, '```json', JSON.stringify(current.rule, null, 1), '```',
+      `## 실제 추출`, JSON.stringify({ itemCount: current.deterministic.itemCount, subtotal: current.deterministic.subtotal }, null, 1),
+      `## 정답`, JSON.stringify(expected.items || [], null, 1)
+    ].join('\n')
+    let rule
+    try {
+      rule = { ...base, ...extractJson(await ai({ prompt: repairPrompt })), id: ruleId, name: base.name }
+    } catch (e) {
+      repairHistory.push({ round, action: 'error', reason: String(e.message || e) })
+      break
+    }
+    const key = JSON.stringify(rule)
+    if (attempted.has(key)) {
+      log('이전과 동일한 규칙이 반환되어 수정을 중단합니다', 'err')
+      repairHistory.push({ round, action: 'stalled', reason: '이전 회차와 동일한 JSON' })
+      break
+    }
+    attempted.add(key)
+    const ev = await evaluateCandidate({ rule, samples, expected, jev })
+    repairHistory.push({ round, action: ev.decision.action, reason: ev.decision.reason })
+    if (ev.decision.action === 'reject') break
+    if (ev.deterministic.countMatches && ev.deterministic.totalWithinTolerance) {
+      return { status: 'repaired', rule, deterministic: ev.deterministic, jev: ev.jevRes, decision: ev.decision, results, repairHistory }
+    }
+    current = { rule, deterministic: ev.deterministic, decision: ev.decision }
+  }
+  return { status: 'human_review', results, repairHistory }
+}
+
+async function evaluateCandidate(ctx) {
+  const { rule, samples, expected, jev } = ctx
   const deterministic = verifyRule({ rule, samples, expected })
-  return { status: deterministic.countMatches && deterministic.totalWithinTolerance ? 'repaired' : 'human_review', rule, deterministic, results }
+  if (!deterministic.schemaValid) {
+    return { deterministic, jevRes: null, decision: { action: 'reject', reason: deterministic.errors[0] || '스키마 오류' } }
+  }
+  if (!passesMinimumDeterministicGate(deterministic)) {
+    return { deterministic, jevRes: null, decision: { action: 'repair', reason: deterministic.errors[0] || '로컬 검증 실패' } }
+  }
+  try {
+    const jevRes = await jev({ rule, extraction: deterministic.extraction, expected, diagnostics: deterministic.diagnostics })
+    return { deterministic, jevRes, decision: decideRuleAction({ deterministic, jev: jevRes }) }
+  } catch (e) {
+    return { deterministic, jevRes: null, decision: { action: 'human_review', reason: 'Jev 연결 실패 — ' + String(e.message || e) } }
+  }
 }
 
 function passesMinimumDeterministicGate(d) {

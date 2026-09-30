@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import GeneratePanel from './GeneratePanel.jsx'
 import MappingPanel from './MappingPanel.jsx'
+import DiffView from './DiffView.jsx'
+import { diffLines, diffSummary } from '../../shared/line-diff.js'
 import { subscribe, getState, startMapping } from './mapping-state.js'
 
 const PHASES = [
@@ -30,10 +32,14 @@ export default function App() {
   const [rules, setRules] = useState([])
   const [editing, setEditing] = useState(null)
   const [editText, setEditText] = useState('')
+  const [editOrig, setEditOrig] = useState('')
+  const [showDiff, setShowDiff] = useState(false)
   const [msg, setMsg] = useState('')
   const [showGenerate, setShowGenerate] = useState(false)
   const [mappingActive, setMappingActive] = useState(false)
   const [txs, setTxs] = useState([])
+  const [deleteAsk, setDeleteAsk] = useState(null)
+  const [deleteTyped, setDeleteTyped] = useState('')
 
   const loadTxs = async () => setTxs(await window.ruleMgr.tx.list())
   const rollbackTx = async (id) => {
@@ -77,6 +83,7 @@ export default function App() {
     const raw = await window.ruleMgr.rulesRead(id)
     setEditing(id)
     setEditText(raw)
+    setEditOrig(raw)
   }
   const saveRule = async () => {
     try {
@@ -87,10 +94,24 @@ export default function App() {
     } catch (e) { setMsg('저장 실패: ' + String(e.message || e)) }
   }
   const deleteRule = async (id) => {
-    if (!confirm(`규칙 "${id}"을(를) 삭제할까요? 소스·분석·사용자 사본이 함께 지워집니다.`)) return
+    let targets = []
+    try {
+      targets = await window.ruleMgr.rulesDeletePreview(project.repoRoot, id)
+    } catch (e) {
+      setMsg('삭제 불가: ' + String(e.message || e))
+      return
+    }
+    setDeleteAsk({ id, targets })
+    setDeleteTyped('')
+  }
+  const confirmDelete = async () => {
+    const { id } = deleteAsk
+    if (deleteTyped !== id) { setMsg('규칙 ID가 일치하지 않습니다'); return }
+    setDeleteAsk(null)
     const r = await window.ruleMgr.rulesDelete(id)
-    setMsg(r && r.error ? ('삭제 실패: ' + r.error) : `삭제 완료: ${id}`)
+    setMsg(r && r.ok === false ? `삭제 실패(자동 복구됨): ${r.error || r.status}` : `삭제 완료: ${id} (트랜잭션 ${r.id || '-'})`)
     await loadProject(false)
+    await loadTxs()
   }
   const registerBuiltin = async () => {
     const r = await window.ruleMgr.rulesBuiltin()
@@ -143,7 +164,7 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'Malgun Gothic, sans-serif', padding: 20, color: '#0f172a' }}>
-      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.3.0</span></h1>
+      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.4.0</span></h1>
       <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 13 }}>
         ADMIN_SATAD_ALONE.MD 기준 — 사용자용 앱과 독립 실행(별도 userData·잠금·포트)
       </p>
@@ -209,10 +230,14 @@ export default function App() {
           <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={16} style={{ width: '100%', fontFamily: 'Consolas, monospace', fontSize: 12 }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <button onClick={saveRule} style={{ padding: '6px 14px', background: '#5B4DFB', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>💾 저장 (소스+analysis 사본)</button>
+            <button onClick={() => setShowDiff(v => !v)} style={{ padding: '6px 14px', cursor: 'pointer' }}>
+              {showDiff ? 'diff 닫기' : `🔍 변경 전후 비교${diffSummary(diffLines(editOrig, editText)).changed ? ` (+${diffSummary(diffLines(editOrig, editText)).added}/−${diffSummary(diffLines(editOrig, editText)).removed})` : ' (변경 없음)'}`}
+            </button>
             <button onClick={registerBuiltin} style={{ padding: '6px 14px', cursor: 'pointer' }}>🧩 builtin 등록</button>
             <button onClick={rebuildJson} style={{ padding: '6px 14px', cursor: 'pointer' }}>📥 rules.json 재생성</button>
             <button onClick={commitGit} style={{ padding: '6px 14px', cursor: 'pointer' }}> Git 커밋</button>
           </div>
+          {showDiff && <DiffView before={editOrig} after={editText} />}
           {msg && <p style={{ fontSize: 12, color: '#4c3de6', marginTop: 6 }}>{msg}</p>}
         </section>
       )}
@@ -245,6 +270,34 @@ export default function App() {
           </table>
         )}
       </section>
+
+      {deleteAsk && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div style={{ background: '#fff', borderRadius: 10, padding: 18, width: 480, border: '2px solid #dc2626' }}>
+            <h3 style={{ margin: '0 0 6px', fontSize: 15, color: '#dc2626' }}>🗑 규칙 삭제 확인 (§16.2 2단계)</h3>
+            <p style={{ fontSize: 12, margin: '4px 0' }}><b>{deleteAsk.id}</b> — 아래 파일이 트랜잭션 스냅샷 후 삭제되고 rules.json이 재반영됩니다.</p>
+            <ul style={{ fontSize: 11, color: '#64748b', margin: '4px 0 10px', paddingLeft: 18 }}>
+              {deleteAsk.targets.map(t => <li key={t}>{t}</li>)}
+            </ul>
+            <p style={{ fontSize: 12, margin: '4px 0' }}>삭제 확인: 규칙 ID <b>{deleteAsk.id}</b>를 입력하세요.</p>
+            <input
+              value={deleteTyped}
+              onChange={e => setDeleteTyped(e.target.value)}
+              placeholder={deleteAsk.id}
+              autoFocus
+              style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 4, padding: '4px 8px', fontSize: 13, boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setDeleteAsk(null)} style={{ padding: '6px 14px', cursor: 'pointer' }}>취소</button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleteTyped !== deleteAsk.id}
+                style={{ padding: '6px 14px', cursor: deleteTyped === deleteAsk.id ? 'pointer' : 'not-allowed', background: deleteTyped === deleteAsk.id ? '#dc2626' : '#fca5a5', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700 }}
+              >삭제</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14, marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

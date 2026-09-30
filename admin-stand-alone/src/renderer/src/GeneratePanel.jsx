@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import DiffView from './DiffView.jsx'
 import { ruleIdFor, suggestBaseId } from '../../shared/rule-id.js'
 
 const KIND_LABEL = { order: '주문서', cart: '장바구니' }
@@ -18,8 +19,22 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState([])
   const [generation, setGeneration] = useState(null)
+  const [genDiffs, setGenDiffs] = useState({})
   const [msg, setMsg] = useState('')
   const logRef = useRef(null)
+
+  useEffect(() => {
+    if (!generation || !generation.results) return
+    ;(async () => {
+      const d = {}
+      for (const r of generation.results) {
+        if (!r.rule) continue
+        const raw = await window.ruleMgr.rulesRead(r.rule.id)
+        d[r.rule.id] = raw ? { before: raw, after: JSON.stringify(r.rule, null, 2) + '\n' } : null
+      }
+      setGenDiffs(d)
+    })()
+  }, [generation])
 
   useEffect(() => {
     const off = window.ruleMgr.generate.onProgress(m => {
@@ -173,6 +188,15 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
               {' · '}합계 {Number(r.deterministic.subtotal || 0).toLocaleString('ko-KR')}원{r.deterministic.subtotalExpected != null ? ` / 정답 ${Number(r.deterministic.subtotalExpected).toLocaleString('ko-KR')}원` : ''}
               {r.deterministic.checkedOnlyValid === false && ' · checkedOnly 오류'}
             </div>
+          )}
+          {r.rule && genDiffs[r.rule.id] && (
+            <details style={{ marginTop: 4 }}>
+              <summary style={{ cursor: 'pointer', color: '#b45309' }}>기존 규칙 대비 변경 diff</summary>
+              <DiffView before={genDiffs[r.rule.id].before} after={genDiffs[r.rule.id].after} />
+            </details>
+          )}
+          {r.rule && !genDiffs[r.rule.id] && genDiffs[r.rule.id] !== undefined && (
+            <p style={{ fontSize: 11, color: '#1a7f37', margin: '4px 0 0' }}>신규 규칙 — 기존 파일 없음</p>
           )}
           {r.rule && (
             <details style={{ marginTop: 4 }}>
