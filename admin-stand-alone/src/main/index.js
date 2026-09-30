@@ -144,7 +144,8 @@ if (!gotLock) {
     })
     ipcMain.handle('jev:get-shadow-results', () => readShadowRecords(userDataDir))
 
-    // 프로젝트 탐지·규칙 목록(§8) — §8.1 1순위인 --project CLI 인자를 최우선으로 한다
+    // 프로젝트 탐지(§8.1 우선순위) — CLI 1순위 → 최근 프로젝트 2순위 → exe 위치 상승 탐색.
+    // 패키지 exe는 %TEMP%에서 실행되므로 최근 프로젝트 복원이 없으면 매번 수동 선택이 필요하다.
     const projectArg = process.argv.find(a => a.startsWith('--project='))
     const cliProject = projectArg ? projectArg.split('=').slice(1).join('=') : ''
     let project = null
@@ -157,7 +158,16 @@ if (!gotLock) {
       }
       return project
     }
-    ipcMain.handle('project:detect', (_e, startDir) => setProject(detectProjectRoot(startDir || cliProject || join(app.getAppPath(), '..'))))
+    ipcMain.handle('project:detect', (_e, startDir) => {
+      const recents = loadSettings(userDataDir).recentProjects || []
+      const candidates = [startDir, cliProject, ...recents, join(app.getAppPath(), '..'), app.getAppPath()]
+      for (const c of candidates) {
+        if (!c) continue
+        const root = detectProjectRoot(c)
+        if (root) return setProject(root)
+      }
+      return setProject(null)
+    })
     ipcMain.handle('project:choose', async () => {
       const r = await dialog.showOpenDialog(mainWindow, { properties: ['openDirectory'] })
       if (r.canceled || !r.filePaths.length) return project

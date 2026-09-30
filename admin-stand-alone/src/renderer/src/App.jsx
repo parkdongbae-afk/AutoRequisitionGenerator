@@ -196,7 +196,7 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'Malgun Gothic, sans-serif', padding: '20px 20px 48px', color: '#0f172a' }}>
-      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.7.0</span></h1>
+      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.7.1</span></h1>
       <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 13 }}>
         ADMIN_SATAD_ALONE.MD 기준 — 사용자용 앱과 독립 실행(별도 userData·잠금·포트)
       </p>
@@ -257,7 +257,11 @@ export default function App() {
         />
       )}
       {showGenerate && !project && (
-        <p style={{ fontSize: 12, color: '#b45309' }}>규칙을 생성·적용하려면 먼저 대상 저장소를 선택하세요.</p>
+        <div style={{ border: '1px solid #fde68a', background: '#fffbeb', borderRadius: 8, padding: 12, marginBottom: 14, fontSize: 12 }}>
+          <b>규칙을 생성·적용하려면 먼저 대상 저장소를 선택하세요.</b>
+          <span style={{ color: '#64748b' }}> — rules.json과 .git이 있는 저장소 루트 폴더를 지정하면 즉시 열립니다.</span>
+          <button onClick={() => loadProject(true)} style={{ marginLeft: 8, padding: '3px 10px', cursor: 'pointer' }}>📁 폴더 선택…</button>
+        </div>
       )}
 
       {mappingActive && project && (
