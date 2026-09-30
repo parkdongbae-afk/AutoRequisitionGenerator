@@ -12,7 +12,7 @@ npm run dev      # 개발
 npm run build    # 번들
 npm run smoke    # OpenCode 브리지 감지 스모크(--smoke-out= 파일 출력)
 
-# 단위·통합 테스트 (30건)
+# 단위·통합 테스트 (38건)
 node --test tests/unit/*.test.js tests/integration/*.test.js
 
 # E2E (실제 창으로 프로젝트 탐지·매핑 클릭·설정·생성·트랜잭션 롤백 검증)
@@ -25,24 +25,23 @@ npx electron . --e2e --project="C:\경로\저장소"
 배포: `npx electron-builder --win portable` → `release\ShoppingMallRuleManager-Portable.exe`
 (패키지 exe는 `--project` 지정 E2E까지 자동 검증 완료)
 
-## 현재 구현 (v0.4.0)
+## 현재 구현 (v0.5.0)
 
-- **트랜잭션 백업·롤백**(§13.2·§16·§29.3): 저장·**삭제** 모두 스냅샷 → 임시 JSON 검증 →
-  원자 적용 → 실패 시 자동 롤백(+bundle 재동기화). 삭제는 2단계 확인(대상 파일 표시·
-  규칙 ID 직접 입력), 이력은 백업/복원 화면에서 되돌리기
-- **변경 전후 diff**(§7.5·§6.4): 편집 패널 diff 보기(+n/−n 요약, context 접기) +
-  생성 결과를 기존 규칙과 비교하는 diff(신규는 "기존 파일 없음" 표시)
-- **자가 수정 3회 루프**(§11.3): 회차별 재검증 + Jev 재판정, 이전과 동일 JSON 반환 시
-  즉시 중단(무한 반복 방지), Jev reject면 폐기, repairHistory를 결과에 첨부
-- **OpenCode 브리지 감지**(§10.3): 설치·버전·모델 목록·Z.AI Coding Plan 인증 상태
-- **프로젝트 탐지**(§8): --project CLI(1순위) → 자동 탐지 → 수동 선택, 최근 프로젝트 기억
-- **AI 생성 화면 ↔ 파이프라인**(§7.6·§14): 프롬프트는 admin-text.js(스키마·few-shot) 재사용,
-  GLM 후보 3개 → 로컬 검증 → Jev 판정 → 트랜잭션 적용
-- **클릭 매핑**(§12): admin-sample:// 안전 뷰어 + 8단계 위자드 + 공통 선택자 도출 +
-  input 수량 attr:value 자동 + 추출 미리보기
-- **Jev 판정 게이트**(JEV.MD): decision-gate + Shadow Mode(§19) 통계·자동 승인 임계값 게이트
-- **TYPESAFE_API_KEY safeStorage 저장**(JEV.MD §2.3)
-- **규칙 관리**: 편집·삭제·builtin 등록·rules.json 재생성·Git 커밋
+- **검증 센터**(§7.7): [전체 검증] 한 번으로 JSON 문법·스키마(column 구조 포함)·ID 중복·
+  파일명 불일치·장바구니 checkedOnly(§9.6 예외 몰은 설정으로 WARNING 강등)·match 중복·
+  bundle 동기화·count 필드·버전 형식·**-cart 우선순위(§15.2)**를 심각도(ERROR/WARNING/
+  INFO/PASS)별 보고 — no-op 스텁 규칙(never_match)은 INFO로 구분
+- **규칙 비교**(§7.4): 두 규칙을 선택해 라인 diff로 비교
+- **Shadow 픽스처 수집**(§19.2): selector×상품명×추출 정합성×화면종류 72케이스를 Jev로
+  판정해 관리자 정답과 비교 기록 — 실사용 50건 전 자동 승인 임계값 데이터 확보
+- **트랜잭션 백업·롤백**(§13.2·§16·§29.3): 저장·삭제 모두 스냅샷 → 임시 JSON 검증 →
+  원자 적용 → 실패 시 자동 롤백(+bundle 재동기화). 삭제는 2단계 확인, 백업/복원 화면에서 되돌리기
+- **변경 전후 diff**(§7.5·§6.4): 편집 패널 diff + 생성 결과 vs 기존 규칙 diff
+- **자가 수정 3회 루프**(§11.3): 동일 JSON 중단·Jev reject 폐기·repairHistory 첨부
+- **OpenCode 브리지 감지**(§10.3) · **프로젝트 탐지**(§8, --project CLI) ·
+  **AI 생성 화면↔파이프라인**(§7.6·§14) · **클릭 매핑**(§12) ·
+  **Jev 판정 게이트**(JEV.MD) · **TYPESAFE_API_KEY safeStorage**(§2.3) ·
+  **규칙 관리**(편집·삭제·builtin·rules.json 재생성·Git 커밋)
 
 ## 공용 모듈(사용자 앱과 공유)
 
@@ -52,8 +51,8 @@ npx electron . --e2e --project="C:\경로\저장소"
 
 ## 다음 단계
 
-Shadow 데이터 50건 수집 후 자동 승인 임계값 실측 활성화(§19.2), 규칙 비교 선택 화면(§7.4),
-검증 센터 통합(§7.7 — 전체 규칙 일괄 검증).
+실사용 Shadow 데이터 누적과 자동 승인 임계값 실측 활성화(§19.2 — 픽스처 72건은 보조 데이터),
+전체 규칙 샘플 추출 검증(§7.7 뒤쪽 절반 — 캡처 fixture 필요), Git 배포 화면 분리(§7.8).
 
 ## 주의
 

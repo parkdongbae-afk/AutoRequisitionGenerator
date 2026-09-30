@@ -21,6 +21,10 @@ export const DEFAULT_SETTINGS = {
     minAgreement: 0.8,
     timeoutMs: 60000
   },
+  verify: {
+    // §9.6 — 장바구니 checkedOnly 예외 몰(사유가 규칙 notes로 문서화된 것만 등록)
+    checkedOnlyExcuses: ['naver-cart']
+  },
   generation: {
     model: '',
     allowFallback: true,

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import GeneratePanel from './GeneratePanel.jsx'
 import MappingPanel from './MappingPanel.jsx'
 import DiffView from './DiffView.jsx'
+import VerificationPanel from './VerificationPanel.jsx'
 import { diffLines, diffSummary } from '../../shared/line-diff.js'
 import { subscribe, getState, startMapping } from './mapping-state.js'
 
@@ -157,6 +158,18 @@ export default function App() {
     }
   }
 
+  const [fixtureMsg, setFixtureMsg] = useState('')
+  const collectFixtures = async () => {
+    setFixtureMsg('픽스처 판정 수집 중… (72케이스)')
+    try {
+      const r = await window.ruleMgr.shadowCollectFixtures()
+      setFixtureMsg(`수집 완료: ${r.recorded}/${r.total} 기록 (Jev 오류 ${r.errors})`)
+      setJev(await window.ruleMgr.jev.getStatus())
+    } catch (e) {
+      setFixtureMsg('수집 실패: ' + String(e.message || e))
+    }
+  }
+
   useEffect(() => { refresh(); loadProject(false); loadTxs() }, [])
   useEffect(() => subscribe(() => setMappingActive(!!getState().token)), [])
 
@@ -164,7 +177,7 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'Malgun Gothic, sans-serif', padding: 20, color: '#0f172a' }}>
-      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.4.0</span></h1>
+      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.5.0</span></h1>
       <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 13 }}>
         ADMIN_SATAD_ALONE.MD 기준 — 사용자용 앱과 독립 실행(별도 userData·잠금·포트)
       </p>
@@ -220,6 +233,8 @@ export default function App() {
       {mappingActive && project && (
         <MappingPanel repoRoot={project.repoRoot} onSaved={() => { loadProject(false); loadTxs(); setMsg('매핑 규칙 저장 완료') }} />
       )}
+
+      {project && <VerificationPanel rules={rules} onDone={loadProject} />}
 
       {editing && (
         <section style={{ border: '2px solid #DDD9FC', borderRadius: 10, padding: 14, marginBottom: 14 }}>
@@ -342,6 +357,10 @@ export default function App() {
             )}
           </p>
         )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '4px 0' }}>
+          <button onClick={collectFixtures} style={{ fontSize: 11, cursor: 'pointer' }}>🧾 §19.2 픽스처 수집 (72케이스)</button>
+          {fixtureMsg && <span style={{ fontSize: 11, color: '#4c3de6' }}>{fixtureMsg}</span>}
+        </div>
         <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
           Jev는 selector 안정성·상품명 품질·실패 원인·배포 가능성만 판정합니다. 건수·금액 판정은 로컬 검증기가 담당하며, 로컬 검증 실패 규칙은 Jev 결과와 무관하게 배포가 차단됩니다. Shadow 비교 데이터 50건+ 일치율 충족 전까지 자동 승인은 비활성입니다.
         </p>

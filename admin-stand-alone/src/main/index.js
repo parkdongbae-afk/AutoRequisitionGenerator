@@ -18,6 +18,8 @@ import {
   openMappingSample, closeSample, serveSampleRequest,
   assembleMappingRule, previewMappingExtraction, isSampleFile
 } from './services/mapping-service.js'
+import { verifyProject } from './services/verification-service.js'
+import { runShadowFixtures } from './services/shadow-fixtures.js'
 import {
   prepareGenerationRequest, runGeneration, applyGenerationResult
 } from './services/generation-service.js'
@@ -218,6 +220,19 @@ if (!gotLock) {
     // 트랜잭션 이력·복원(§13.2·§29.3)
     ipcMain.handle('tx:list', () => listTransactions(userDataDir))
     ipcMain.handle('tx:rollback', (_e, id) => rollbackTransaction(userDataDir, id))
+
+    // 검증 센터(§7.7) + Shadow 픽스처 수집(§19.2)
+    ipcMain.handle('verify:all', () => {
+      const settings = loadSettings(userDataDir)
+      return verifyProject(project ? project.repoRoot : resolveRepoRoot(), {
+        checkedOnlyExcuses: (settings.verify && settings.verify.checkedOnlyExcuses) || []
+      })
+    })
+    ipcMain.handle('shadow:collect-fixtures', () => runShadowFixtures({
+      callJev: args => jevService.judgeCandidate(args),
+      persist: rec => appendShadowRecord(userDataDir, rec),
+      onProgress: m => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m) }
+    }))
 
     createWindow()
 
@@ -423,6 +438,21 @@ async function runE2E(outPath, userDataDir) {
         deleted: !fs.existsSync(join(tmpRepo, 'app', 'src', 'main', 'lib', 'rules', 'delcheck.json')),
         status: delRes && delRes.status
       }
+
+      // 검증 센터(§7.7) — 실제 저장소에서 ERROR 0·PASS 존재
+      result.verificationCheck = !!(await win.webContents.executeJavaScript(
+        'window.ruleMgr.verifyAll().then(r => r.summary && r.summary.ok && r.summary.PASS > 0)'
+      ))
+
+      // Shadow 픽스처(§19.2) — Key 없으면 전 케이스가 오류로 집계되는 우아한 처리 확인.
+      // Key가 있으면 실제 API 72회 호출이 되므로 E2E에서는 생략한다.
+      if (jevService.isConfigured()) {
+        result.shadowFixtureCheck = 'skipped-key-present'
+      } else {
+        result.shadowFixtureCheck = !!(await win.webContents.executeJavaScript(
+          'window.ruleMgr.shadowCollectFixtures().then(r => r.total === 72 && r.recorded === 0 && r.errors === 72)'
+        ))
+      }
     }
     // 입력 검증 차단(§7.6 — 샘플 없으면 실행 차단)
     result.generationInputGate = await win.webContents.executeJavaScript(
@@ -440,6 +470,7 @@ async function runE2E(outPath, userDataDir) {
       && result.transactionCheck.foundApplied && result.transactionCheck.rolledBack
       && result.transactionCheck.filesGone
       && result.deleteCheck && result.deleteCheck.deleted && result.deleteCheck.status === 'applied'
+      && result.verificationCheck && result.shadowFixtureCheck
   } catch (e) {
     result.fatal = String(e && e.message || e)
   }

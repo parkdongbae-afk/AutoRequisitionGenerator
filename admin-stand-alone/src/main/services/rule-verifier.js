@@ -7,18 +7,25 @@ import { load as cheerioLoad } from 'cheerio'
 import { extractItems } from '../../../../app/src/main/lib/extract.js'
 
 // 스키마 검사(§11.1) — admin.js validateRule과 동일한 최소 계약
-function checkSchema(rule) {
+// orientation:'column'(열 구조) 규칙은 rowSelector·fields.name/price 대신 nameRow·priceRow를 쓴다.
+export function checkSchema(rule) {
   const errors = []
   if (!rule || typeof rule !== 'object' || Array.isArray(rule)) {
     return { schemaValid: false, errors: ['JSON이 객체가 아님'] }
   }
+  const isColumn = rule.orientation === 'column'
   if (!rule.id || !/^[a-z0-9][a-z0-9-]*$/i.test(String(rule.id))) errors.push('id가 영문 식별자 형식이 아님')
   if (!rule.name) errors.push('name 없음')
   if (!Array.isArray(rule.match) || !rule.match.length) errors.push('match 배열 없음')
-  if (!rule.rowSelector && rule.orientation !== 'column') errors.push('rowSelector 없음')
+  if (!rule.rowSelector && !isColumn) errors.push('rowSelector 없음')
   const f = rule.fields || {}
-  if (!f.name || !f.name.sel) errors.push('fields.name.sel 없음')
-  if (!f.price || (!f.price.sel && !f.price.regex)) errors.push('fields.price 없음')
+  if (isColumn) {
+    if (rule.nameRow == null) errors.push('column 규칙에 nameRow 없음')
+    if (rule.priceRow == null) errors.push('column 규칙에 priceRow 없음')
+  } else {
+    if (!f.name || !f.name.sel) errors.push('fields.name.sel 없음')
+    if (!f.price || (!f.price.sel && !f.price.regex)) errors.push('fields.price 없음')
+  }
   return { schemaValid: errors.length === 0, errors }
 }
 

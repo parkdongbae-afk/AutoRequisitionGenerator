@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('ruleMgr', {
     list: () => ipcRenderer.invoke('tx:list'),
     rollback: id => ipcRenderer.invoke('tx:rollback', id)
   },
+  verifyAll: () => ipcRenderer.invoke('verify:all'),
+  shadowCollectFixtures: () => ipcRenderer.invoke('shadow:collect-fixtures'),
   pickSamples: () => ipcRenderer.invoke('pick:samples', 'sample'),
   pickAnswer: () => ipcRenderer.invoke('pick:samples', 'answer'),
   settings: {
