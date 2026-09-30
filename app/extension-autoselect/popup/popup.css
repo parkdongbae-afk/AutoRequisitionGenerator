@@ -70,7 +70,14 @@ button.primary:disabled { background: #94a3b8; cursor: not-allowed; }
 button.primary:not(:disabled):hover { background: #1d4ed8; }
 
 .summary { font-weight: 700; margin-bottom: 6px; word-break: keep-all; }
+.summary .need-check { color: #dc2626; font-weight: 800; }
 .other-mall { color: var(--info); font-size: 12px; margin-bottom: 6px; word-break: keep-all; }
+.other-mall .mall-link {
+  display: inline-block; margin: 1px 0;
+  color: #2563eb; font-weight: 700; text-decoration: underline; cursor: pointer;
+}
+.other-mall .mall-link:hover { text-decoration: none; }
+.other-mall .mall-plain { margin: 1px 0; }
 
 .tabs { display: flex; gap: 4px; margin-bottom: 8px; }
 .tabs button {

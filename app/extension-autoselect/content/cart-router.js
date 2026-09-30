@@ -12,6 +12,11 @@
 (function () {
   'use strict';
 
+  // manifest 자동 주입과 백그라운드 프로그램 주입(chrome.scripting)이 겹쳐도
+  // onMessage 리스너가 2번 등록되어 실행이 중복되지 않도록 막는다.
+  if (globalThis.__AUTO_SELECT_ROUTER__) return;
+  globalThis.__AUTO_SELECT_ROUTER__ = true;
+
   var Core = globalThis.AutoSelectCore;
   var Rules = globalThis.AutoSelectRules;
 
