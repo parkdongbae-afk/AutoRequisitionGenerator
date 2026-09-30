@@ -45,10 +45,10 @@ const { ipcRenderer } = require('electron')
       var el = e.target
       if (el && el.closest && el.closest('a')) e.preventDefault()
       var payload
-      if (mode === 'row') {
+      if (mode === 'row' || mode === 'optionrow') {
         rowSel = cssPath(el, document.body) || el.tagName.toLowerCase()
         haveRow = true
-        payload = { kind: 'row', selector: rowSel }
+        payload = { kind: mode, selector: rowSel }
       } else {
         var base = haveRow ? rowSel : null
         var root = null
@@ -123,11 +123,11 @@ export const PICKER_SCRIPT = `
     e.preventDefault()
     e.stopPropagation()
     var el = e.target
-    if (mode === 'row') {
+    if (mode === 'row' || mode === 'optionrow') {
       rowSel = cssPath(el, document.body)
       if (!rowSel) rowSel = el.tagName.toLowerCase()
       haveRow = true
-      lastSel = { kind: 'row', selector: rowSel }
+      lastSel = { kind: mode, selector: rowSel }
       // 표 셀 좌표 — 열(column) 구분 쇼핑몰 규칙 생성용
       try {
         var td = el.closest ? el.closest('td,th') : null

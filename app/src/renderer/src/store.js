@@ -629,6 +629,16 @@ export const useStore = create((set, get) => ({
       else if (uniq.length === 1) get().toast(`행 ${rowSamples.length}개 선택 — 공통 선택자: ${stripped.slice(0, 50)}`, 'ok')
       else get().toast('서로 다른 구조가 섞였습니다 — 마지막 클릭한 행 기준으로 갱신됩니다', 'warn')
       get().validateRowCount()
+    } else if (kind === 'optionrow') {
+      // 옵션 행(체크 시 상품 아래에 새로 생기는 행) — 규칙의 optionRows.sel이 된다.
+      // 열 모드·상품명 등 다른 단계와 무관하게 이 단계에서만 수집한다.
+      if (m.orientation === 'column') {
+        get().toast('열 모드에서는 옵션 행을 지원하지 않습니다', 'warn')
+        return
+      }
+      const stripped = selector.replace(/:nth-of-type\(\d+\)/g, '')
+      set({ mapping: { ...m, optionRow: { selector: stripped, sampleText }, step: 'shipping' } })
+      get().toast('옵션 행 지정 완료 — 배송비 단계로 이동합니다', 'ok')
     } else if (['name', 'qty', 'price', 'shipping'].includes(kind)) {
       if (m.orientation === 'column') {
         if (!cell || !m.tableSelector) {
@@ -736,6 +746,8 @@ export const useStore = create((set, get) => ({
         match: [matchPattern].filter(Boolean),
         rowSelector,
         priceIs: 'lineTotal',
+        // 옵션 행(체크 시 상품 아래에 새로 생기는 행)을 독립 품목으로 추출한다(v1.49.8)
+        ...(m.optionRow ? { optionRows: { sel: m.optionRow.selector } } : {}),
         fields: {
           name: nameSel ? { sel: nameSel } : { sel: '' },
           qty: qtySel ? { sel: qtySel, regex: '(\\d+)' } : null,

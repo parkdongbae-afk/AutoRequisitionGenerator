@@ -6,8 +6,9 @@ const STEPS = [
   { key: 'name', label: '② 상품명', desc: '선택한 행 안에서 상품명 텍스트를 클릭하세요' },
   { key: 'qty', label: '③ 수량', desc: '행 안에서 수량(숫자)을 클릭하세요 · 없으면 [건너뛰기]' },
   { key: 'price', label: '④ 주문금액', desc: '행 안에서 주문금액(해당 상품 가격)을 클릭하세요 — 예상단가는 주문금액÷수량으로 자동 계산됩니다' },
-  { key: 'shipping', label: '⑤ 배송비', desc: '페이지에서 배송비 금액을 클릭하세요 · 없으면 [건너뛰기]' },
-  { key: 'confirm', label: '⑥ 확인/저장', desc: '규칙 이름·URL 패턴을 확인하고 저장하세요' }
+  { key: 'optionrow', label: '⑤ 옵션 행', desc: '체크했을 때 상품 아래에 새로 생기는 옵션/선택 행이 있으면 그 행을 한 번 클릭하세요 — 옵션마다 독립 품목으로 추출됩니다 · 없으면 [건너뛰기]' },
+  { key: 'shipping', label: '⑥ 배송비', desc: '페이지에서 배송비 금액을 클릭하세요 · 없으면 [건너뛰기]' },
+  { key: 'confirm', label: '⑦ 확인/저장', desc: '규칙 이름·URL 패턴을 확인하고 저장하세요' }
 ]
 
 export default function MappingModal() {
@@ -208,14 +209,31 @@ export default function MappingModal() {
               {pickBox('name')}
               {pickBox('qty')}
               {pickBox('price')}
+              {(() => {
+                const o = m.optionRow
+                return (
+                  <div className={`flex items-center justify-between gap-1 rounded border px-2 py-1 text-[11px] ${o ? 'border-[#BBF7D0] bg-[#E6F4EA] text-[#15803D]' : 'border-[#E2E8F0] bg-[#F8FAFC] text-[#94A3B8]'}`}>
+                    <span className="truncate">{o ? `✔ 옵션 행: ${o.sampleText || o.selector}` : '옵션 행 미지정'}</span>
+                    {o && (
+                      <span
+                        className="ml-1 shrink-0 cursor-pointer rounded px-1 text-[#94A3B8] hover:bg-[#FEE2E2] hover:text-red-500"
+                        title="잘못 지정 — 삭제 후 다시 클릭할 수 있습니다"
+                        onClick={() => setMappingField('optionRow', null)}
+                      >
+                        ✕
+                      </span>
+                    )}
+                  </div>
+                )
+              })()}
               {pickBox('shipping')}
             </div>
           </div>
 
-          {(m.step === 'qty' || m.step === 'shipping') && (
+          {(m.step === 'qty' || m.step === 'optionrow' || m.step === 'shipping') && (
             <button
               className="rounded border border-[#E2E8F0] px-3 py-1 text-[12px] text-[#64748B] hover:bg-[#F1F5F9]"
-              onClick={() => setMappingStep(m.step === 'qty' ? 'price' : 'confirm')}
+              onClick={() => setMappingStep(m.step === 'qty' ? 'price' : m.step === 'optionrow' ? 'shipping' : 'confirm')}
             >
               건너뛰기
             </button>

@@ -124,6 +124,9 @@ function extractItems(html, rule) {
 
   $(rule.rowSelector).each((_, el) => {
     const row = $(el);
+    // 옵션 행(체크 시 상품 행 뒤에 새로 생기는 형제 행 — rule.optionRows.sel)은
+    // 앞의 상품 행에 붙여 별도 품목으로 추출하므로 독립 행으로 처리하지 않는다.
+    if (rule.optionRows && rule.optionRows.sel && row.is(rule.optionRows.sel)) return;
     // nameFallback: DOM에 상품명이 없는 행(알리 주문서의 '상품 더 보기' 캐러셀 등)도
     // 가격·수량이 맞으면 행을 만든다 — 이름은 사용자가 추출 표에서 직접 수정한다
     const name = extractField(row, rule.fields.name) || rule.nameFallback || '';
@@ -206,6 +209,42 @@ function extractItems(html, rule) {
         if (qtyBox.length) qtyBox.attr('value', String(effQty));
       }
       pending.push({ name, qty: effQty, unitPrice, option: unit.option, image: unit.image || rowImage, url: unit.url, productKey: unit.productKey, state, row });
+    }
+
+    // 옵션 행 추출(v1.49.8): 체크했을 때 상품 행 뒤에 새로 생기는 형제 행(rule.optionRows.sel)을
+    // 상품 행과 다음 상품 행 사이에서 모아 각각 독립 품목으로 만든다. 수량·금액은 옵션 행에서
+    // 같은 필드 선택자로 읽고, 상품명은 옵션 행에 없으면 '상품명 — 옵션 내용' 형태로 만든다.
+    if (rule.optionRows && rule.optionRows.sel) {
+      // cheerio 노드에는 nextElementSibling이 없어 nextAll()로 뒤 형제를 훑는다 —
+      // 다음 상품 행(rowSelector 일치)을 만나면 중단, 옵션 행만 수집한다.
+      const optSibs = row.nextAll().toArray();
+      for (const sib of optSibs) {
+        const s = $(sib);
+        if (s.is(rule.rowSelector)) break;
+        if (!s.is(rule.optionRows.sel)) continue;
+        const optPriceStr = extractField(s, rule.fields.price);
+        const optPrice = optPriceStr != null ? cleanInt(optPriceStr) : null;
+        if (optPrice != null) {
+          let optQtyStr = extractField(s, rule.fields.qty);
+          if (optQtyStr != null && !/[0-9]/.test(optQtyStr)) optQtyStr = null;
+          const optQty = optQtyStr != null ? cleanInt(optQtyStr) : 1;
+          const optName = extractField(s, rule.fields.name);
+          const optText = s.text().replace(/\s+/g, ' ').trim().replace(/[\d,]+$/, '').trim().slice(0, 80);
+          let unitPrice = optPrice;
+          if (rule.priceIs === 'lineTotal' && optQty > 1) unitPrice = Math.round(optPrice / optQty);
+          pending.push({
+            name: optName || (name ? `${name} — ${optText}` : optText),
+            qty: optQty,
+            unitPrice,
+            option: extractField(s, rule.fields.option) || optText,
+            image: rowImage,
+            url: rowUrl,
+            productKey: rowKey,
+            state,
+            row: s
+          });
+        }
+      }
     }
   });
 
