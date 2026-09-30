@@ -31,11 +31,6 @@ function normalizeError(e) {
   return { code: 'JEV_NETWORK_ERROR', message: msg }
 }
 
-function apiKey() {
-  const v = process.env.TYPESAFE_API_KEY
-  return v && String(v).trim() ? String(v).trim() : null
-}
-
 function validateJevResponse(result) {
   if (!result || typeof result !== 'object' || !result.answers || typeof result.answers !== 'object') {
     throw new Error('Jev 응답 구조 오류: answers 없음')
@@ -50,10 +45,24 @@ export class JevJudgeService {
     this.endpoint = options.endpoint || JEV_ENDPOINT
     this.model = options.model || JEV_MODEL
     this.timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS
+    this.keyProvider = options.keyProvider || null
   }
 
   isConfigured() {
-    return !!apiKey()
+    return !!this.#key()
+  }
+
+  #key() {
+    if (this.keyProvider) {
+      try {
+        const v = this.keyProvider()
+        if (v && String(v).trim()) return String(v).trim()
+      } catch (e) {
+        console.error('[jev] key 복호화 실패 — 환경변수로 폴백:', String(e && e.message || e))
+      }
+    }
+    const v = process.env.TYPESAFE_API_KEY
+    return v && String(v).trim() ? String(v).trim() : null
   }
 
   // 연결 테스트 — 최소 질문 1개로 실제 응답만 확인한다(키 값은 로그에 남지 않는다)
@@ -151,7 +160,7 @@ export class JevJudgeService {
       const res = await fetch(this.endpoint, {
         method: 'POST',
         signal: ac.signal,
-        headers: { Authorization: `Bearer ${apiKey()}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${this.#key()}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       })
       if (!res.ok) throw new Error(`Jev API 오류: ${res.status} ${String(await res.text().catch(() => '')).slice(0, 200)}`)

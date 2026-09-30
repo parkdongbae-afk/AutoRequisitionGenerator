@@ -53,7 +53,7 @@ const CANDIDATE_ANGLES = [
 export async function generateAndVerifyRule({
   mallName, kind, ruleId, samples, expected, expectAnswer = false,
   model, count = 3, repairRounds = 2, log = () => {},
-  callAi, callJev
+  callAi, callJev, promptBuilder, repairPromptBuilder
 }) {
   const ai = callAi || (({ prompt }) => runOpenCodePrompt(prompt, { model }))
   const jev = callJev || (async (r) => { const { JevJudgeService } = await import('./jev-judge-service.js'); const s = new JevJudgeService(); return s.judgeCandidate(r) })
@@ -65,7 +65,9 @@ export async function generateAndVerifyRule({
   }
   for (let i = 0; i < count; i++) {
     const angle = CANDIDATE_ANGLES[i % CANDIDATE_ANGLES.length]
-    const prompt = [
+    const prompt = promptBuilder
+      ? promptBuilder({ samples, answer: expected, angle, index: i })
+      : [
       `당신은 쇼핑몰 캡처 화면에서 품목을 CSS 선택자로 추출하는 파싱 규칙 전문가입니다.`,
       `"${mallName}"(${kind === 'cart' ? '장바구니' : '주문서'}) 규칙 후보 #${i + 1}를 만들어 주세요. ${angle}`,
       `규칙 id는 "${ruleId}", name은 "${mallName}"으로 고정. 응답은 설명 없이 규칙 JSON 객체만.`,
@@ -112,7 +114,9 @@ export async function generateAndVerifyRule({
   if (!repairable || repairRounds <= 0) return { status: 'human_review', results }
 
   log(`최적 후보(${repairable.decision.reason})를 GLM에 수정 요청합니다`, 'step')
-  const repairPrompt = [
+  const repairPrompt = repairPromptBuilder
+    ? repairPromptBuilder({ samples, answer: expected, rule: repairable.rule, problems: [repairable.decision.reason] })
+    : [
     `아래 규칙으로 추출했더니 정답과 다릅니다. 문제: ${repairable.decision.reason}`,
     `수정된 규칙 JSON 객체만 응답하세요(id "${ruleId}" 고정).`,
     `## 기존 규칙`, '```json', JSON.stringify(repairable.rule, null, 1), '```',
