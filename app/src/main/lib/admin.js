@@ -474,7 +474,7 @@ export function adminSelfTest() {
     repoRoot: path.basename(repoRoot),
     rules: doc.count,
     version: onDiskDoc && !Array.isArray(onDiskDoc) ? onDiskDoc.version : null,
-    rulesJsonSynced: onDisk === JSON.stringify({ version: doc.version, generatedAt: doc.generatedAt, count: doc.count, rules: doc.rules }, null, 2)
+    rulesJsonSynced: onDisk.replace(/\r\n/g, '\n') === JSON.stringify({ version: doc.version, generatedAt: doc.generatedAt, count: doc.count, rules: doc.rules }, null, 2)
   }
 }
 

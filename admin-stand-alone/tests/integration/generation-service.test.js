@@ -99,8 +99,10 @@ test('파이프라인 연결 — mock AI·Jev로 승인까지 + 임시 저장소
     assert.ok(progress.some(p => /승인|결과/.test(p.message) || p.message))
 
     const repo = join(dir, 'repo')
-    const applied = await applyGenerationResult(repo, gen, { apply: true, rebuildBundle: false })
+    const uData = join(dir, 'userdata')
+    const applied = await applyGenerationResult(repo, gen, { apply: true, rebuildBundle: false, userDataDir: uData })
     assert.equal(applied.applied.length, 1)
+    assert.ok(applied.applied[0].transactionId, '트랜잭션 id가 기록된다')
     assert.ok(existsSync(join(repo, 'app', 'src', 'main', 'lib', 'rules', 'gentest2.json')))
     assert.ok(existsSync(join(repo, 'app', 'analysis', 'rules', 'gentest2.json')))
     assert.equal(applied.errors.length, 0)

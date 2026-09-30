@@ -8,7 +8,7 @@ import fs from 'node:fs'
 import { detectBridge } from './services/zai-tool-bridge.js'
 import { JevJudgeService } from './services/jev-judge-service.js'
 import { detectProjectRoot, projectInfo } from './services/project-service.js'
-import { rulesList, saveRule, deleteRule, registerBuiltinRules, rebuildRulesJson, resolveRepoRoot, gitCommit } from './services/rules-service.js'
+import { rulesList, saveRule, deleteRule, registerBuiltinRules, rebuildRulesJson, resolveRepoRoot, gitCommit, listTransactions, rollbackTransaction } from './services/rules-service.js'
 import { appendShadowRecord, readShadowRecords } from './services/shadow-store.js'
 import {
   loadSettings, saveSettings, storeTypesafeKey, loadTypesafeKey, clearTypesafeKey,
@@ -130,7 +130,9 @@ if (!gotLock) {
     })
     ipcMain.handle('jev:get-shadow-results', () => readShadowRecords(userDataDir))
 
-    // 프로젝트 탐지·규칙 목록(§8) — 기본은 관리자 앱 위치 기준 상위 저장소, 수동 선택도 허용
+    // 프로젝트 탐지·규칙 목록(§8) — §8.1 1순위인 --project CLI 인자를 최우선으로 한다
+    const projectArg = process.argv.find(a => a.startsWith('--project='))
+    const cliProject = projectArg ? projectArg.split('=').slice(1).join('=') : ''
     let project = null
     const setProject = (root) => {
       project = root ? projectInfo(root) : null
@@ -141,7 +143,7 @@ if (!gotLock) {
       }
       return project
     }
-    ipcMain.handle('project:detect', (_e, startDir) => setProject(detectProjectRoot(startDir || join(app.getAppPath(), '..'))))
+    ipcMain.handle('project:detect', (_e, startDir) => setProject(detectProjectRoot(startDir || cliProject || join(app.getAppPath(), '..'))))
     ipcMain.handle('project:choose', async () => {
       const r = await dialog.showOpenDialog(mainWindow, { properties: ['openDirectory'] })
       if (r.canceled || !r.filePaths.length) return project
@@ -155,7 +157,7 @@ if (!gotLock) {
       const p = join(project.rulesDir, `${id}.json`)
       return fs.existsSync(p) ? fs.readFileSync(p, 'utf-8') : ''
     })
-    ipcMain.handle('rules:save', (_e, repoRoot, rule) => saveRule(repoRoot, rule))
+    ipcMain.handle('rules:save', (_e, repoRoot, rule) => saveRule(userDataDir, repoRoot, rule))
     ipcMain.handle('rules:delete', (_e, id) => deleteRule({ id }, m => console.log('[delete]', m)))
     ipcMain.handle('rules:builtin', () => registerBuiltinRules())
     ipcMain.handle('rules:rebuild-json', (_e, bump) => rebuildRulesJson(resolveRepoRoot(), { bump: !!bump }))
@@ -208,7 +210,11 @@ if (!gotLock) {
         onProgress: m => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m) }
       })
     })
-    ipcMain.handle('generate:apply', (_e, { repoRoot, generation, options }) => applyGenerationResult(repoRoot, generation, options || {}))
+    ipcMain.handle('generate:apply', (_e, { repoRoot, generation, options }) => applyGenerationResult(repoRoot, generation, { ...(options || {}), userDataDir }))
+
+    // 트랜잭션 이력·복원(§13.2·§29.3)
+    ipcMain.handle('tx:list', () => listTransactions(userDataDir))
+    ipcMain.handle('tx:rollback', (_e, id) => rollbackTransaction(userDataDir, id))
 
     createWindow()
 
@@ -240,7 +246,7 @@ if (!gotLock) {
     if (process.argv.includes('--e2e')) {
       const outArg = process.argv.find(a => a.startsWith('--e2e-out='))
       const outPath = outArg ? outArg.split('=')[1] : join(app.getPath('temp'), 'rule-manager-e2e.json')
-      await runE2E(outPath)
+      await runE2E(outPath, userDataDir)
     }
 
     app.on('activate', () => {
@@ -291,7 +297,7 @@ function mockJev() {
   }
 }
 
-async function runE2E(outPath) {
+async function runE2E(outPath, userDataDir) {
   const result = { ok: false, rendererErrors: [] }
   const win = createWindow({ show: false })
   try {
@@ -398,6 +404,15 @@ async function runE2E(outPath) {
       )
       result.generationCheck.applied = applied.applied.length === 1
         && fs.existsSync(join(applied.applied[0].files[0]))
+      // 트랜잭션(§13.2) — 적용 이력이 남고 되돌리면 신규 파일이 제거된다
+      const txList = listTransactions(userDataDir)
+      const mine = txList.find(t => t.status === 'applied' && t.changes.some(c => c.includes('e2emall')))
+      result.transactionCheck = { listed: txList.length > 0, foundApplied: !!mine }
+      if (mine) {
+        const rb = rollbackTransaction(userDataDir, mine.id)
+        result.transactionCheck.rolledBack = rb.ok === true
+        result.transactionCheck.filesGone = !fs.existsSync(join(tmpRepo, 'app', 'src', 'main', 'lib', 'rules', 'e2emall.json'))
+      }
     }
     // 입력 검증 차단(§7.6 — 샘플 없으면 실행 차단)
     result.generationInputGate = await win.webContents.executeJavaScript(
@@ -411,6 +426,9 @@ async function runE2E(outPath) {
       && result.mappingCheck.checkedClick && result.mappingCheck.assemble
       && result.generationCheck.status === 'approved'
       && result.generationCheck.applied && result.generationInputGate
+      && result.transactionCheck && result.transactionCheck.listed
+      && result.transactionCheck.foundApplied && result.transactionCheck.rolledBack
+      && result.transactionCheck.filesGone
   } catch (e) {
     result.fatal = String(e && e.message || e)
   }

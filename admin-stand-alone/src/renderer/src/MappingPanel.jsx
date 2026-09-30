@@ -60,7 +60,7 @@ export default function MappingPanel({ repoRoot, onSaved }) {
 
           <div style={{ fontSize: 12, display: 'grid', gridTemplateColumns: '84px 1fr', rowGap: 4 }}>
             <label>규칙 ID</label>
-            <input value={meta.ruleId} onChange={e => setMeta({ ...meta, ruleId: e.target.value })} placeholder="예: musinsa-cart" style={inp} />
+            <input value={meta.ruleId} onChange={e => setMeta({ ...meta, ruleId: e.target.value })} placeholder="예: somemall-cart" style={inp} />
             <label>이름</label>
             <input value={meta.name} onChange={e => setMeta({ ...meta, name: e.target.value })} style={inp} />
             <label>match</label>

@@ -6,7 +6,8 @@
  */
 import { buildPromptText, buildRepairPromptText, sampleHtmlText, answerSummary } from '../../../../app/src/main/lib/admin-text.js'
 import { generateAndVerifyRule, extractJson } from './generate-and-verify.js'
-import { saveRule, gitCommit } from './rule-files.js'
+import { ruleChanges, gitCommit } from './rule-files.js'
+import { createPlan, applyTransaction } from './transaction-service.js'
 import { suggestBaseId as deriveSuggestedId, ruleIdFor as idFor } from '../../shared/rule-id.js'
 
 // builtin 등록·bundle 재생성은 사용자 앱 admin.js(→electron)를 필요로 하므로 적용 시에만 로드한다
@@ -135,17 +136,23 @@ export { extractJson }
  * apply가 false면 파일에 전혀 손대지 않는다(초안은 결과 JSON으로만 유지).
  */
 export async function applyGenerationResult(repoRoot, generation, options = {}) {
-  const applied = []
-  const errors = []
-  const { apply = true, rebuildBundle = false, registerBuiltin = false, git = null } = options
+  const { apply = true, rebuildBundle = false, registerBuiltin = false, git = null, userDataDir = null } = options
+  if (apply && !userDataDir) throw new Error('userDataDir가 필요합니다(트랜잭션 스냅샷 저장소)')
   const needAdminApi = apply && (rebuildBundle || registerBuiltin)
   const adminApi = needAdminApi ? await rulesApi() : null
+  const applied = []
+  const errors = []
   if (apply) {
     for (const r of generation.results) {
       if (!r.rule) continue
       try {
-        const files = saveRule(repoRoot, r.rule).files
-        applied.push({ kind: r.kind, ruleId: r.rule.id, files })
+        const plan = createPlan(ruleChanges(repoRoot, r.rule))
+        const res = applyTransaction(userDataDir, plan)
+        if (res.ok) {
+          applied.push({ kind: r.kind, ruleId: r.rule.id, files: plan.changes.map(c => c.path), transactionId: res.id })
+        } else {
+          errors.push(`${r.kind}: ${res.status === 'validation_blocked' ? res.errors.join(' / ') : res.error}`)
+        }
       } catch (e) {
         errors.push(`${r.kind}: 저장 실패 — ${String(e.message || e)}`)
       }

@@ -12,6 +12,10 @@ contextBridge.exposeInMainWorld('ruleMgr', {
   rulesBuiltin: () => ipcRenderer.invoke('rules:builtin'),
   rulesRebuildJson: bump => ipcRenderer.invoke('rules:rebuild-json', bump),
   gitCommit: (repoRoot, files, message, push) => ipcRenderer.invoke('git:commit', { repoRoot, files, message, push }),
+  tx: {
+    list: () => ipcRenderer.invoke('tx:list'),
+    rollback: id => ipcRenderer.invoke('tx:rollback', id)
+  },
   pickSamples: () => ipcRenderer.invoke('pick:samples', 'sample'),
   pickAnswer: () => ipcRenderer.invoke('pick:samples', 'answer'),
   settings: {

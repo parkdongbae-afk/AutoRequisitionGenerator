@@ -33,6 +33,16 @@ export default function App() {
   const [msg, setMsg] = useState('')
   const [showGenerate, setShowGenerate] = useState(false)
   const [mappingActive, setMappingActive] = useState(false)
+  const [txs, setTxs] = useState([])
+
+  const loadTxs = async () => setTxs(await window.ruleMgr.tx.list())
+  const rollbackTx = async (id) => {
+    if (!confirm(`트랜잭션 ${id}을(를) 되돌릴까요? 적용된 파일이 스냅샷으로 복원됩니다.`)) return
+    const r = await window.ruleMgr.tx.rollback(id)
+    setMsg(r.ok ? `되돌리기 완료: ${id}` : `되돌리기 실패: ${r.error}`)
+    await loadTxs()
+    await loadProject(false)
+  }
 
   const refresh = async () => {
     setLoading(true)
@@ -126,14 +136,14 @@ export default function App() {
     }
   }
 
-  useEffect(() => { refresh(); loadProject(false) }, [])
+  useEffect(() => { refresh(); loadProject(false); loadTxs() }, [])
   useEffect(() => subscribe(() => setMappingActive(!!getState().token)), [])
 
   const stats = jev && jev.stats
 
   return (
     <div style={{ fontFamily: 'Malgun Gothic, sans-serif', padding: 20, color: '#0f172a' }}>
-      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.2.0</span></h1>
+      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.3.0</span></h1>
       <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 13 }}>
         ADMIN_SATAD_ALONE.MD 기준 — 사용자용 앱과 독립 실행(별도 userData·잠금·포트)
       </p>
@@ -179,7 +189,7 @@ export default function App() {
           repoRoot={project.repoRoot}
           bridge={status}
           settings={null}
-          onSaved={() => { loadProject(false); setShowGenerate(false) }}
+          onSaved={() => { loadProject(false); loadTxs(); setShowGenerate(false) }}
         />
       )}
       {showGenerate && !project && (
@@ -187,7 +197,7 @@ export default function App() {
       )}
 
       {mappingActive && project && (
-        <MappingPanel repoRoot={project.repoRoot} onSaved={() => { loadProject(false); setMsg('매핑 규칙 저장 완료') }} />
+        <MappingPanel repoRoot={project.repoRoot} onSaved={() => { loadProject(false); loadTxs(); setMsg('매핑 규칙 저장 완료') }} />
       )}
 
       {editing && (
@@ -206,6 +216,35 @@ export default function App() {
           {msg && <p style={{ fontSize: 12, color: '#4c3de6', marginTop: 6 }}>{msg}</p>}
         </section>
       )}
+
+      <section style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h2 style={{ fontSize: 15, margin: 0 }}>💾 백업/복원 (트랜잭션 §13.2)</h2>
+          <button onClick={loadTxs} style={{ marginLeft: 'auto', padding: '4px 12px', cursor: 'pointer' }}>새로고침</button>
+        </div>
+        {txs.length === 0 && <p style={{ fontSize: 12, color: '#94a3b8', margin: '6px 0 0' }}>아직 적용 이력이 없습니다 — 규칙 저장·생성 적용 시 자동 기록됩니다.</p>}
+        {txs.length > 0 && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginTop: 6 }}>
+            <thead><tr style={{ color: '#64748b' }}><th style={{ textAlign: 'left', padding: 3 }}>시각</th><th style={{ textAlign: 'left' }}>상태</th><th style={{ textAlign: 'left' }}>파일</th><th style={{ textAlign: 'left' }}>되돌리기</th></tr></thead>
+            <tbody>
+              {txs.map(t => (
+                <tr key={t.id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: 3 }}>{String(t.finishedAt || '').replace('T', ' ').slice(0, 19)}</td>
+                  <td style={{ padding: 3, color: t.status === 'applied' ? '#1a7f37' : t.status === 'rolled_back' ? '#94a3b8' : '#b45309' }}>{t.status}</td>
+                  <td style={{ padding: 3, maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.changes.join('\n')}>
+                    {t.changes.map(c => c.split(/[\\/]/).slice(-2).join('/')).join(', ')}
+                  </td>
+                  <td style={{ padding: 3 }}>
+                    {t.status === 'applied'
+                      ? <button onClick={() => rollbackTx(t.id)} style={{ cursor: 'pointer', color: '#b45309' }}>↩ 되돌리기</button>
+                      : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
 
       <section style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14, marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

@@ -97,7 +97,7 @@ function ruleSchemaDoc() {
     '{',
     '  "id": "영문소문자-하이픈 식별자",',
     '  "name": "쇼핑몰 한글 이름",',
-    '  "match": ["URL에 포함되는 도메인/경로 substring (예: musinsa.com)"],',
+    '  "match": ["URL에 포함되는 도메인/경로 substring (예: example-mall.com)"],',
     '  "rowSelector": "품목 1개(반복 행)를 가리키는 CSS 선택자. 여러 상품에 공통 적용되도록 :nth-of-type/:nth-child 서수를 쓰지 말 것.',
     '      장바구니에서 V체크(체크박스)된 상품만 추출하려면 :has(input[체크박스선택자]) 로 행을 좁히고 checkedOnly를 지정",',
     '  "priceIs": "lineTotal",   // 화면 표시 금액이 단가가 아니라 (단가×수량) 합계일 때만 지정 → 단가=금액÷수량 환산',
