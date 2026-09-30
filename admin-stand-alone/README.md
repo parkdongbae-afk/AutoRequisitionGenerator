@@ -12,7 +12,7 @@ npm run dev      # 개발
 npm run build    # 번들
 npm run smoke    # OpenCode 브리지 감지 스모크(--smoke-out= 파일 출력)
 
-# 단위·통합 테스트 (43건)
+# 단위·통합 테스트 (46건)
 node --test tests/unit/*.test.js tests/integration/*.test.js
 
 # E2E (실제 창으로 프로젝트 탐지·매핑 클릭·설정·생성·트랜잭션 롤백 검증)
@@ -28,7 +28,7 @@ npx electron . --e2e --project="C:\경로\저장소"
 사용법 매뉴얼: [MANUAL.md](MANUAL.md) 원본 · `resources\쇼핑몰규칙관리자_사용설명서.pdf`
 (재생성: `npm run manual`)
 
-## 현재 구현 (v0.6.0)
+## 현재 구현 (v0.7.0)
 
 - **샘플 추출 검증**(§7.7 후반): 캡처 폴더(하위 포함, 최대 60개)를 훑어 문서↔규칙 매칭
   (URL cart 힌트로 -cart 규칙 우선) → 추출 실행 → 같은 폴더 정답 Excel과 건수·총액(2%) 대조 —
@@ -50,7 +50,32 @@ npx electron . --e2e --project="C:\경로\저장소"
   사용자 앱 admin.js가 re-export하므로 사용자 앱 API는 변하지 않는다.
 - `app/src/main/lib/{mhtml,extract,picker,admin}.js` — 파서·규칙 엔진·피커·규칙 관리 재사용
 
+## 수용 기준 충족 상태 (§31 DoD, 2026-10-01 최종 점검)
+
+| # | 기준 | 상태 |
+|---|---|---|
+| 1 | 별도 Portable EXE로 사용자용 앱 없이 실행 | ✅ (스모크+E2E) |
+| 2 | 실제 프로젝트 선택·규칙/버전/동기화 표시 | ✅ E2E: 32규칙 v1.0.8 synced true |
+| 3~4 | 생성·자가 검증·수정·클릭 매핑·옵션 행·삭제·builtin·bundle·Git | ✅ 테스트+E2E |
+| 5 | 적용 전 diff·적용 후 검증 | ✅ diff 화면 + postValidate |
+| 6 | 중간 실패 시 자동 복구 | ✅ 트랜잭션 테스트 |
+| 7 | API Key 미노출 | ✅ safeStorage·마스킹 테스트 |
+| 8~10 | 사용자 앱 빌드·E2E / rulesJsonSynced / renderer 오류 0 | ✅ 실측 |
+| 11 | Windows portable 실행 | ✅ Win11 실측(Win10 실기기는 미검) |
+| 12~13 | 절대경로 하드코딩 없음 / add .·force push·shell 금지 | ✅ safePaths 테스트 |
+| 14 | 문서-UI 일치 | ✅ MANUAL.md·설명서 PDF v0.7.0 |
+
+미충족(운영 과제): 실사용 Shadow 50건+ 수집 후 자동 승인 활성화(§19.2 — 수집 도구는 구현됨).
+
+## 주의
+
+- 사용자용 앱과 이름·userData·단일 인스턴스 잠금·수신 포트를 공유하지 않는다.
+- `TYPESAFE_API_KEY`는 safeStorage 암호화 저장 또는 환경변수만 사용 — 코드·로그·Git 금지.
+- Jev에 전체 HTML/MHTML을 전송하지 않는다(요약 데이터만).
+- 생성 결과는 로컬 검증 실패 시 Jev 승인과 무관하게 배포가 차단된다.
+- `rulesJsonSynced` 검사는 CRLF/LF를 정규화해 비교한다(git autocrlf 체크아웃 대응).
+
 ## 다음 단계
 
 운영: 실사용 Shadow 데이터 누적 후 자동 승인 임계값 활성화(§19.2).
-개발 여유: 검색·필터 확장(§7.4), 로그 화면(§7.9), 트랜잭션 임시 파일 구조 정리(§13.2 tmp).
+명세상 남은 확장: 트랜잭션 임시 파일 구조 정리(§13.2 tmp), 검토자 모드(§5.2, 선택).

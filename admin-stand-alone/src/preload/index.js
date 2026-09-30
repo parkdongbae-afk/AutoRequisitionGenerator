@@ -29,6 +29,16 @@ contextBridge.exposeInMainWorld('ruleMgr', {
     push: opts => ipcRenderer.invoke('git:push', opts),
     ahead: () => ipcRenderer.invoke('git:ahead')
   },
+  log: {
+    list: filter => ipcRenderer.invoke('log:list', filter),
+    counts: () => ipcRenderer.invoke('log:counts'),
+    export: level => ipcRenderer.invoke('log:export', level),
+    onLog: cb => {
+      const h = (_e, m) => cb(m)
+      ipcRenderer.on('operation:log', h)
+      return () => ipcRenderer.removeListener('operation:log', h)
+    }
+  },
   pickSamples: () => ipcRenderer.invoke('pick:samples', 'sample'),
   pickAnswer: () => ipcRenderer.invoke('pick:samples', 'answer'),
   settings: {

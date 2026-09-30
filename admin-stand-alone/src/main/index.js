@@ -22,9 +22,12 @@ import { verifyProject } from './services/verification-service.js'
 import { verifySamples } from './services/sample-verify-service.js'
 import { runShadowFixtures } from './services/shadow-fixtures.js'
 import { gitStatus, gitDiff, gitStage, gitCommit as gitCommitFiles, gitPush, gitAheadBehind } from './services/git-service.js'
+import { createLogStore, maskSecrets } from './services/log-service.js'
 import {
   prepareGenerationRequest, runGeneration, applyGenerationResult
 } from './services/generation-service.js'
+
+const logStore = createLogStore()
 
 const jevService = new JevJudgeService({
   keyProvider: () => loadTypesafeKey(app.getPath('userData'), { decryptFn: b => safeStorage.decryptString(b) })
@@ -38,6 +41,13 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let mainWindow = null
+
+// §7.9 — 운영 로그는 링 버퍼로 모아 하단 상태바·로그 패널에 중계한다
+function opLog(level, step, message, detail = '') {
+  const entry = logStore.append({ level, step, message: maskSecrets(message), detail: maskSecrets(detail) })
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:log', entry)
+  return entry
+}
 
 function createWindow({ show = true } = {}) {
   mainWindow = new BrowserWindow({
@@ -164,7 +174,9 @@ if (!gotLock) {
     ipcMain.handle('rules:save', (_e, repoRoot, rule) => saveRule(userDataDir, repoRoot, rule))
     ipcMain.handle('rules:delete-preview', (_e, repoRoot, id) => deleteRulePreview(repoRoot, id))
     ipcMain.handle('rules:delete', (_e, id, repoRoot) => {
-      return deleteRuleTx(userDataDir, repoRoot || (project ? project.repoRoot : resolveRepoRoot()), id, { bump: false })
+      const r = deleteRuleTx(userDataDir, repoRoot || (project ? project.repoRoot : resolveRepoRoot()), id, { bump: false })
+      opLog(r.ok ? 'info' : 'warn', 'delete', r.ok ? `규칙 삭제 완료: ${id}` : `규칙 삭제 실패(${r.status}) — 자동 복구됨: ${id}`, (r.error || '').slice(0, 200))
+      return r
     })
     ipcMain.handle('rules:builtin', () => registerBuiltinRules())
     ipcMain.handle('rules:rebuild-json', (_e, bump) => rebuildRulesJson(resolveRepoRoot(), { bump: !!bump }))
@@ -214,14 +226,21 @@ if (!gotLock) {
         repoRoot: project ? project.repoRoot : resolveRepoRoot(),
         callAi: payload.mockAi ? mockAiFor(req) : undefined,
         callJev: payload.mockJev ? mockJev : undefined,
-        onProgress: m => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m) }
+        onProgress: m => {
+          if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m)
+          opLog(m.kind === 'cart' || m.kind === 'order' ? 'info' : 'info', 'generate', `[${m.kind || '-'}] ${m.message}`)
+        }
       })
     })
     ipcMain.handle('generate:apply', (_e, { repoRoot, generation, options }) => applyGenerationResult(repoRoot, generation, { ...(options || {}), userDataDir }))
 
     // 트랜잭션 이력·복원(§13.2·§29.3)
     ipcMain.handle('tx:list', () => listTransactions(userDataDir))
-    ipcMain.handle('tx:rollback', (_e, id) => rollbackTransaction(userDataDir, id))
+    ipcMain.handle('tx:rollback', (_e, id) => {
+      const r = rollbackTransaction(userDataDir, id)
+      opLog(r.ok ? 'info' : 'warn', 'tx', r.ok ? `트랜잭션 되돌리기 완료: ${id}` : `되돌리기 실패: ${r.error || ''}`)
+      return r
+    })
 
     // 검증 센터(§7.7) + Shadow 픽스처 수집(§19.2)
     ipcMain.handle('verify:all', () => {
@@ -233,7 +252,10 @@ if (!gotLock) {
     ipcMain.handle('shadow:collect-fixtures', () => runShadowFixtures({
       callJev: args => jevService.judgeCandidate(args),
       persist: rec => appendShadowRecord(userDataDir, rec),
-      onProgress: m => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m) }
+      onProgress: m => {
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m)
+        opLog('info', 'shadow', m.message)
+      }
     }))
 
     // 샘플 추출 검증(§7.7) + Git 배포(§7.8) — push 실패는 파일 적용 실패가 아니다(§17.5)
@@ -247,10 +269,35 @@ if (!gotLock) {
     const repoOf = () => (project ? project.repoRoot : resolveRepoRoot())
     ipcMain.handle('git:status', () => gitStatus(repoOf()))
     ipcMain.handle('git:diff', (_e, paths) => gitDiff(repoOf(), paths))
-    ipcMain.handle('git:stage', (_e, paths) => gitStage(repoOf(), paths))
-    ipcMain.handle('git:commit', (_e, message) => gitCommitFiles(repoOf(), message))
-    ipcMain.handle('git:push', (_e, opts) => gitPush(repoOf(), opts))
+    ipcMain.handle('git:stage', async (_e, paths) => {
+      const r = await gitStage(repoOf(), paths)
+      opLog('info', 'git', `stage 완료 — ${r.staged.length}파일`)
+      return r
+    })
+    ipcMain.handle('git:commit', async (_e, message) => {
+      const r = await gitCommitFiles(repoOf(), message)
+      opLog('info', 'git', `커밋 완료: ${r.hash}`)
+      return r
+    })
+    ipcMain.handle('git:push', async (_e, opts) => {
+      const r = await gitPush(repoOf(), opts)
+      opLog(r.ok ? 'info' : 'warn', 'git', r.ok ? `push 완료 (${r.branch})` : `push 실패 — 로컬 커밋 보존: ${r.error || ''}`)
+      return r
+    })
     ipcMain.handle('git:ahead', () => gitAheadBehind(repoOf()))
+
+    // 작업 로그(§7.9) — 레벨 필터·내보내기(민감정보 마스킹)
+    ipcMain.handle('log:list', (_e, filter) => logStore.list(filter || {}))
+    ipcMain.handle('log:counts', () => logStore.counts())
+    ipcMain.handle('log:export', async (_e, level) => {
+      const r = await dialog.showSaveDialog(mainWindow, {
+        title: '작업 로그 내보내기',
+        defaultPath: `rule-manager-logs-${Date.now()}.txt`
+      })
+      if (r.canceled || !r.filePath) return { ok: false, canceled: true }
+      fs.writeFileSync(r.filePath, maskSecrets(logStore.exportText({ level })), 'utf-8')
+      return { ok: true, path: r.filePath, lines: logStore.list({ level }).length }
+    })
 
     createWindow()
 
@@ -502,6 +549,11 @@ async function runE2E(outPath, userDataDir) {
       } else {
         result.sampleVerifyCheck = 'skipped-no-check-dir'
       }
+
+      // 작업 로그(§7.9) — 생성 과정 로그가 버퍼에 쌓이고 필터·카운트가 동작한다
+      result.logCheck = !!(await win.webContents.executeJavaScript(
+        'window.ruleMgr.log.list({}).then(l => l.length > 0 && l.some(x => x.step === "generate")).then(() => window.ruleMgr.log.counts()).then(c => typeof c.error === "number")'
+      ))
     }
     // 입력 검증 차단(§7.6 — 샘플 없으면 실행 차단)
     result.generationInputGate = await win.webContents.executeJavaScript(
@@ -520,7 +572,7 @@ async function runE2E(outPath, userDataDir) {
       && result.transactionCheck.filesGone
       && result.deleteCheck && result.deleteCheck.deleted && result.deleteCheck.status === 'applied'
       && result.verificationCheck && result.shadowFixtureCheck
-      && result.gitCheck && result.sampleVerifyCheck
+      && result.gitCheck && result.sampleVerifyCheck && result.logCheck
   } catch (e) {
     result.fatal = String(e && e.message || e)
   }

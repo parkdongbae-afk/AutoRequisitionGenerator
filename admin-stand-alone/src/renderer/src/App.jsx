@@ -42,6 +42,24 @@ export default function App() {
   const [txs, setTxs] = useState([])
   const [deleteAsk, setDeleteAsk] = useState(null)
   const [deleteTyped, setDeleteTyped] = useState('')
+  const [lastLog, setLastLog] = useState(null)
+  const [logCounts, setLogCounts] = useState({ error: 0, warn: 0 })
+  const [showLogs, setShowLogs] = useState(false)
+  const [q, setQ] = useState('')
+  const [kindFilter, setKindFilter] = useState('all')
+
+  useEffect(() => {
+    const off = window.ruleMgr.log.onLog(e => setLastLog(e))
+    const t = setInterval(async () => { try { setLogCounts(await window.ruleMgr.log.counts()) } catch {} }, 2500)
+    return () => { off(); clearInterval(t) }
+  }, [])
+
+  const shownRules = rules.filter(r => {
+    if (q && !(String(r.id) + String(r.name)).toLowerCase().includes(q.toLowerCase())) return false
+    if (kindFilter === 'cart' && !/-cart$/.test(r.id)) return false
+    if (kindFilter === 'order' && /-cart$/.test(r.id)) return false
+    return true
+  })
 
   const loadTxs = async () => setTxs(await window.ruleMgr.tx.list())
   const rollbackTx = async (id) => {
@@ -177,8 +195,8 @@ export default function App() {
   const stats = jev && jev.stats
 
   return (
-    <div style={{ fontFamily: 'Malgun Gothic, sans-serif', padding: 20, color: '#0f172a' }}>
-      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.6.0</span></h1>
+    <div style={{ fontFamily: 'Malgun Gothic, sans-serif', padding: '20px 20px 48px', color: '#0f172a' }}>
+      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>쇼핑몰 규칙 관리자 <span style={{ fontSize: 12, color: '#94a3b8' }}>단독 실행형 v0.7.0</span></h1>
       <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 13 }}>
         ADMIN_SATAD_ALONE.MD 기준 — 사용자용 앱과 독립 실행(별도 userData·잠금·포트)
       </p>
@@ -196,10 +214,20 @@ export default function App() {
             <p style={{ margin: '2px 0' }}>경로: {project.repoRoot}</p>
             <p style={{ margin: '2px 0' }}>규칙 {project.rulesCount}개 · rules.json v{project.rulesJsonVersion || '?'} · Git {project.git ? '연결' : '없음'}</p>
             {rules.length > 0 && (
+              <>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+                <input value={q} onChange={e => setQ(e.target.value)} placeholder="ID·이름 검색 (§7.4)" style={{ border: '1px solid #e2e8f0', borderRadius: 4, padding: '2px 8px', fontSize: 12, width: 200 }} />
+                <select value={kindFilter} onChange={e => setKindFilter(e.target.value)} style={{ border: '1px solid #e2e8f0', borderRadius: 4, fontSize: 12 }}>
+                  <option value="all">전체 {rules.length}종</option>
+                  <option value="cart">장바구니만</option>
+                  <option value="order">주문서만</option>
+                </select>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>{shownRules.length}건 표시</span>
+              </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginTop: 6 }}>
                 <thead><tr style={{ color: '#64748b' }}><th style={{ textAlign: 'left', padding: 3 }}>id</th><th style={{ textAlign: 'left' }}>이름</th><th style={{ textAlign: 'left' }}>checkedOnly</th><th style={{ textAlign: 'left' }}>optionRows</th><th style={{ textAlign: 'left' }}>조작</th></tr></thead>
                 <tbody>
-                  {rules.map(r => (
+                  {shownRules.map(r => (
                     <tr key={r.id} style={{ borderTop: '1px solid #f1f5f9' }}>
                       <td style={{ padding: 3 }}>{r.id}</td><td>{r.name}</td>
                       <td style={{ color: r.checkedOnly ? '#1a7f37' : '#94a3b8' }}>{r.checkedOnly ? '✓' : '—'}</td>
@@ -209,11 +237,12 @@ export default function App() {
                         <button onClick={() => deleteRule(r.id)} style={{ cursor: 'pointer', color: '#dc2626' }}>삭제</button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                   ))}
+                 </tbody>
+               </table>
+               </>
+             )}
+           </div>
         ) : (
           <p style={{ fontSize: 12, color: '#b45309' }}>저장소를 찾지 못했습니다 — rules.json과 .git이 있는 폴더를 선택하세요.</p>
         )}
@@ -419,6 +448,17 @@ export default function App() {
           </tbody>
         </table>
       </section>
+
+      <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, background: '#f8fafc', borderTop: '1px solid #e2e8f0', padding: '5px 16px', fontSize: 11, color: '#64748b', display: 'flex', gap: 12, alignItems: 'center', zIndex: 50 }}>
+        <span style={{ color: (logCounts.error || 0) > 0 ? '#dc2626' : (logCounts.warn || 0) > 0 ? '#b45309' : '#1a7f37', fontWeight: 700 }}>
+          오류 {logCounts.error || 0} · 경고 {logCounts.warn || 0}
+        </span>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {lastLog ? `마지막 작업: ${lastLog.message}` : '대기 중 — 작업을 실행하면 여기에 상태가 표시됩니다'}
+        </span>
+        <button onClick={() => setShowLogs(v => !v)} style={{ fontSize: 11, cursor: 'pointer' }}>📋 로그</button>
+      </div>
+      {showLogs && <LogPanel onClose={() => setShowLogs(false)} />}
     </div>
   )
 }
