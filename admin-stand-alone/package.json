@@ -1,6 +1,6 @@
 {
   "name": "shopping-mall-rule-manager",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "productName": "쇼핑몰 규칙 관리자",
   "description": "단독 실행형 쇼핑몰 규칙 관리 프로그램 (ADMIN_SATAD_ALONE.MD)",
   "main": "./out/main/index.js",

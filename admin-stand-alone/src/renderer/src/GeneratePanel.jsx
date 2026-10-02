@@ -285,6 +285,7 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
             ))}
           </select>
           {' · '}자가 수정 최대 <input type="number" min="0" max="3" value={maxRepair} onChange={e => setMaxRepair(Math.max(0, Math.min(3, Number(e.target.value) || 0)))} style={{ width: 40 }} />회
+          <span style={{ fontSize: 10, color: '#94a3b8' }}> — 빠른 생성은 flash 모델 권장 (후보 3개 동시 생성)</span>
         </div>
       </div>
 

@@ -102,38 +102,42 @@ export async function generateAndVerifyRule({
   const ai = callAi || (({ prompt }) => runOpenCodePrompt(prompt, { model }))
   const jev = callJev || (async (r) => { const { JevJudgeService } = await import('./jev-judge-service.js'); const s = new JevJudgeService(); return s.judgeCandidate(r) })
 
-  const results = []
   const base = {
     id: ruleId, name: kind === 'cart' ? `${mallName} 장바구니` : mallName,
     match: [], priceIs: 'lineTotal', user: true
   }
-  for (let i = 0; i < count; i++) {
-    const angle = CANDIDATE_ANGLES[i % CANDIDATE_ANGLES.length]
-    const prompt = promptBuilder
-      ? promptBuilder({ samples: promptSampleList, answer: promptAnswerObj, angle, index: i })
-      : [
-      `당신은 쇼핑몰 캡처 화면에서 품목을 CSS 선택자로 추출하는 파싱 규칙 전문가입니다.`,
-      `"${mallName}"(${kind === 'cart' ? '장바구니' : '주문서'}) 규칙 후보 #${i + 1}를 만들어 주세요. ${angle}`,
-      `규칙 id는 "${ruleId}", name은 "${mallName}"으로 고정. 응답은 설명 없이 규칙 JSON 객체만.`,
-      '',
-      '## 입력 샘플',
-      ...promptSampleList.map((s, j) => `### 샘플 ${j + 1}\n\`\`\`html\n${s.html}\n\`\`\``),
-      '',
-      '## 정답 품목',
-      JSON.stringify(promptAnswerObj.items || [], null, 1)
-    ].join('\n')
-    log(`후보 #${i + 1} 생성 중…`)
-    let rule
-    try {
-      rule = { ...base, ...extractJson(await ai({ prompt })), id: ruleId, name: base.name }
-    } catch (e) {
-      log(`후보 #${i + 1} 생성 실패: ${String(e.message || e)}`, 'err')
-      continue
-    }
-    const ev = await evaluateCandidate({ rule, samples, expected: promptAnswerObj || expected, jev })
-    judgeHook(rule, ev.deterministic, ev.jevRes, ev.decision)
-    results.push({ rule, deterministic: ev.deterministic, jev: ev.jevRes, decision: ev.decision })
-  }
+  // 후보 생성은 서로 독립적이므로 병렬 실행한다 — opencode 1회당 수 분이라 순차면 3배 느리다
+  const outcomes = await Promise.all(
+    Array.from({ length: count }, (_, i) =>
+      (async () => {
+        const angle = CANDIDATE_ANGLES[i % CANDIDATE_ANGLES.length]
+        const prompt = promptBuilder
+          ? promptBuilder({ samples: promptSampleList, answer: promptAnswerObj, angle, index: i })
+          : [
+          `당신은 쇼핑몰 캡처 화면에서 품목을 CSS 선택자로 추출하는 파싱 규칙 전문가입니다.`,
+          `"${mallName}"(${kind === 'cart' ? '장바구니' : '주문서'}) 규칙 후보 #${i + 1}를 만들어 주세요. ${angle}`,
+          `규칙 id는 "${ruleId}", name은 "${mallName}"으로 고정. 응답은 설명 없이 규칙 JSON 객체만.`,
+          '',
+          '## 입력 샘플',
+          ...promptSampleList.map((s, j) => `### 샘플 ${j + 1}\n\`\`\`html\n${s.html}\n\`\`\``),
+          '',
+          '## 정답 품목',
+          JSON.stringify(promptAnswerObj.items || [], null, 1)
+        ].join('\n')
+        log(`후보 #${i + 1} 생성 중…`)
+        try {
+          const rule = { ...base, ...extractJson(await ai({ prompt })), id: ruleId, name: base.name }
+          const ev = await evaluateCandidate({ rule, samples, expected: promptAnswerObj || expected, jev })
+          judgeHook(rule, ev.deterministic, ev.jevRes, ev.decision)
+          return { rule, deterministic: ev.deterministic, jev: ev.jevRes, decision: ev.decision }
+        } catch (e) {
+          log(`후보 #${i + 1} 생성 실패: ${String(e.message || e)}`, 'err')
+          return null
+        }
+      })()
+    )
+  )
+  const results = outcomes.filter(Boolean)
 
   const approved = results.filter(r => r.decision.action === 'approve')
     .sort((a, b) => scoreCandidate(b.deterministic).score - scoreCandidate(a.deterministic).score)[0]

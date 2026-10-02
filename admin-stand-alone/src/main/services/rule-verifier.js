@@ -6,6 +6,33 @@ import { load as cheerioLoad } from 'cheerio'
 // 권장안 A(§4.1) — 기존 앱의 순수 모듈을 직접 재사용한다(동일 로직 복제 금지)
 import { extractItems } from '../../../../app/src/main/lib/extract.js'
 
+/*
+ * 가격 진단 — 건수는 일치하는데 총액만 틀릴 때, 추출 단가 vs 정답 단가의 비율이
+ * 일정하면(±6%) 정답 Excel 자체가 의심(부가세 포함·다른 시점 파일)으로 판정한다.
+ * AI 자가 수정으로는 해결할 수 없는 원인이므로, 관리자에게 정답 파일 확인을 요구한다(토큰 낭비 차단).
+ */
+export function diagnosePrices(gotItems, ansItems, tolPct = 0.06) {
+  if (!Array.isArray(gotItems) || !Array.isArray(ansItems)) return null
+  if (!gotItems.length || gotItems.length !== ansItems.length) return null
+  const pairs = gotItems.map((g, i) => {
+    const gotU = Number(g.unitPrice) || 0
+    const gotQ = Number(g.qty) || 1
+    const ansU = Number(ansItems[i].unitPrice) || 0
+    const ansQ = Number(ansItems[i].qty) || 1
+    return { gotU, ansU, ratio: gotU > 0 && gotQ > 0 && ansQ > 0 ? (ansU * ansQ) / (gotU * gotQ) : 0 }
+  })
+  if (pairs.some(p => !(p.gotU > 0) || !(p.ratio > 0))) return null
+  const sorted = [...pairs.map(p => p.ratio)].sort((a, b) => a - b)
+  const med = sorted[Math.floor(sorted.length / 2)]
+  if (Math.abs(med - 1) <= 0.02) return null
+  const consistent = pairs.every(p => Math.abs(p.ratio - med) <= med * tolPct)
+  if (!consistent) return null
+  return {
+    medianRatio: Math.round(med * 100) / 100,
+    message: `정답 Excel 단가가 화면(추출) 단가의 약 ${Math.round(med * 100)}%입니다 — 부가세 포함가이거나 다른 시점의 정답 파일로 보입니다. 정답 Excel을 확인하세요. (AI 자가 수정으로는 해결되지 않아 중단합니다)`
+  }
+}
+
 // 스키마 검사(§11.1) — admin.js validateRule과 동일한 최소 계약
 // orientation:'column'(열 구조) 규칙은 rowSelector·fields.name/price 대신 nameRow·priceRow를 쓴다.
 export function checkSchema(rule) {
@@ -85,6 +112,7 @@ export function verifyRule({ rule, samples, expected }) {
   let uncheckedIncluded = false
   const allItems = []
   const perSample = []
+  const answerPairs = []
   let diag = { selectorMatchCounts: {}, suspiciousClassNames: [] }
 
   for (const s of samples) {
@@ -128,13 +156,31 @@ export function verifyRule({ rule, samples, expected }) {
         subtotal: tot,
         expectedSubtotal: expTot,
         countOk: cnt === expCnt,
-        totalOk: Math.abs(tot - expTot) <= Math.max(10, expTot * 0.02)
+        totalOk: Math.abs(tot - expTot) <= Math.max(10, expTot * 0.02),
+        got: res.items
       })
+      answerPairs.push({ got: res.items, ans: sampleExpectedItems })
+    }
+    if (!sampleExpectedItems && expectedItems) {
+      answerPairs.push({ got: res.items, ans: expectedItems.filter(i => !i.isShipping) })
     }
   }
 
   const hasPerSample = perSample.length > 0
   const judgedAllOk = perSample.every(p => p.countOk && p.totalOk)
+
+  // 가격 진단(§11.1 보강) — 건수 일치·총액 불일치인 샘플에서 단가 비율이 일정하면
+  // 정답 Excel 문제(부가세 등)로 판정해 결과에 첨부한다.
+  let priceDiagnosis = null
+  if (!hasPerSample && expectedItems) {
+    answerPairs.push({ got: allItems, ans: expectedItems.filter(i => !i.isShipping) })
+  }
+  for (const pair of answerPairs) {
+    if (pair.got.length !== pair.ans.length) continue
+    const d = diagnosePrices(pair.got, pair.ans)
+    if (d) { priceDiagnosis = d; break }
+  }
+
   const countMatches = hasPerSample
     ? itemCount > 0 && judgedAllOk
     : itemCountExpected == null ? itemCount > 0 : itemCount === itemCountExpected
@@ -165,6 +211,7 @@ export function verifyRule({ rule, samples, expected }) {
     subtotalExpected,
     totalWithinTolerance,
     perSample,
+    priceDiagnosis,
     shipping: null,
     shippingExpected: null,
     checkedOnlyValid,
