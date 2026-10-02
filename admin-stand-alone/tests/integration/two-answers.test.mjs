@@ -104,7 +104,6 @@ test('사전 대조 — meta 총액이 정답과 다르면 ANSWER_MISMATCH로 AI
     })()
     assert.equal(req.__thrown.code, 'ANSWER_MISMATCH')
     assert.ok(req.__thrown.message.includes('총액') && req.__thrown.message.includes('건수'))
-    assert.ok(!req.__thrown.message.includes('99,999원 vs') === false || true)
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
