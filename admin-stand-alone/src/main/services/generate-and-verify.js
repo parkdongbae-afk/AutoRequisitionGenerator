@@ -3,13 +3,20 @@
  * Z.ai GLM(OpenCode 브리지) = 후보 생성·수정 / 로컬 검증기 = 수치 판정 / Jev = 의미 판정.
  * callAi·callJev를 주입받아 단위 테스트 가능하며, 기본값은 실제 브리지·Jev 서비스다.
  */
-import { spawn } from 'node:child_process'
+import { spawn, execFileSync } from 'node:child_process'
 import { verifyRule } from './rule-verifier.js'
 import { scoreCandidate } from './candidate-ranker.js'
 import { decideRuleAction } from './decision-gate.js'
 
-const TIMEOUT_MS = 180000
+const TIMEOUT_MS = 600000
 export const DEFAULT_OPENCODE_MODEL = 'zai-coding-plan/glm-5.3'
+
+// Windows에서 child.kill()은 cmd.exe만 죽이고 opencode 본체는 남아 파이프를 붙잡는다 —
+// 실측 문제로, 트리 전체를 taskkill /T /F로 정리해야 close 이벤트가 온다.
+function killTree(child) {
+  try { execFileSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true }) }
+  catch { try { child.kill() } catch {} }
+}
 
 // opencode run 명령 — 실측 규약(OpenCode 1.18.33):
 //   · -p는 password 옵션이다(프롬프트 아님 — 혼용 금지)
@@ -30,7 +37,7 @@ export function runOpenCodePrompt(prompt, { model = '', timeoutMs = TIMEOUT_MS }
     let stdout = ''
     let stderr = ''
     const timer = setTimeout(() => {
-      try { child.kill() } catch {}
+      killTree(child)
       reject(new Error(`opencode 응답 시간 초과(${timeoutMs / 1000}초) — 모델·인증 상태를 확인하세요`))
     }, timeoutMs)
     child.stdout.on('data', d => { stdout += d })
