@@ -29,6 +29,18 @@ contextBridge.exposeInMainWorld('ruleMgr', {
     return () => ipcRenderer.removeListener('inbox:new', h)
   },
   extensionInstall: () => ipcRenderer.invoke('extension:install'),
+  google: {
+    setKey: plain => ipcRenderer.invoke('google:set-key', plain),
+    clearKey: () => ipcRenderer.invoke('google:clear-key'),
+    hasKey: () => ipcRenderer.invoke('google:has-key'),
+    test: key => ipcRenderer.invoke('google:test', key),
+    listModels: key => ipcRenderer.invoke('google:list-models', key)
+  },
+  answer: {
+    extract: req => ipcRenderer.invoke('answer:extract', req),
+    save: req => ipcRenderer.invoke('answer:save', req),
+    pickFile: () => ipcRenderer.invoke('answer:pick-file')
+  },
   git: {
     status: () => ipcRenderer.invoke('git:status'),
     diff: paths => ipcRenderer.invoke('git:diff', paths),

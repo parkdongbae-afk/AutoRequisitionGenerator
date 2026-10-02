@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import GeneratePanel from './GeneratePanel.jsx'
+import AnswerMakerPanel from './AnswerMakerPanel.jsx'
 import MappingPanel from './MappingPanel.jsx'
 import DiffView from './DiffView.jsx'
 import VerificationPanel from './VerificationPanel.jsx'
@@ -11,6 +12,7 @@ import { subscribe, getState, startMapping } from './mapping-state.js'
 const TABS = [
   ['home', '🏠 홈'],
   ['generate', '🤖 새 규칙'],
+  ['answer', '📑 엑셀 정답 만들기'],
   ['mapping', '🖱 클릭 매핑'],
   ['verify', '🧪 검증 센터'],
   ['git', '🚀 배포/Git'],
@@ -303,6 +305,10 @@ export default function App() {
               <button onClick={() => loadProject(true)} style={{ marginLeft: 8, padding: '3px 10px', cursor: 'pointer' }}>📁 폴더 선택…</button>
             </div>
           )}
+      </div>
+
+      <div style={{ display: activeTab === 'answer' ? 'block' : 'none' }}>
+        <AnswerMakerPanel />
       </div>
 
       <div style={{ display: activeTab === 'mapping' ? 'block' : 'none' }}>

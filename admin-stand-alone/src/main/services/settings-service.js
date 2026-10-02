@@ -25,6 +25,7 @@ export const DEFAULT_SETTINGS = {
     // §9.6 — 장바구니 checkedOnly 예외 몰(사유가 규칙 notes로 문서화된 것만 등록)
     checkedOnlyExcuses: ['naver-cart']
   },
+  googleKey: null,
   ui: {
     // §7.1/§28 — 글자 크기 배율(설정 탭에서 조절, 1 = 기본 100%)
     fontScale: 1.2
@@ -123,6 +124,37 @@ export function loadTypesafeKey(userDataDir, { decryptFn } = {}) {
 export function clearTypesafeKey(userDataDir) {
   const s = loadSettings(userDataDir)
   delete s.jevKey
+  fs.mkdirSync(userDataDir, { recursive: true })
+  fs.writeFileSync(settingsPath(userDataDir), JSON.stringify(s, null, 2) + '\n', 'utf-8')
+}
+
+// Google API Key — safeStorage 암호화 저장(엑셀 정답 만들기 탭용)
+export function storeGoogleKey(userDataDir, plainKey, { encryptFn } = {}) {
+  const key = String(plainKey || '').trim()
+  if (!key) throw new Error('빈 API Key는 저장할 수 없습니다')
+  if (typeof encryptFn !== 'function') {
+    return { ok: false, code: 'GOOGLE_KEY_STORE_UNAVAILABLE', message: 'safeStorage를 사용할 수 없어 Key를 저장하지 않았습니다.' }
+  }
+  const encrypted = Buffer.from(encryptFn(key), 'binary').toString('base64')
+  saveSettings(userDataDir, { googleKey: { encrypted, scheme: 'safeStorage.v1' } })
+  return { ok: true }
+}
+
+export function loadGoogleKey(userDataDir, { decryptFn } = {}) {
+  let rec = null
+  try { rec = loadSettings(userDataDir).googleKey } catch { rec = null }
+  if (!rec || !rec.encrypted || typeof decryptFn !== 'function') return null
+  try {
+    const s = String(decryptFn(Buffer.from(rec.encrypted, 'base64')) || '')
+    return s || null
+  } catch {
+    return null
+  }
+}
+
+export function clearGoogleKey(userDataDir) {
+  const s = loadSettings(userDataDir)
+  delete s.googleKey
   fs.mkdirSync(userDataDir, { recursive: true })
   fs.writeFileSync(settingsPath(userDataDir), JSON.stringify(s, null, 2) + '\n', 'utf-8')
 }

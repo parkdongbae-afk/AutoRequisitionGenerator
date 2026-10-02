@@ -25,6 +25,8 @@ import { scanCaptureFolder, summarizeScan } from './services/sample-folder-servi
 import { gitStatus, gitDiff, gitStage, gitCommit as gitCommitFiles, gitPush, gitAheadBehind } from './services/git-service.js'
 import { createLogStore, maskSecrets } from './services/log-service.js'
 import { startReceiver, stopReceiver } from './services/receiver-service.js'
+import { listGeminiModels, testGeminiConnection, extractItemsWithGemini, DEFAULT_GEMINI_MODEL } from './services/gemini-service.js'
+import { storeGoogleKey, loadGoogleKey, clearGoogleKey } from './services/settings-service.js'
 import {
   prepareGenerationRequest, runGeneration, applyGenerationResult
 } from './services/generation-service.js'
@@ -330,6 +332,54 @@ if (!gotLock) {
         port: receiver ? receiver.port : null,
         guide: 'Chrome 주소창에 chrome://extensions → 개발자 모드 ON → [압축해제된 확장 프로그램을 로드] → 방금 연 폴더 선택.\n사용: 쇼핑몰 장바구니/주문서 화면에서 확장 아이콘 클릭 → 상태 확인 → [전송].'
       }
+    })
+
+    // 엑셀 정답 만들기(구글 API) — Key는 safeStorage 저장, 추출·모델 목록·연결 확인
+    const googleKeyOf = () => loadGoogleKey(userDataDir, { decryptFn: b => safeStorage.decryptString(b) }) || process.env.GOOGLE_API_KEY || null
+    ipcMain.handle('google:set-key', (_e, plain) => storeGoogleKey(userDataDir, plain, { encryptFn: k => safeStorage.encryptString(k) }))
+    ipcMain.handle('google:clear-key', () => clearGoogleKey(userDataDir))
+    ipcMain.handle('google:has-key', () => {
+      const stored = !!loadGoogleKey(userDataDir, { decryptFn: b => safeStorage.decryptString(b) })
+      return { stored, env: !!process.env.GOOGLE_API_KEY, configured: stored || !!process.env.GOOGLE_API_KEY }
+    })
+    ipcMain.handle('google:test', async (_e, keyArg) => {
+      const key = String(keyArg || '').trim() || googleKeyOf()
+      return testGeminiConnection(key)
+    })
+    ipcMain.handle('google:list-models', async (_e, keyArg) => {
+      const key = String(keyArg || '').trim() || googleKeyOf()
+      return listGeminiModels(key)
+    })
+    ipcMain.handle('answer:extract', async (_e, { model, files }) => {
+      const key = googleKeyOf()
+      const captures = files.map((p, i) => {
+        const { html } = sampleHtmlText(p)
+        return { label: `캡처${i + 1}`, html }
+      })
+      return extractItemsWithGemini({ apiKey: key, model: model || DEFAULT_GEMINI_MODEL, captures })
+    })
+    ipcMain.handle('answer:pick-file', async () => {
+      const r = await dialog.showOpenDialog(mainWindow, {
+        title: '캡처 HTML/MHTML 선택(여러 개 가능)',
+        properties: ['openFile', 'multiSelections'],
+        filters: [{ name: '캡처', extensions: ['html', 'htm', 'mhtml', 'mht'] }]
+      })
+      return r.canceled ? [] : r.filePaths
+    })
+    ipcMain.handle('answer:save', async (_e, { items }) => {
+      const XLSX = (await import('xlsx')).default
+      const r = await dialog.showSaveDialog(mainWindow, {
+        title: '정답 Excel 저장',
+        defaultPath: `정답_품목내역_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.xls`,
+        filters: [{ name: 'Excel 97-2003', extensions: ['xls'] }]
+      })
+      if (r.canceled || !r.filePath) return { ok: false, canceled: true }
+      const aoa = [['품목명', '규격', '수량', '예상단가']]
+      for (const it of items) aoa.push([it.name, it.spec || '', Number(it.qty) || 1, Number(it.unitPrice) || 0])
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), '품목내역')
+      XLSX.writeFile(wb, r.filePath, { bookType: 'xls' })
+      return { ok: true, path: r.filePath, count: items.length }
     })
 
     // 샘플 추출 검증(§7.7) + Git 배포(§7.8) — push 실패는 파일 적용 실패가 아니다(§17.5)
