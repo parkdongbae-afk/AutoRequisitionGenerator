@@ -65,7 +65,7 @@ const BOX = (title, lines, tone = 'purple') => {
 doc.font('kb').fontSize(24).fillColor('#1e293b').text('쇼핑몰 규칙 관리자', M, 180, { width: CW, align: 'center' })
 doc.font('kb').fontSize(13).fillColor('#6d28d9').text('사용법 매뉴얼', M, 216, { width: CW, align: 'center' })
 doc.font('kr').fontSize(10.5).fillColor('#64748b').text(
-  '쇼핑몰 캡처에서 품목을 추출하는 파싱 규칙을 만들고·검증하고·배포하는 관리자 전용 프로그램\n버전 v0.8.0 — 사용자용 "자동 품의 요구 생성기"와 동시 실행 가능(별도 저장소·포트)',
+  '쇼핑몰 캡처에서 품목을 추출하는 파싱 규칙을 만들고·검증하고·배포하는 관리자 전용 프로그램\n버전 v0.10.0 — 사용자용 "자동 품의 요구 생성기"와 동시 실행 가능(별도 저장소·포트)',
   M, 260, { width: CW, align: 'center', lineGap: 4 }
 )
 BOX('이 매뉴얼이 다루는 것', [
@@ -75,6 +75,18 @@ BOX('이 매뉴얼이 다루는 것', [
 ], 'purple')
 doc.font('kr').fontSize(9).fillColor('#94a3b8').text('ADMIN_SATAD_ALONE.MD · JEV.MD 명세 기반 — 매뉴얼 원본: admin-stand-alone/MANUAL.md', M, doc.page.maxY() - 40, { width: CW, align: 'center' })
 doc.addPage()
+
+/* ── 0. 화면 구성 ── */
+H1('0. 화면 구성 (탭 방식)')
+P('상단 탭으로 화면을 전환합니다. 탭을 옮겨도 진행 중인 작업은 유지됩니다.')
+B('홈 — 대상 저장소·규칙 목록(검색·필터)·빠른 작업')
+B('새 규칙 — AI 자동 생성(캡처 폴더 불러오기)')
+B('클릭 매핑 — 캡처를 열어 클릭으로 규칙 생성')
+B('검증 센터 — 전체 검증·샘플 추출 대조·규칙 비교')
+B('배포/Git — 변경 파일 선택 stage·커밋·푸시')
+B('백업/복원 — 트랜잭션 이력·되돌리기')
+B('설정 — 글자 크기·TYPESAFE Key·Jev/Shadow·브리지 상태')
+P('글자 크기는 설정에서 100%~150% 중 선택하며 즉시 적용·저장됩니다(기본 120%).')
 
 /* ── 1. 시작하기 ── */
 H1('1. 시작하기')

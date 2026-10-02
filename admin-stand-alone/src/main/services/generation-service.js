@@ -8,6 +8,7 @@ import { buildPromptText, buildRepairPromptText, sampleHtmlText, answerSummary }
 import { generateAndVerifyRule, extractJson } from './generate-and-verify.js'
 import { ruleChanges, gitCommit } from './rule-files.js'
 import { createPlan, applyTransaction } from './transaction-service.js'
+import { profileCapture, pickSimilarRules, loadRepoRules } from './rule-similarity-service.js'
 import { suggestBaseId as deriveSuggestedId, ruleIdFor as idFor } from '../../shared/rule-id.js'
 
 // builtin 등록·bundle 재생성은 사용자 앱 admin.js(→electron)를 필요로 하므로 적용 시에만 로드한다
@@ -50,7 +51,7 @@ export function pickPromptSamples(samples) {
  * payload: { mallName, baseId, kinds, samplesByKind: {order:[path], cart:[path]},
  *            answerExcel, answerBasis: 'order'|'cart'|'common', model, maxRepair }
  */
-export function prepareGenerationRequest(payload) {
+export function prepareGenerationRequest(payload, { repoRoot = null } = {}) {
   const errors = []
   const mallName = String(payload.mallName || '').trim()
   if (!mallName) errors.push('쇼핑몰 이름을 입력하세요')
@@ -133,12 +134,30 @@ export function prepareGenerationRequest(payload) {
           items: samples.filter(s => s.expected).flatMap(s => s.expected.items.map(it => ({ ...it, sample: s.label })))
         }
       : (expected || answer)
+
+    // §10-A.5 — 새 캡처의 DOM 특징과 구조가 비슷한 기존 규칙을 몇 샷 예시로 선정한다.
+    // 유사 규칙이 없으면 기존 고정 예시(admin-text 기본값)를 그대로 쓴다.
+    let similarIds = null
+    let similarNames = null
+    if (repoRoot) {
+      try {
+        const repoRules = loadRepoRules(repoRoot)
+        const profile = profileCapture(promptSamples[0].html, promptSamples[0].location || '')
+        const picked = pickSimilarRules(repoRules, profile, { limit: 3 })
+        if (picked.length) {
+          similarIds = picked.map(p => p.id)
+          similarNames = picked.map(p => `${p.id}(${p.score})`)
+        }
+      } catch {}
+    }
     return {
       kind,
       ruleId: ruleIdFor(baseId, kind),
       samples,
       promptSamples,
       promptAnswer,
+      similarIds,
+      similarNames,
       answer,
       expected
     }
@@ -161,6 +180,9 @@ export async function runGeneration(request, deps = {}) {
   const results = []
   for (const ctx of request.contexts) {
     onProgress({ step: 'generate', kind: ctx.kind, message: `${KIND_LABEL[ctx.kind]} 규칙 후보 생성 시작 (${ctx.ruleId})` })
+    if (ctx.similarNames && ctx.similarNames.length) {
+      onProgress({ step: 'similar', kind: ctx.kind, message: `유사 규칙 참조: ${ctx.similarNames.join(', ')}` })
+    }
     let res
     try {
       res = await generateAndVerifyRule({
@@ -176,17 +198,20 @@ export async function runGeneration(request, deps = {}) {
         callAi: callAi ? (a => callAi({ ...a, kind: ctx.kind })) : undefined,
         callJev,
         onJudge: onJudge ? (h => onJudge({ ...h, kind: ctx.kind })) : undefined,
-        // 프롬프트는 기존 admin-text.js의 스키마 문서·few-shot 구성을 재사용한다(§4.1 권장안 A)
+        // 프롬프트는 기존 admin-text.js의 스키마 문서·few-shot 구성을 재사용한다(§4.1 권장안 A).
+        // §10-A.5 — 몇 샷 예시는 고정 리스트 대신 유사 규칙으로 대체될 수 있다.
         promptBuilder: ({ samples: s, answer }) => buildPromptText({
           mallName: request.mallName, kind: ctx.kind, ruleId: ctx.ruleId,
           samples: ctx.promptSamples || s, answer: ctx.promptAnswer || answer,
-          repoRoot: repoRoot || undefined
+          repoRoot: repoRoot || undefined,
+          exampleIds: ctx.similarIds || undefined
         }),
         repairPromptBuilder: ({ samples: s, answer, rule, problems, details }) => buildRepairPromptText({
           mallName: request.mallName, kind: ctx.kind, ruleId: ctx.ruleId,
           samples: ctx.promptSamples || s, answer: ctx.promptAnswer || answer, rule,
           verification: { details: details || [], problems: problems || [] },
-          repoRoot: repoRoot || undefined
+          repoRoot: repoRoot || undefined,
+          exampleIds: ctx.similarIds || undefined
         })
       })
     } catch (e) {

@@ -226,11 +226,14 @@ if (!gotLock) {
 
     // AI 생성(§7.6 ↔ §14) — 진행은 operation:progress 이벤트로 중계한다
     ipcMain.handle('generate:validate', (_e, payload) => {
-      const req = prepareGenerationRequest(payload)
-      return { contexts: req.contexts.map(c => ({ kind: c.kind, ruleId: c.ruleId, samples: c.samples.length, expectedItems: c.expected ? c.expected.items.length : null })) }
+      const req = prepareGenerationRequest(payload, { repoRoot: project ? project.repoRoot : resolveRepoRoot() })
+      return {
+        contexts: req.contexts.map(c => ({ kind: c.kind, ruleId: c.ruleId, samples: c.samples.length, expectedItems: c.expected ? c.expected.items.length : null, similarNames: c.similarNames })),
+        answerParsed: req.answerParsed
+      }
     })
     ipcMain.handle('generate:start', async (_e, payload) => {
-      const req = prepareGenerationRequest(payload)
+      const req = prepareGenerationRequest(payload, { repoRoot: project ? project.repoRoot : resolveRepoRoot() })
       return runGeneration(req, {
         model: payload.model || '',
         maxRepair: payload.maxRepair != null ? payload.maxRepair : 3,

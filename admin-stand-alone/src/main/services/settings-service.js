@@ -25,6 +25,10 @@ export const DEFAULT_SETTINGS = {
     // §9.6 — 장바구니 checkedOnly 예외 몰(사유가 규칙 notes로 문서화된 것만 등록)
     checkedOnlyExcuses: ['naver-cart']
   },
+  ui: {
+    // §7.1/§28 — 글자 크기 배율(설정 탭에서 조절, 1 = 기본 100%)
+    fontScale: 1.2
+  },
   generation: {
     model: '',
     allowFallback: true,

@@ -142,10 +142,11 @@ const KIND_GUIDE = {
   ]
 }
 
-export function buildPromptText({ mallName, kind, ruleId, samples, answer, repoRoot }) {
+export function buildPromptText({ mallName, kind, ruleId, samples, answer, repoRoot, exampleIds }) {
   const examples = []
+  const ids = (exampleIds && exampleIds.length ? exampleIds : EXAMPLE_RULE_IDS[kind]) || []
   if (repoRoot) {
-    for (const id of EXAMPLE_RULE_IDS[kind]) {
+    for (const id of ids) {
       const p = path.join(rulesSourceDir(repoRoot), `${id}.json`)
       try { examples.push(`// 예시 규칙: ${id}\n` + fs.readFileSync(p, 'utf-8')) } catch {}
     }
@@ -189,10 +190,11 @@ export function buildPromptText({ mallName, kind, ruleId, samples, answer, repoR
 
 // 자가 수정용 프롬프트 — 기존 프롬프트 구성에 '이전 규칙 + 실제 추출 결과 + 문제'를 추가하고
 // 수정된 규칙 JSON만 다시 받는다. (판정은 admin-verify.js의 verifyRuleSamples가 담당)
-export function buildRepairPromptText({ mallName, kind, ruleId, samples, answer, rule, verification, repoRoot }) {
+export function buildRepairPromptText({ mallName, kind, ruleId, samples, answer, rule, verification, repoRoot, exampleIds }) {
   const examples = []
+  const ids = (exampleIds && exampleIds.length ? exampleIds : EXAMPLE_RULE_IDS[kind]) || []
   if (repoRoot) {
-    for (const id of EXAMPLE_RULE_IDS[kind]) {
+    for (const id of ids) {
       const p = path.join(rulesSourceDir(repoRoot), `${id}.json`)
       try { examples.push(`// 예시 규칙: ${id}\n` + fs.readFileSync(p, 'utf-8')) } catch {}
     }
