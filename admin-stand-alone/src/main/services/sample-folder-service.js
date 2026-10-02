@@ -39,6 +39,7 @@ export function scanCaptureFolder(dir) {
   const answers = []
   const skipped = []
   let truncated = false
+  let merged = 0
   const byStem = new Map()
 
   const walk = d => {
@@ -67,6 +68,7 @@ export function scanCaptureFolder(dir) {
       }
       const prev = byStem.get(key)
       if (prev) {
+        merged++
         if (entry.isMhtml && !prev.isMhtml) byStem.set(key, entry)
         continue
       }
@@ -86,7 +88,7 @@ export function scanCaptureFolder(dir) {
   }
   captures.sort((a, b) => a.path.localeCompare(b.path))
   answers.sort((a, b) => a.localeCompare(b))
-  return { captures, answers: [...new Set(answers)], skipped, truncated }
+  return { captures, answers: [...new Set(answers)], skipped, truncated, merged }
 }
 
 function findAnswer(dir) {
@@ -105,7 +107,7 @@ function scoreAnswerName(name) {
   return s
 }
 
-/* 스캔 결과를 요약 문자열로 — UI 표시용 */
+// 스캔 결과 요약 — UI 표시용
 export function summarizeScan(scan) {
   const bucket = { cart: { free: 0, paid: 0, unknown: 0 }, order: { free: 0, paid: 0, unknown: 0 } }
   for (const c of scan.captures) {
@@ -118,6 +120,7 @@ export function summarizeScan(scan) {
     order: bucket.order,
     answers: scan.answers.length,
     total: scan.captures.length,
+    merged: scan.merged || 0,
     truncated: scan.truncated
   }
 }

@@ -49,6 +49,7 @@ test('스캔 — 종류별 분류·html/mhtml 중복 제거(mhtml 우선)·폴�
     assert.equal(s.cart.paid, 1)
     assert.equal(s.answers, 2)
     assert.equal(s.total, 4)
+    assert.equal(scan.merged, 1, 'html+mhtml 쌍 1개 병합')
   } finally { rmSync(mall, { recursive: true, force: true }) }
 })
 

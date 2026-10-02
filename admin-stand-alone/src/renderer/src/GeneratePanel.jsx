@@ -71,7 +71,12 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
         order: scan.captures.filter(c => c.kind === 'order'),
         cart: scan.captures.filter(c => c.kind === 'cart')
       })
-      if (scan.answers.length && !answerExcel) setAnswerExcel(scan.answers[0])
+      // 스캔에 캡처가 있는 화면 종류는 생성 대상을 자동으로 켠다 — 한쪽 파일이 무시되지 않게
+      setKinds(k => ({
+        order: k.order || scan.captures.some(c => c.kind === 'order'),
+        cart: k.cart || scan.captures.some(c => c.kind === 'cart')
+      }))
+      if (scan.answers.length) setAnswerExcel(scan.answers[0])
     } catch (e) {
       setMsg('폴더 불러오기 실패: ' + String(e.message || e))
     }
@@ -154,7 +159,9 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
             (무료 {scanSummary.order.free}/발생 {scanSummary.order.paid}) ·
             장바구니 {scanSummary.cart.free + scanSummary.cart.paid + scanSummary.cart.unknown}건
             (무료 {scanSummary.cart.free}/발생 {scanSummary.cart.paid}) · 정답 {scanSummary.answers}개
+            {scanSummary.merged ? ` · html/mhtml 중복 ${scanSummary.merged}쌍 병합(mhtml 우선)` : ''}
             {scanSummary.truncated ? ' · 40개 초과 일부 생략' : ''}
+            {' · '}<b>생성 대상이 자동 선택됨</b>
           </span>
         )}
         {selectedKinds.map(k => (
