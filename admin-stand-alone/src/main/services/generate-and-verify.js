@@ -14,20 +14,33 @@ import { decideRuleAction } from './decision-gate.js'
 
 const execFileAsync = promisify(execFile)
 const TIMEOUT_MS = 180000
+export const DEFAULT_OPENCODE_MODEL = 'zai-coding-plan/glm-5.3'
 
-// OpenCode run — 긴 프롬프트는 임시 파일로 전달하고(§10.3 표준 입력·임시 파일 허용)
-// 작업 디렉터리는 임시 폴더로 제한해 저장소 수정 권한을 주지 않는다(§10.3).
-export async function runOpenCodePrompt(prompt, { model = 'zai-coding-plan/glm-5.3', timeoutMs = TIMEOUT_MS } = {}) {
+// opencode run 명령 조립 — 실측 규약(OpenCode 1.18.33):
+//   · 프롬프트는 위치 인자(message) 또는 -f(파일 첨부)로 전달 — -p는 password 옵션이다(혼용 금지)
+//   · -f는 배열 플래그라 뒤따르는 인자를 삼키므로 반드시 맨 마지막에 둔다
+//   · 긴 프롬프트는 파일 첨부로 전달하고(§10.3), 작업 디렉터리는 임시 폴더로 제한한다(§10.3)
+export function buildOpenCodeCommand(promptFile, model) {
+  const m = String(model || '').trim() || DEFAULT_OPENCODE_MODEL
+  return `opencode run --model ${m} "Read the attached file prompt.txt and follow its instructions exactly. Output only the requested JSON." -f "${promptFile}"`
+}
+
+export async function runOpenCodePrompt(prompt, { model = '', timeoutMs = TIMEOUT_MS } = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), 'rule-mgr-'))
   const promptFile = path.join(dir, 'prompt.txt')
   writeFileSync(promptFile, prompt)
-  // cmd.exe /c로 .ps1/.cmd 래퍼를 실행하고 프롬프트 파일을 type으로 stdin 대신 전달
-  const { stdout } = await execFileAsync(
-    'cmd.exe',
-    ['/d', '/s', '/c', `opencode run --model ${model} -p "@${promptFile}"`],
-    { timeout: timeoutMs, windowsHide: true, cwd: dir, maxBuffer: 32 * 1024 * 1024 }
-  )
-  return String(stdout || '')
+  try {
+    const { stdout } = await execFileAsync(
+      'cmd.exe',
+      ['/d', '/s', '/c', buildOpenCodeCommand(promptFile, model)],
+      { timeout: timeoutMs, windowsHide: true, cwd: dir, maxBuffer: 32 * 1024 * 1024 }
+    )
+    return String(stdout || '')
+  } catch (e) {
+    // 실패 원인(인증·모델 오류 등)을 로그에서 바로 볼 수 있게 stderr 꼬리를 붙인다
+    const tail = String((e && e.stderr) || (e && e.stdout) || e.message || '').trim().slice(-300)
+    throw new Error(`opencode 실행 실패 — ${tail || e.message}`)
+  }
 }
 
 // 응답에서 JSON만 추출(코드펜스·앞뒤 설명 제거) — 관리자 도구 extractRuleJson과 동일 계약
