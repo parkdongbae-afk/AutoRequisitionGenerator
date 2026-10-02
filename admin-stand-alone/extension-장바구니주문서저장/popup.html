@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+  body { width: 300px; font-family: 'Malgun Gothic', sans-serif; font-size: 13px; margin: 0; padding: 10px; color: #0f172a; }
+  h1 { font-size: 14px; margin: 0 0 8px; }
+  .row { margin: 4px 0; }
+  .lbl { color: #64748b; }
+  .val { font-weight: 700; }
+  .ok { color: #1a7f37; } .warn { color: #b45309; } .err { color: #dc2626; }
+  button { width: 100%; padding: 8px 0; margin-top: 8px; cursor: pointer; border: none; border-radius: 6px;
+           background: #5B4DFB; color: #fff; font-size: 13px; font-weight: 700; }
+  button:disabled { background: #c7c7c7; cursor: not-allowed; }
+  #msg { margin-top: 6px; font-size: 12px; min-height: 16px; }
+  #srv { font-size: 11px; color: #94a3b8; margin-top: 6px; }
+</style>
+</head>
+<body>
+<h1>장바구니/주문서 저장</h1>
+<div class="row"><span class="lbl">쇼핑몰: </span><span class="val" id="mall">-</span></div>
+<div class="row"><span class="lbl">화면 종류: </span><span class="val" id="kind">확인 중…</span></div>
+<div class="row"><span class="lbl">배송비: </span><span class="val" id="ship">확인 중…</span></div>
+<div class="row"><span class="lbl">상품 행: </span><span class="val" id="cnt">-</span>개</div>
+<div class="row"><span class="lbl">화면 총액: </span><span class="val" id="tot">-</span></div>
+<button id="send" disabled>⬆ 쇼핑몰 규칙 관리자로 전송</button>
+<div id="msg"></div>
+<div id="srv"></div>
+<script src="detect-fn.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

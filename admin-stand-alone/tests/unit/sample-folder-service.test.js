@@ -44,6 +44,7 @@ test('스캔 — 종류별 분류·html/mhtml 중복 제거(mhtml 우선)·폴�
     assert.equal(cart.find(c => c.shipTag === 'paid').path.includes('배송비발생'), true)
     for (const c of cart) assert.ok(c.answerPath, '같은 폴더의 정답이 매칭되어야 한다')
     assert.equal(scan.answers.length, 2)
+    assert.equal(scan.mallName, '무신사')
     const s = summarizeScan(scan)
     assert.equal(s.cart.free, 1)
     assert.equal(s.cart.paid, 1)

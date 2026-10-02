@@ -3,25 +3,144 @@ import DiffView from './DiffView.jsx'
 import { ruleIdFor, suggestBaseId } from '../../shared/rule-id.js'
 
 const KIND_LABEL = { order: '주문서', cart: '장바구니' }
+const SHIP_LABEL = { free: '배송비 무료', paid: '배송비 발생' }
+const SLOT_KEYS = ['order.free', 'order.paid', 'cart.free', 'cart.paid']
 
 export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
   const [mallName, setMallName] = useState('')
   const [baseId, setBaseId] = useState('')
   const [kinds, setKinds] = useState({ order: true, cart: false })
-  const [samples, setSamples] = useState({ order: [], cart: [] })
-  const [answerExcel, setAnswerExcel] = useState('')
+  const [slots, setSlots] = useState({ 'order.free': [], 'order.paid': [], 'cart.free': [], 'cart.paid': [] })
+  const [answers, setAnswers] = useState({ free: '', paid: '' })
   const [answerBasis, setAnswerBasis] = useState('common')
+  const [folderDir, setFolderDir] = useState('')
+  const [scanSummary, setScanSummary] = useState(null)
+  const [inbox, setInbox] = useState(null)
   const [model, setModel] = useState(settings && settings.generation && settings.generation.model || '')
   const [maxRepair, setMaxRepair] = useState(3)
-  const [opts, setOpts] = useState({
-    apply: true, rebuildBundle: true, registerBuiltin: false, gitCommit: false, gitPush: false
-  })
+  const [opts, setOpts] = useState({ rebuildBundle: true, registerBuiltin: false, gitCommit: false, gitPush: false })
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState([])
   const [generation, setGeneration] = useState(null)
   const [genDiffs, setGenDiffs] = useState({})
   const [msg, setMsg] = useState('')
   const logRef = useRef(null)
+
+  useEffect(() => {
+    const off = window.ruleMgr.generate.onProgress(m => setProgress(p => [...p.slice(-200), m]))
+    return off
+  }, [])
+  useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight }, [progress])
+  useEffect(() => { loadInbox() }, [])
+  useEffect(() => {
+    const off = window.ruleMgr.onInbox(() => loadInbox())
+    return off
+  }, [])
+
+  const loadInbox = async () => {
+    try {
+      const scan = await window.ruleMgr.inboxList()
+      setInbox(scan)
+      if (scan.mallName) setMallName(m => m || scan.mallName)
+      setSlots(s => {
+        const n = { ...s }
+        for (const c of scan.captures) {
+          const key = `${c.kind}.${c.shipTag || 'free'}`
+          if (!n[key]) continue
+          if (!n[key].some(x => x.path === c.path)) n[key].push({ path: c.path, metaPath: c.metaPath || null, tag: c.shipTag || 'free' })
+        }
+        return n
+      })
+    } catch {}
+  }
+
+  const effBaseId = baseId || suggestBaseId(mallName)
+  const selectedKinds = Object.entries(kinds).filter(([, v]) => v).map(([k]) => k)
+
+  const importFolder = async () => {
+    const dir = await window.ruleMgr.pickDir()
+    if (!dir) return
+    setFolderDir(dir)
+    try {
+      const scan = await window.ruleMgr.generate.scanFolder(dir)
+      setScanSummary(scan.summary)
+      setSlots(s => {
+        const n = { ...s }
+        for (const c of scan.captures) {
+          const key = `${c.kind}.${c.shipTag || 'free'}`
+          if (!n[key]) n[key] = []
+          if (!n[key].some(x => x.path === c.path)) n[key].push({ path: c.path, answerPath: c.answerPath || null, tag: c.shipTag || 'free' })
+        }
+        return n
+      })
+      if (scan.mallName) setMallName(m => m || scan.mallName)
+      if (scan.answers.length) setAnswers(a => {
+        const n = { ...a }
+        for (const p of scan.answers) {
+          if (/무료/.test(p) && !n.free) n.free = p
+          else if (/유료|발생/.test(p) && !n.paid) n.paid = p
+        }
+        return n
+      })
+      setKinds(k => ({
+        order: k.order || scan.captures.some(c => c.kind === 'order'),
+        cart: k.cart || scan.captures.some(c => c.kind === 'cart')
+      }))
+    } catch (e) {
+      setMsg('폴더 불러오기 실패: ' + String(e.message || e))
+    }
+  }
+
+  const pickAnswer = async (ship) => {
+    const files = await window.ruleMgr.pickAnswer()
+    if (files && files.length) setAnswers(a => ({ ...a, [ship]: files[0] }))
+  }
+  const addSlotFiles = async (key) => {
+    const files = await window.ruleMgr.pickSamples()
+    if (!files || !files.length) return
+    const ship = key.split('.')[1]
+    setSlots(s => ({ ...s, [key]: [...s[key], ...files.slice(0, 8).map(p => ({ path: p, tag: ship }))] }))
+  }
+
+  const payload = () => {
+    const samplesByKind = { order: [], cart: [] }
+    for (const key of Object.keys(slots)) {
+      const [kind, ship] = key.split('.')
+      for (const e of slots[key]) {
+        samplesByKind[kind].push({
+          path: e.path,
+          tag: ship,
+          answerPath: answers[ship] || e.answerPath || undefined,
+          metaPath: e.metaPath || undefined
+        })
+      }
+    }
+    return {
+      mallName, baseId: effBaseId, kinds: selectedKinds, samplesByKind,
+      answers: { free: answers.free || undefined, paid: answers.paid || undefined },
+      answerExcel: answers.free || answers.paid || answerExcelFallback(),
+      answerBasis, model, maxRepair
+    }
+  }
+  const answerExcelFallback = () => {
+    for (const key of Object.keys(slots)) for (const e of slots[key]) if (e.answerPath) return e.answerPath
+    return null
+  }
+
+  const run = async () => {
+    setRunning(true)
+    setProgress([])
+    setGeneration(null)
+    setMsg('')
+    try {
+      const res = await window.ruleMgr.generate.start(payload())
+      setGeneration(res)
+      setMsg('생성 완료 — 아래 결과를 확인하고 적용하세요')
+    } catch (e) {
+      setMsg('생성 실패: ' + String(e.message || e))
+    }
+    setRunning(false)
+  }
 
   useEffect(() => {
     if (!generation || !generation.results) return
@@ -36,78 +155,6 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
     })()
   }, [generation])
 
-  useEffect(() => {
-    const off = window.ruleMgr.generate.onProgress(m => {
-      setProgress(p => [...p.slice(-200), m])
-    })
-    return off
-  }, [])
-  useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight }, [progress])
-
-  const effBaseId = baseId || suggestBaseId(mallName)
-  const selectedKinds = Object.entries(kinds).filter(([, v]) => v).map(([k]) => k)
-
-  const pickSample = async (kind) => {
-    const files = await window.ruleMgr.pickSamples()
-    if (files && files.length) {
-      setSamples(s => ({ ...s, [kind]: files.slice(0, 8).map(p => ({ path: p, answerPath: null, tag: '' })) }))
-    }
-  }
-  const pickAnswer = async () => {
-    const files = await window.ruleMgr.pickAnswer()
-    if (files && files.length) setAnswerExcel(files[0])
-  }
-
-  const [folderDir, setFolderDir] = useState('')
-  const [scanSummary, setScanSummary] = useState(null)
-  const importFolder = async () => {
-    const dir = await window.ruleMgr.pickDir()
-    if (!dir) return
-    setFolderDir(dir)
-    try {
-      const scan = await window.ruleMgr.generate.scanFolder(dir)
-      setScanSummary(scan.summary)
-      setSamples({
-        order: scan.captures.filter(c => c.kind === 'order'),
-        cart: scan.captures.filter(c => c.kind === 'cart')
-      })
-      // 스캔에 캡처가 있는 화면 종류는 생성 대상을 자동으로 켠다 — 한쪽 파일이 무시되지 않게
-      setKinds(k => ({
-        order: k.order || scan.captures.some(c => c.kind === 'order'),
-        cart: k.cart || scan.captures.some(c => c.kind === 'cart')
-      }))
-      if (scan.answers.length) setAnswerExcel(scan.answers[0])
-    } catch (e) {
-      setMsg('폴더 불러오기 실패: ' + String(e.message || e))
-    }
-  }
-
-  const payload = () => ({
-    mallName,
-    baseId: effBaseId,
-    kinds: selectedKinds,
-    samplesByKind: samples,
-    answerExcel,
-    answerBasis,
-    model,
-    maxRepair
-  })
-
-  const run = async () => {
-    setRunning(true)
-    setProgress([])
-    setGeneration(null)
-    setMsg('')
-    try {
-      const res = await window.ruleMgr.generate.start(payload())
-      setGeneration(res)
-      setMsg('생성 완료 — 아래 결과를 확인하고 적용하세요')
-    } catch (e) {
-      setMsg('생성 실패: ' + String(e.message || e).split('\n')[0])
-    }
-    setRunning(false)
-  }
-
   const apply = async () => {
     if (!generation) return
     try {
@@ -117,7 +164,6 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
         registerBuiltin: opts.registerBuiltin,
         git: opts.gitCommit ? { commit: true, push: opts.gitPush, message: `feat: ${mallName} 쇼핑몰 규칙 추가 및 rules.json 갱신` } : null
       })
-      // §19 — 관리자가 적용을 선택하면 Shadow 레코드의 adminDecision을 approve로 확정
       for (const a of r.applied) await window.ruleMgr.shadowResolve(a.ruleId, 'approve')
       const errs = r.errors && r.errors.length ? ` — 오류: ${r.errors.join('; ')}` : ''
       setMsg(`적용 완료: 규칙 ${r.applied.length}건${r.bundle ? ` · rules.json v${r.bundle.version}` : ''}${r.git ? ' · Git 커밋됨' : ''}${errs} · Shadow 기록: 승인(approve)`)
@@ -134,85 +180,112 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
     setMsg(`Shadow 판정 기록 완료: ${ids.join(', ')} → ${decision}`)
   }
 
+  const installExtension = async () => {
+    try {
+      const r = await window.ruleMgr.extensionInstall()
+      alert('확장 프로그램 폴더를 열었습니다.\n\n' + r.guide)
+    } catch (e) {
+      setMsg('확장 설치 준비 실패: ' + String(e.message || e))
+    }
+  }
+
   return (
     <section style={{ border: '2px solid #DDD9FC', borderRadius: 10, padding: 14, marginBottom: 14 }}>
       <h2 style={{ fontSize: 15, margin: '0 0 8px' }}>🤖 새 규칙 만들기 — AI 자동 생성 (§7.6)</h2>
 
       <div style={{ fontSize: 12, display: 'grid', gridTemplateColumns: '110px 1fr', rowGap: 6, alignItems: 'center' }}>
         <label>쇼핑몰 이름</label>
-        <input value={mallName} onChange={e => setMallName(e.target.value)} placeholder="예: 무신사" style={inp} />
+        <input value={mallName} onChange={e => setMallName(e.target.value)} placeholder="예: 무신사 (확장 전송·폴더 불러오기 시 자동)" style={inp} />
         <label>기본 ID</label>
         <input value={baseId} onChange={e => setBaseId(e.target.value)} placeholder={effBaseId || '쇼핑몰 이름에서 자동'} style={inp} />
         <label>생성 대상</label>
         <span style={{ display: 'flex', gap: 14 }}>
           {['order', 'cart'].map(k => (
             <label key={k}>
-              <input
-                type="checkbox"
-                checked={kinds[k]}
-                onChange={e => setKinds({ ...kinds, [k]: e.target.checked })}
-              /> {KIND_LABEL[k]} → <code>{ruleIdFor(effBaseId, k)}</code>
+              <input type="checkbox" checked={kinds[k]} onChange={e => setKinds({ ...kinds, [k]: e.target.checked })} /> {KIND_LABEL[k]} → <code>{ruleIdFor(effBaseId, k)}</code>
             </label>
           ))}
         </span>
-        <label>캡처 폴더</label>
-        <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button onClick={importFolder} style={btnSm}>📂 폴더 불러오기</button>
+      </div>
+
+      <div style={{ marginTop: 10, fontSize: 12 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button onClick={importFolder} style={btnSm}>📂 캡처 폴더 불러오기</button>
+          <button onClick={installExtension} style={btnSm}>🧩 확장 프로그램 설치</button>
+          <button onClick={loadInbox} style={btnSm}>📥 확장 수신함 새로고침</button>
           <span style={{ fontSize: 11, color: '#64748b' }}>
-            {folderDir ? folderDir.split(/[\\/]/).pop() : '폴더 지정 시 장바구니·주문서·정답을 자동 분류 (파일명/폴더명: 장바구니·주문서, 무료·유료)'}
+            {folderDir ? folderDir.split(/[\\/]/).pop() : '폴더 지정 시 장바구니·주문서·무료/유료·정답을 자동 분류 (파일명/폴더명: 장바구니·주문서·무료·유료/발생)'}
           </span>
-        </span>
+        </div>
+        {inbox && inbox.captures.length > 0 && (
+          <p style={{ fontSize: 11, color: '#1a7f37', margin: '6px 0' }}>
+            📥 확장 수신함 {inbox.captures.length}건 자동 사용 중 ({inbox.captures.map(c => `${KIND_LABEL[c.kind] || c.kind}/${SHIP_LABEL[c.shipTag] || c.shipTag}`).join(', ')})
+          </p>
+        )}
         {scanSummary && (
-          <span style={{ fontSize: 11, color: '#4c3de6', gridColumn: '2' }}>
+          <p style={{ fontSize: 11, color: '#4c3de6', margin: '6px 0' }}>
             불러옴: 주문서 {scanSummary.order.free + scanSummary.order.paid + scanSummary.order.unknown}건
             (무료 {scanSummary.order.free}/발생 {scanSummary.order.paid}) ·
             장바구니 {scanSummary.cart.free + scanSummary.cart.paid + scanSummary.cart.unknown}건
             (무료 {scanSummary.cart.free}/발생 {scanSummary.cart.paid}) · 정답 {scanSummary.answers}개
-            {scanSummary.merged ? ` · html/mhtml 중복 ${scanSummary.merged}쌍 병합(mhtml 우선)` : ''}
-            {scanSummary.truncated ? ' · 40개 초과 일부 생략' : ''}
-            {' · '}<b>생성 대상이 자동 선택됨</b>
-          </span>
+            {scanSummary.merged ? ` · html/mhtml 중복 ${scanSummary.merged}쌍 병합` : ''}
+            {mallName ? ` · 쇼핑몰 이름 자동 입력: ${mallName}` : ''}
+          </p>
         )}
-        {selectedKinds.map(k => (
-          <React.Fragment key={k}>
-            <label>{KIND_LABEL[k]} 샘플</label>
-            <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <button onClick={() => pickSample(k)} style={btnSm}>파일 직접 선택</button>
-              <span style={{ fontSize: 11, color: '#64748b' }}>
-                {samples[k].length ? samples[k].map(s => s.path.split(/[\\/]/).pop()).join(', ') : '없음'}
-              </span>
-            </span>
-          </React.Fragment>
-        ))}
-        <label>정답 Excel</label>
-        <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button onClick={pickAnswer} style={btnSm}>파일 선택</button>
-          <span style={{ fontSize: 11, color: '#64748b' }}>{answerExcel ? answerExcel.split(/[\\/]/).pop() : '없음'}</span>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+          {SLOT_KEYS.map(key => {
+            const [kind, ship] = key.split('.')
+            const arr = slots[key]
+            return (
+              <div key={key} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 8 }}>
+                <b>{KIND_LABEL[kind]} · {SHIP_LABEL[ship]}</b>
+                <span style={{ color: '#94a3b8', fontSize: 11 }}> {arr.length}건</span>
+                <div style={{ marginTop: 4 }}>
+                  <button onClick={() => addSlotFiles(key)} style={btnSm}>＋ 파일 추가</button>
+                </div>
+                {arr.length > 0 && (
+                  <ul style={{ margin: '4px 0 0', paddingLeft: 14, fontSize: 10, color: '#475569' }}>
+                    {arr.map(e => <li key={e.path}>{e.path.split(/[\\/]/).pop()}</li>)}
+                  </ul>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+          {['free', 'paid'].map(ship => (
+            <div key={ship} style={{ border: '1px dashed #c7d2fe', borderRadius: 8, padding: 8 }}>
+              <b>{SHIP_LABEL[ship]} 정답 Excel</b>
+              <div style={{ marginTop: 4 }}>
+                <button onClick={() => pickAnswer(ship)} style={btnSm}>파일 선택</button>
+              </div>
+              <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{answers[ship] ? answers[ship].split(/[\\/]/).pop() : '없음 — 태그된 캡처의 폴더 정답 사용'}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: 8 }}>
+          <label>정답 기준 화면 </label>
           <select value={answerBasis} onChange={e => setAnswerBasis(e.target.value)} style={inpSm}>
-            <option value="order">정답 기준: 주문서</option>
-            <option value="cart">정답 기준: 장바구니</option>
+            <option value="order">주문서</option>
+            <option value="cart">장바구니</option>
             <option value="common">공통/알 수 없음 (0건만 판정)</option>
           </select>
-        </span>
-        <label>모델</label>
-        <select value={model} onChange={e => setModel(e.target.value)} style={inpSm}>
-          <option value="">기본 (브리지 기본 모델)</option>
-          {bridge && bridge.codingPlanModels && bridge.codingPlanModels.map(m => (
-            <option key={m.id} value={m.id}>{m.model}</option>
-          ))}
-        </select>
-        <label>자가 수정</label>
-        <span>
-          최대 <input type="number" min="0" max="3" value={maxRepair} onChange={e => setMaxRepair(Math.max(0, Math.min(3, Number(e.target.value) || 0)))} style={{ width: 40 }} />회
-          {' · '}
-          <label><input type="checkbox" checked={opts.rebuildBundle} onChange={e => setOpts({ ...opts, rebuildBundle: e.target.checked })} /> rules.json 재생성</label>
-          {' '}
-          <label><input type="checkbox" checked={opts.registerBuiltin} onChange={e => setOpts({ ...opts, registerBuiltin: e.target.checked })} /> builtin 등록</label>
-          {' '}
-          <label><input type="checkbox" checked={opts.gitCommit} onChange={e => setOpts({ ...opts, gitCommit: e.target.checked })} /> Git 커밋</label>
-          {' '}
-          <label><input type="checkbox" checked={opts.gitPush} disabled={!opts.gitCommit} onChange={e => setOpts({ ...opts, gitPush: e.target.checked })} /> push</label>
-        </span>
+          <span style={{ fontSize: 10, color: '#94a3b8' }}> — 무료/유료 정답 2개를 각각 넣으면 자동으로 캡처별 대조됩니다</span>
+        </div>
+
+        <div style={{ marginTop: 8 }}>
+          <label>모델 </label>
+          <select value={model} onChange={e => setModel(e.target.value)} style={inpSm}>
+            <option value="">기본 (GLM-5.3)</option>
+            {bridge && bridge.codingPlanModels && bridge.codingPlanModels.map(m => (
+              <option key={m.id} value={m.id}>{m.model}</option>
+            ))}
+          </select>
+          {' · '}자가 수정 최대 <input type="number" min="0" max="3" value={maxRepair} onChange={e => setMaxRepair(Math.max(0, Math.min(3, Number(e.target.value) || 0)))} style={{ width: 40 }} />회
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
@@ -228,11 +301,20 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
         </pre>
       )}
 
-      {msg && <p style={{ fontSize: 12, color: '#4c3de6', marginTop: 6 }}>{msg}</p>}
+      {msg && <p style={{ fontSize: 12, color: msg.startsWith('생성 실패') || msg.includes('일치하지 않아') ? '#dc2626' : '#4c3de6', marginTop: 6, whiteSpace: 'pre-wrap' }}>{msg}</p>}
+
+      {generation && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, fontSize: 11, color: '#64748b' }}>
+          <span>관리자 판정 기록(§19 Shadow):</span>
+          <button onClick={() => recordDecision('approve')} style={btnSm}>승인(approve)</button>
+          <button onClick={() => recordDecision('repair')} style={btnSm}>수정 필요(repair)</button>
+          <button onClick={() => recordDecision('reject')} style={btnSm}>폐기(reject)</button>
+        </div>
+      )}
 
       {generation && generation.results && generation.results.map(r => (
         <div key={r.kind} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 10, marginTop: 8, fontSize: 12 }}>
-          <b>{KIND_LABEL[r.kind]} ({r.ruleId})</b> — 상태:{' '}
+          <b>{KIND_LABEL[r.kind] || r.kind} ({r.ruleId})</b> — 상태:{' '}
           <b style={{ color: r.status === 'approved' ? '#1a7f37' : r.status === 'repaired' ? '#b45309' : '#dc2626' }}>{r.status}</b>
           {r.decision && <> · 판정: {r.decision.action} ({r.decision.reason})</>}
           {r.deterministic && (
@@ -266,16 +348,8 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
           )}
         </div>
       ))}
-      {generation && (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, fontSize: 11, color: '#64748b' }}>
-          <span>관리자 판정 기록(§19 Shadow):</span>
-          <button onClick={() => recordDecision('approve')} style={btnSm}>승인(approve)</button>
-          <button onClick={() => recordDecision('repair')} style={btnSm}>수정 필요(repair)</button>
-          <button onClick={() => recordDecision('reject')} style={btnSm}>폐기(reject)</button>
-        </div>
-      )}
       <p style={{ fontSize: 11, color: '#94a3b8', margin: '8px 0 0' }}>
-        안전 기본값: 생성 결과는 로컬 검증 + Jev 판정 통과분만 승인됩니다. Shadow Mode 사용 중에는 판정이 기록만 되고, Git push는 직접 선택해야 수행됩니다.
+        안전 기본값: 생성 결과는 로컬 검증 + Jev 판정 통과분만 승인됩니다. 무료/유료 정답 2개를 넣으면 캡처별로 자동 대조되며, 화면 총액과 정답이 다르면 AI 실행 전에 차단됩니다.
       </p>
     </section>
   )

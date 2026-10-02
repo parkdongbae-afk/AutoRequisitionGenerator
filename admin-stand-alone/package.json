@@ -1,6 +1,6 @@
 {
   "name": "shopping-mall-rule-manager",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "productName": "쇼핑몰 규칙 관리자",
   "description": "단독 실행형 쇼핑몰 규칙 관리 프로그램 (ADMIN_SATAD_ALONE.MD)",
   "main": "./out/main/index.js",
@@ -14,6 +14,12 @@
     "manual": "node analysis/make-manual-pdf.js"
   },
   "build": {
+    "extraResources": [
+      {
+        "from": "extension-장바구니주문서저장",
+        "to": "extension-장바구니주문서저장"
+      }
+    ],
     "appId": "kr.school.shopping-mall-rule-manager",
     "productName": "쇼핑몰 규칙 관리자",
     "directories": {

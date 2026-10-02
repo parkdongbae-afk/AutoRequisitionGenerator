@@ -87,7 +87,25 @@ export function scanCaptureFolder(dir) {
   }
   captures.sort((a, b) => a.path.localeCompare(b.path))
   answers.sort((a, b) => a.localeCompare(b))
-  return { captures, answers: [...new Set(answers)], skipped, truncated, merged }
+  return { captures, answers: [...new Set(answers)], skipped, truncated, merged, mallName: guessMallName(captures, dir) }
+}
+
+// 쇼핑몰 이름 — 모든 캡처가 공유하는 가장 깊은 공통 폴더 이름(관례상 쇼핑몰명 폴더).
+// 공통 폴더가 없으면(바로 스캔한 폴더에 흩어진 경우) 스캔 폴더명으로 폴백한다.
+function guessMallName(captures, scanDir) {
+  if (!captures.length) return path.basename(path.resolve(scanDir))
+  const rels = captures.map(c => path.relative(scanDir, c.path).split(path.sep).slice(0, -1))
+  let common = rels[0]
+  for (const parts of rels.slice(1)) {
+    const next = []
+    for (let i = 0; i < Math.min(common.length, parts.length); i++) {
+      if (common[i] === parts[i]) next.push(common[i])
+      else break
+    }
+    common = next
+  }
+  if (common.length) return common[common.length - 1]
+  return path.basename(path.resolve(scanDir))
 }
 
 // 캡처 폴더에 정답이 없으면 상위 폴더(스캔 루트까지)의 정답으로 폴백한다 — 정답 1개 공용 구조 지원

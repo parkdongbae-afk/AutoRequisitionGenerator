@@ -22,6 +22,13 @@ contextBridge.exposeInMainWorld('ruleMgr', {
   pickDir: () => ipcRenderer.invoke('pick:dir'),
   shadowCollectFixtures: () => ipcRenderer.invoke('shadow:collect-fixtures'),
   shadowResolve: (ruleId, adminDecision) => ipcRenderer.invoke('shadow:resolve', ruleId, adminDecision),
+  inboxList: () => ipcRenderer.invoke('inbox:list'),
+  onInbox: cb => {
+    const h = () => cb()
+    ipcRenderer.on('inbox:new', h)
+    return () => ipcRenderer.removeListener('inbox:new', h)
+  },
+  extensionInstall: () => ipcRenderer.invoke('extension:install'),
   git: {
     status: () => ipcRenderer.invoke('git:status'),
     diff: paths => ipcRenderer.invoke('git:diff', paths),

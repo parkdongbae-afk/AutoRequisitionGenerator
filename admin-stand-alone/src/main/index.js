@@ -2,7 +2,7 @@
  * 쇼핑몰 규칙 관리자 — 단독 실행형(ADMIN_SATAD_ALONE.MD)
  * 사용자용 앱과 이름·userData·단일 인스턴스 잠금·수신 포트를 공유하지 않는다(§4.2).
  */
-import { app, BrowserWindow, ipcMain, dialog, protocol, net, safeStorage } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, net, safeStorage, shell } from 'electron'
 import { join } from 'node:path'
 import fs from 'node:fs'
 import { detectBridge } from './services/zai-tool-bridge.js'
@@ -24,6 +24,7 @@ import { runShadowFixtures } from './services/shadow-fixtures.js'
 import { scanCaptureFolder, summarizeScan } from './services/sample-folder-service.js'
 import { gitStatus, gitDiff, gitStage, gitCommit as gitCommitFiles, gitPush, gitAheadBehind } from './services/git-service.js'
 import { createLogStore, maskSecrets } from './services/log-service.js'
+import { startReceiver, stopReceiver } from './services/receiver-service.js'
 import {
   prepareGenerationRequest, runGeneration, applyGenerationResult
 } from './services/generation-service.js'
@@ -42,6 +43,7 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let mainWindow = null
+let receiver = null
 
 // §7.9 — 운영 로그는 링 버퍼로 모아 하단 상태바·로그 패널에 중계한다
 function opLog(level, step, message, detail = '') {
@@ -79,6 +81,8 @@ if (!gotLock) {
   })
 
   app.whenReady().then(async () => {
+  // 시작 오류가 조용히 죽지 않게 가시화한다 — whenReady 본문 예외는 창 없는 무한 대기로 이어진다
+  process.on('unhandledRejection', e => console.error('[startup] unhandled:', e && e.message || e))
     const userDataDir = app.getPath('userData')
 
     protocol.handle('admin-sample', (request) => {
@@ -291,6 +295,43 @@ if (!gotLock) {
     }))
     ipcMain.handle('shadow:resolve', (_e, ruleId, adminDecision) => resolveAdminDecision(userDataDir, ruleId, adminDecision))
 
+    // 확장 프로그램 수신 서버(§7.6 확장 연동) — 127.0.0.1 전용, 사용자용 앱 포트(57330~35)와 분리
+    startReceiver(join(userDataDir, 'inbox'), {
+      log: m => {
+        opLog('info', 'inbox', m)
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('inbox:new', { at: Date.now() })
+      }
+    }).then(r => {
+      receiver = r
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('inbox:new', { port: r.port })
+    }).catch(e => opLog('warn', 'inbox', `수신 서버 시작 실패 — ${String(e.message || e)}`))
+    ipcMain.handle('inbox:list', () => {
+      const scan = scanCaptureFolder(join(userDataDir, 'inbox'))
+      return {
+        mallName: scan.mallName,
+        captures: scan.captures.map(c => {
+          let meta = null
+          const metaPath = c.path.replace(/\.(mhtml?|mht|html?)$/i, '.meta.json')
+          try { meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8')) } catch {}
+          return { ...c, metaPath, meta: meta || null }
+        }),
+        answers: scan.answers
+      }
+    })
+    ipcMain.handle('extension:install', async () => {
+      const src = fs.existsSync(join(process.resourcesPath || '', 'extension-장바구니주문서저장'))
+        ? join(process.resourcesPath, 'extension-장바구니주문서저장')
+        : join(app.getAppPath(), 'extension-장바구니주문서저장')
+      const dest = join(userDataDir, 'extension-장바구니주문서저장')
+      fs.cpSync(src, dest, { recursive: true })
+      await shell.openPath(dest)
+      return {
+        dest,
+        port: receiver ? receiver.port : null,
+        guide: 'Chrome 주소창에 chrome://extensions → 개발자 모드 ON → [압축해제된 확장 프로그램을 로드] → 방금 연 폴더 선택.\n사용: 쇼핑몰 장바구니/주문서 화면에서 확장 아이콘 클릭 → 상태 확인 → [전송].'
+      }
+    })
+
     // 샘플 추출 검증(§7.7) + Git 배포(§7.8) — push 실패는 파일 적용 실패가 아니다(§17.5)
     ipcMain.handle('verify:samples', (_e, dir) => verifySamples(project ? project.repoRoot : resolveRepoRoot(), dir, {
       onProgress: m => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m) }
@@ -372,6 +413,7 @@ if (!gotLock) {
 }
 
 app.on('window-all-closed', () => {
+  if (receiver) stopReceiver(receiver.server)
   app.quit()
 })
 

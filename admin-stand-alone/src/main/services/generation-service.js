@@ -4,6 +4,7 @@
  * - 후보 생성 → 로컬 검증 → Jev 판정은 generate-and-verify 파이프라인에 위임한다.
  * - 이 파일은 화면(§7.6)과 파이프라인(§14) 사이의 연결을 담당한다.
  */
+import fs from 'node:fs'
 import { buildPromptText, buildRepairPromptText, sampleHtmlText, answerSummary } from '../../../../app/src/main/lib/admin-text.js'
 import { generateAndVerifyRule, extractJson } from './generate-and-verify.js'
 import { ruleChanges, gitCommit } from './rule-files.js'
@@ -82,18 +83,22 @@ export function prepareGenerationRequest(payload, { repoRoot = null } = {}) {
   const contexts = kinds.map(kind => {
     const samples = samplesByKind[kind].map((e, i) => {
       const { html, location } = sampleHtmlText(e.path)
+      const tag = e.tag || ''
       const sample = {
-        label: `샘플${i + 1}${SHIP_SUFFIX[e.tag || '']}`,
+        label: `샘플${i + 1}${SHIP_SUFFIX[tag]}`,
         html,
         location,
-        shipTag: e.tag || ''
+        shipTag: tag,
+        metaPath: e.metaPath || null
       }
-      if (e.answerPath) {
+      // 정답 매칭 우선순위: 항목 자체 answerPath → 무료/유료 슬롯 정답
+      const answerPath = e.answerPath || (tag && payload.answers && payload.answers[tag]) || null
+      if (answerPath) {
         try {
-          const a = answerSummary(e.answerPath)
+          const a = answerSummary(answerPath)
           if (a.mode === 'parsed' && a.items.length) {
             sample.expected = { items: a.items }
-            sample.expectedPath = e.answerPath
+            sample.expectedPath = answerPath
           }
         } catch {}
       }
@@ -119,6 +124,30 @@ export function prepareGenerationRequest(payload, { repoRoot = null } = {}) {
       for (const s of samples) {
         if (!s.expected && answerParsed && payload.answerBasis === kind) s.expected = { items: answer.items }
       }
+    }
+
+    // 사전 대조(토큰 낭비 방지) — 확장 캡처의 화면 총액·상품 행 수가 정답과 다르면
+    // AI를 실행하지 않고 즉시 에러로 차단한다(엉뚱한 정답 파일 방어).
+    const mismatches = []
+    for (const s of samples) {
+      if (!s.expected || !s.metaPath) continue
+      let meta
+      try { meta = JSON.parse(fs.readFileSync(s.metaPath, 'utf-8')) } catch { continue }
+      const expItems = s.expected.items.filter(i => !i.isShipping)
+      const expCnt = expItems.length
+      const expTot = expItems.reduce((sum, i) => sum + (Number(i.qty) || 1) * (Number(i.unitPrice) || 0), 0)
+      if (meta.pageTotal != null) {
+        const d = Math.abs(meta.pageTotal - expTot)
+        if (d > Math.max(10, expTot * 0.02)) mismatches.push(`${s.label}: 정답 총액 ${expTot.toLocaleString('ko-KR')}원 vs 캡처 화면 총액 ${Number(meta.pageTotal).toLocaleString('ko-KR')}원 — 정답 파일이 다른 캡처의 것으로 보입니다`)
+      }
+      if (meta.itemCount != null && meta.itemCount !== expCnt) {
+        mismatches.push(`${s.label}: 정답 건수 ${expCnt}건 vs 캡처 상품 행 ${meta.itemCount}건`)
+      }
+    }
+    if (mismatches.length) {
+      const e = new Error('정답 Excel과 캡처가 일치하지 않아 AI 생성을 중단합니다.\n' + mismatches.join('\n'))
+      e.code = 'ANSWER_MISMATCH'
+      throw e
     }
     // §7.6 — 정답 기준이 어느 화면인지 선택: 일치 화면만 건수·총액 비교,
     // 공통/알 수 없음·raw는 0건 여부만 필수 판정(경고 처리)한다
