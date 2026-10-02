@@ -501,11 +501,13 @@ async function runE2E(outPath, userDataDir) {
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
     const tmpXls = join(app.getPath('temp'), `rule-mgr-e2e-answer-${Date.now()}.xlsx`)
     XLSX.writeFile(wb, tmpXls)
+    const tmpXlsFree = join(app.getPath('temp'), `rule-mgr-e2e-answer-free-${Date.now()}.xlsx`)
+    XLSX.writeFile(wb, tmpXlsFree)
     const gen = await win.webContents.executeJavaScript(`window.ruleMgr.generate.start({
       mallName: "E2E몰", baseId: "e2emall", kinds: ["order"],
       samplesByKind: { order: [
         { path: ${JSON.stringify(tmpHtml)}, answerPath: ${JSON.stringify(tmpXls)}, tag: "paid" },
-        { path: ${JSON.stringify(tmpHtml2)}, answerPath: ${JSON.stringify(tmpXls)}, tag: "free" }
+        { path: ${JSON.stringify(tmpHtml2)}, answerPath: ${JSON.stringify(tmpXlsFree)}, tag: "free" }
       ] },
       answerExcel: ${JSON.stringify(tmpXls)}, answerBasis: "order",
       mockAi: true, mockJev: true

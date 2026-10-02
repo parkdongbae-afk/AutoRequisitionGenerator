@@ -90,14 +90,31 @@ export function prepareGenerationRequest(payload) {
       if (e.answerPath) {
         try {
           const a = answerSummary(e.answerPath)
-          if (a.mode === 'parsed' && a.items.length) sample.expected = { items: a.items }
+          if (a.mode === 'parsed' && a.items.length) {
+            sample.expected = { items: a.items }
+            sample.expectedPath = e.answerPath
+          }
         } catch {}
       }
       return sample
     })
+    let sharedExpected = null
+    let sharedMode = false
     const hasPerSample = samples.some(s => s.expected)
     if (hasPerSample) {
-      // 캡처별 정답 모드 — 자기 정답이 없는 샘플은 정답 기준 화면이 일치할 때 전역 정답으로 보완
+      // 정답 1개 공용 구조 — 모든 샘플이 같은 정답 파일을 가리키면 캡처별 대조가 아니라
+      // "샘플 합계 vs 정답" 모드로 전환한다. s.expected를 걷어내고 전역 정답으로 쓴다.
+      const distinctPaths = [...new Set(samples.filter(s => s.expected).map(s => s.expectedPath))]
+      if (distinctPaths.length === 1) {
+        sharedMode = true
+        const shared = answerSummary(distinctPaths[0])
+        const sharedParsed = shared.mode === 'parsed' && shared.items.length > 0
+        for (const s of samples) { delete s.expected; delete s.expectedPath }
+        sharedExpected = sharedParsed ? { items: shared.items } : null
+      }
+    }
+    if (!sharedMode) {
+      // 자기 정답이 없는 샘플은 정답 기준 화면이 일치할 때 전역 정답으로 보완
       for (const s of samples) {
         if (!s.expected && answerParsed && payload.answerBasis === kind) s.expected = { items: answer.items }
       }
@@ -105,17 +122,17 @@ export function prepareGenerationRequest(payload) {
     // §7.6 — 정답 기준이 어느 화면인지 선택: 일치 화면만 건수·총액 비교,
     // 공통/알 수 없음·raw는 0건 여부만 필수 판정(경고 처리)한다
     const basisOk = !hasPerSample && answerParsed && payload.answerBasis === kind
-    const expected = basisOk ? { items: answer.items } : null
+    const expected = sharedExpected || (basisOk ? { items: answer.items } : null)
 
     const promptSamples = pickPromptSamples(samples)
-    const promptAnswer = hasPerSample
+    const promptAnswer = hasPerSample && samples.some(s => s.expected)
       ? {
           mode: 'parsed',
           sheet: '캡처별 정답 요약',
           headerRow: 1,
           items: samples.filter(s => s.expected).flatMap(s => s.expected.items.map(it => ({ ...it, sample: s.label })))
         }
-      : answer
+      : (expected || answer)
     return {
       kind,
       ruleId: ruleIdFor(baseId, kind),

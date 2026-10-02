@@ -53,6 +53,21 @@ test('스캔 — 종류별 분류·html/mhtml 중복 제거(mhtml 우선)·폴�
   } finally { rmSync(mall, { recursive: true, force: true }) }
 })
 
+test('정답 1개 공용 — 하위 폴더에 정답이 없으면 루트 정답으로 폴백 매칭', () => {
+  const root = mkdtempSync(join(tmpdir(), 'mgr-scan-shared-'))
+  try {
+    const mall = join(root, '무신사')
+    for (const sub of ['배송비무료', '배송비발생']) {
+      mkdirSync(join(mall, sub), { recursive: true })
+      writeFileSync(join(mall, sub, '장바구니.mhtml'), 'MIME-Version: 1.0', 'utf-8')
+    }
+    writeFileSync(join(mall, '정답.xls'), 'x', 'utf-8')
+    const scan = scanCaptureFolder(mall)
+    assert.equal(scan.captures.length, 2)
+    assert.ok(scan.captures.every(c => c.answerPath && c.answerPath.endsWith('정답.xls')), '루트 정답으로 폴백 매칭')
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
 test('빈 폴더 — 정상 빈 결과', () => {
   const dir = mkdtempSync(join(tmpdir(), 'mgr-scan-empty-'))
   try {

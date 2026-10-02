@@ -78,17 +78,31 @@ export function scanCaptureFolder(dir) {
   walk(dir)
 
   for (const entry of byStem.values()) {
-    const localAnswer = findAnswer(path.dirname(entry.path))
     captures.push({
       path: entry.path,
       kind: entry.kind,
       shipTag: entry.shipTag,
-      answerPath: localAnswer
+      answerPath: findAnswerNearest(entry.path, dir)
     })
   }
   captures.sort((a, b) => a.path.localeCompare(b.path))
   answers.sort((a, b) => a.localeCompare(b))
   return { captures, answers: [...new Set(answers)], skipped, truncated, merged }
+}
+
+// 캡처 폴더에 정답이 없으면 상위 폴더(스캔 루트까지)의 정답으로 폴백한다 — 정답 1개 공용 구조 지원
+function findAnswerNearest(capturePath, scanRoot) {
+  let dir = path.dirname(capturePath)
+  const root = path.resolve(scanRoot)
+  for (let i = 0; i < 6; i++) {
+    const hit = findAnswer(dir)
+    if (hit) return hit
+    if (path.resolve(dir) === root) break
+    const up = path.dirname(dir)
+    if (up === dir) break
+    dir = up
+  }
+  return null
 }
 
 function findAnswer(dir) {

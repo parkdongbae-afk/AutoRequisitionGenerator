@@ -89,3 +89,36 @@ test('폴더 payload — 캡처별 정답으로 2샘플 교차 검증 승인까�
     assert.ok(existsSync(join(repo, 'app', 'src', 'main', 'lib', 'rules', 'foldtest-cart.json')))
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
+
+test('정답 1개 공용 — 모든 샘플이 같은 정답 파일이면 합계 대조 모드로 전환', async () => {
+  const { dir, f1, f2, rule } = setup()
+  try {
+    const f2Html = CAPTURE.replace('상품A', '상품C').replace('상품B', '상품D')
+    writeFileSync(f2, f2Html, 'utf-8')
+    const sharedAnswer = join(dir, '정답.xls')
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['품목명', '수량', '단가'],
+      ['상품A', 2, 10000],
+      ['상품B', 1, 3000],
+      ['상품C', 2, 10000],
+      ['상품D', 1, 3000]
+    ]), 'Sheet1')
+    XLSX.writeFile(wb, sharedAnswer)
+    const req = prepareGenerationRequest({
+      mallName: '폴더몰', baseId: 'foldtest', kinds: ['cart'],
+      samplesByKind: { cart: [{ path: f1, answerPath: sharedAnswer, tag: 'free' }, { path: f2, answerPath: sharedAnswer, tag: 'paid' }] },
+      answerExcel: sharedAnswer, answerBasis: 'cart'
+    })
+    const ctx = req.contexts[0]
+    assert.equal(ctx.samples.filter(s => s.expected).length, 0, '공용 정답은 캡처별 부착하지 않는다')
+    assert.equal(ctx.expected.items.length, 4, '공용 정답이 전역 expected로 전환(합계 대조 모드)')
+
+    const gen = await runGeneration(req, {
+      callAi: async () => JSON.stringify(rule),
+      callJev: mockJev
+    })
+    assert.equal(gen.results[0].status, 'approved', '두 캡처 합 4건 vs 정답 4건 → 통과')
+    assert.equal(gen.results[0].deterministic.perSample.length, 0)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
