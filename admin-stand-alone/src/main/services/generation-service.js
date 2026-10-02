@@ -155,7 +155,7 @@ export async function runGeneration(request, deps = {}) {
   const {
     callAi, callJev,
     model = '', maxRepair = 3, repoRoot = null,
-    onProgress = () => {}
+    onProgress = () => {}, onJudge
   } = deps
 
   const results = []
@@ -175,6 +175,7 @@ export async function runGeneration(request, deps = {}) {
         log: m => onProgress({ step: 'generate', kind: ctx.kind, message: m }),
         callAi: callAi ? (a => callAi({ ...a, kind: ctx.kind })) : undefined,
         callJev,
+        onJudge: onJudge ? (h => onJudge({ ...h, kind: ctx.kind })) : undefined,
         // 프롬프트는 기존 admin-text.js의 스키마 문서·few-shot 구성을 재사용한다(§4.1 권장안 A)
         promptBuilder: ({ samples: s, answer }) => buildPromptText({
           mallName: request.mallName, kind: ctx.kind, ruleId: ctx.ruleId,

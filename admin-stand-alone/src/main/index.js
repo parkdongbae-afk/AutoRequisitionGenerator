@@ -9,7 +9,7 @@ import { detectBridge } from './services/zai-tool-bridge.js'
 import { JevJudgeService } from './services/jev-judge-service.js'
 import { detectProjectRoot, projectInfo } from './services/project-service.js'
 import { rulesList, saveRule, deleteRuleTx, deleteRulePreview, registerBuiltinRules, rebuildRulesJson, resolveRepoRoot, gitCommit, listTransactions, rollbackTransaction } from './services/rules-service.js'
-import { appendShadowRecord, readShadowRecords } from './services/shadow-store.js'
+import { appendShadowRecord, readShadowRecords, resolveAdminDecision } from './services/shadow-store.js'
 import {
   loadSettings, saveSettings, storeTypesafeKey, loadTypesafeKey, clearTypesafeKey,
   shadowStats, autoApproveAllowed
@@ -237,6 +237,20 @@ if (!gotLock) {
         repoRoot: project ? project.repoRoot : resolveRepoRoot(),
         callAi: payload.mockAi ? mockAiFor(req) : undefined,
         callJev: payload.mockJev ? mockJev : undefined,
+        onJudge: ({ rule, deterministic, jevRes }) => {
+          // §19 실사용 수집 — 후보·수정 판정마다 Shadow 레코드 적재(adminDecision은 적용/폐기 시 확정).
+          // E2E 스모크가 남긴 기록은 통계에서 제외되도록 notes에 태그를 남긴다.
+          const isE2E = process.argv.includes('--e2e')
+          const localPass = deterministic.extractionSucceeded && deterministic.countMatches && deterministic.totalWithinTolerance
+          appendShadowRecord(userDataDir, {
+            ruleId: rule.id,
+            localDecision: localPass ? 'pass' : 'fail',
+            jevDecision: jevRes && jevRes.answers && jevRes.answers.deployment_ready && jevRes.answers.deployment_ready.value,
+            jevConfidence: jevRes && jevRes.answers && jevRes.answers.deployment_ready && jevRes.answers.deployment_ready.confidence,
+            adminDecision: '',
+            notes: isE2E ? 'e2e smoke' : '실사용 생성'
+          })
+        },
         onProgress: m => {
           if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m)
           opLog(m.kind === 'cart' || m.kind === 'order' ? 'info' : 'info', 'generate', `[${m.kind || '-'}] ${m.message}`)
@@ -272,6 +286,7 @@ if (!gotLock) {
         opLog('info', 'shadow', m.message)
       }
     }))
+    ipcMain.handle('shadow:resolve', (_e, ruleId, adminDecision) => resolveAdminDecision(userDataDir, ruleId, adminDecision))
 
     // 샘플 추출 검증(§7.7) + Git 배포(§7.8) — push 실패는 파일 적용 실패가 아니다(§17.5)
     ipcMain.handle('verify:samples', (_e, dir) => verifySamples(project ? project.repoRoot : resolveRepoRoot(), dir, {
@@ -519,6 +534,10 @@ async function runE2E(outPath, userDataDir) {
     if (gen && gen.results && gen.results[0] && gen.results[0].rule) {
       result.generationCheck.perSampleCount = gen.results[0].deterministic &&
         gen.results[0].deterministic.perSample && gen.results[0].deterministic.perSample.length
+      // Shadow 실사용 수집(§19) — 판정이 자동 기록되고 관리자 승인으로 확정된다
+      result.shadowResolveCheck = !!(await win.webContents.executeJavaScript(
+        'window.ruleMgr.shadowResolve("e2emall", "approve").then(r => r.updated >= 1).then(() => window.ruleMgr.jev.getStatus()).then(s => s.stats.records > 0)'
+      ))
       const applied = await win.webContents.executeJavaScript(
         `window.ruleMgr.generate.apply(${JSON.stringify(tmpRepo)}, ${JSON.stringify(gen)}, { apply: true, rebuildBundle: false })`
       )
@@ -592,6 +611,7 @@ async function runE2E(outPath, userDataDir) {
       && result.mappingCheck.checkedClick && result.mappingCheck.assemble
       && result.generationCheck.status === 'approved'
       && result.generationCheck.perSampleCount === 2
+      && result.shadowResolveCheck
       && result.generationCheck.applied && result.generationInputGate
       && result.transactionCheck && result.transactionCheck.listed
       && result.transactionCheck.foundApplied && result.transactionCheck.rolledBack

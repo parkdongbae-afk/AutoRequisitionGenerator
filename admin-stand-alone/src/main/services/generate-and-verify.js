@@ -65,10 +65,14 @@ function extractionDetails(d) {
 export async function generateAndVerifyRule({
   mallName, kind, ruleId, samples, expected, expectAnswer = false,
   model, count = 3, repairRounds = 3, log = () => {},
-  callAi, callJev, promptBuilder, repairPromptBuilder, promptSamples, promptAnswer
+  callAi, callJev, promptBuilder, repairPromptBuilder, promptSamples, promptAnswer, onJudge
 }) {
   const promptSampleList = promptSamples || samples
   const promptAnswerObj = promptAnswer || expected
+  // 후보·수정 판정마다 호출 — Shadow Mode 실사용 수집(§19)용 훅
+  const judgeHook = (rule, deterministic, jevRes, decision) => {
+    if (onJudge) onJudge({ rule, deterministic, jevRes, decision })
+  }
   const ai = callAi || (({ prompt }) => runOpenCodePrompt(prompt, { model }))
   const jev = callJev || (async (r) => { const { JevJudgeService } = await import('./jev-judge-service.js'); const s = new JevJudgeService(); return s.judgeCandidate(r) })
 
@@ -101,6 +105,7 @@ export async function generateAndVerifyRule({
       continue
     }
     const ev = await evaluateCandidate({ rule, samples, expected: promptAnswerObj || expected, jev })
+    judgeHook(rule, ev.deterministic, ev.jevRes, ev.decision)
     results.push({ rule, deterministic: ev.deterministic, jev: ev.jevRes, decision: ev.decision })
   }
 
@@ -144,6 +149,7 @@ export async function generateAndVerifyRule({
     }
     attempted.add(key)
     const ev = await evaluateCandidate({ rule, samples, expected: promptAnswerObj || expected, jev })
+    judgeHook(rule, ev.deterministic, ev.jevRes, ev.decision)
     repairHistory.push({ round, action: ev.decision.action, reason: ev.decision.reason })
     if (ev.decision.action === 'reject') break
     if (ev.deterministic.countMatches && ev.deterministic.totalWithinTolerance) {

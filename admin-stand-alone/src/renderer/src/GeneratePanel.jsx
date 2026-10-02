@@ -117,12 +117,21 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
         registerBuiltin: opts.registerBuiltin,
         git: opts.gitCommit ? { commit: true, push: opts.gitPush, message: `feat: ${mallName} 쇼핑몰 규칙 추가 및 rules.json 갱신` } : null
       })
+      // §19 — 관리자가 적용을 선택하면 Shadow 레코드의 adminDecision을 approve로 확정
+      for (const a of r.applied) await window.ruleMgr.shadowResolve(a.ruleId, 'approve')
       const errs = r.errors && r.errors.length ? ` — 오류: ${r.errors.join('; ')}` : ''
-      setMsg(`적용 완료: 규칙 ${r.applied.length}건${r.bundle ? ` · rules.json v${r.bundle.version}` : ''}${r.git ? ' · Git 커밋됨' : ''}${errs}`)
+      setMsg(`적용 완료: 규칙 ${r.applied.length}건${r.bundle ? ` · rules.json v${r.bundle.version}` : ''}${r.git ? ' · Git 커밋됨' : ''}${errs} · Shadow 기록: 승인(approve)`)
       onSaved && onSaved()
     } catch (e) {
       setMsg('적용 실패: ' + String(e.message || e).split('\n')[0])
     }
+  }
+
+  const recordDecision = async (decision) => {
+    if (!generation) return
+    const ids = generation.results.filter(r => r.rule).map(r => r.rule.id)
+    for (const id of ids) await window.ruleMgr.shadowResolve(id, decision)
+    setMsg(`Shadow 판정 기록 완료: ${ids.join(', ')} → ${decision}`)
   }
 
   return (
@@ -257,6 +266,14 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
           )}
         </div>
       ))}
+      {generation && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, fontSize: 11, color: '#64748b' }}>
+          <span>관리자 판정 기록(§19 Shadow):</span>
+          <button onClick={() => recordDecision('approve')} style={btnSm}>승인(approve)</button>
+          <button onClick={() => recordDecision('repair')} style={btnSm}>수정 필요(repair)</button>
+          <button onClick={() => recordDecision('reject')} style={btnSm}>폐기(reject)</button>
+        </div>
+      )}
       <p style={{ fontSize: 11, color: '#94a3b8', margin: '8px 0 0' }}>
         안전 기본값: 생성 결과는 로컬 검증 + Jev 판정 통과분만 승인됩니다. Shadow Mode 사용 중에는 판정이 기록만 되고, Git push는 직접 선택해야 수행됩니다.
       </p>

@@ -72,11 +72,15 @@ test('폴더 payload — 캡처별 정답으로 2샘플 교차 검증 승인까�
     assert.ok(ctx.promptAnswer.items.every(it => it.sample), '통합 정답에 샘플 라벨이 붙는다')
 
     const progress = []
+    const judged = []
     const gen = await runGeneration(req, {
       callAi: async () => JSON.stringify(rule),
       callJev: mockJev,
+      onJudge: h => judged.push(h),
       onProgress: m => progress.push(m)
     })
+    assert.ok(judged.length >= 2, '후보마다 Shadow 판정 훅이 호출된다')
+    assert.ok(judged.every(h => h.jevRes && h.rule && h.deterministic), '훅에 규칙·검증·Jev 결과가 전달된다')
     assert.equal(gen.results[0].status, 'approved')
     assert.equal(gen.results[0].deterministic.itemCount, 4, '두 캡처 합계 4건')
     assert.equal(gen.results[0].deterministic.perSample.length, 2)

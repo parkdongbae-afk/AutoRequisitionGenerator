@@ -128,8 +128,10 @@ export function clearTypesafeKey(userDataDir) {
  * localDecision은 로컬 검증 결과(pass/fail), jevDecision은 approve/repair/reject/human_review.
  */
 export function shadowStats(records) {
-  const all = Array.isArray(records) ? records : []
-  const judged = all.filter(r => r && r.jevDecision)
+  // E2E 스모크가 남긴 기록은 통계 오염이므로 제외한다(notes에 e2e 태그)
+  const all = (Array.isArray(records) ? records : [])
+    .filter(r => r && !/e2e/i.test(String(r.notes || '')))
+  const judged = all.filter(r => r.jevDecision)
   const withAdmin = judged.filter(r => r.adminDecision && r.adminDecision !== '')
   const agreed = withAdmin.filter(r => decisionAgrees(r)).length
   return {

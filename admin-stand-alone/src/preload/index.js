@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('ruleMgr', {
   verifySamples: dir => ipcRenderer.invoke('verify:samples', dir),
   pickDir: () => ipcRenderer.invoke('pick:dir'),
   shadowCollectFixtures: () => ipcRenderer.invoke('shadow:collect-fixtures'),
+  shadowResolve: (ruleId, adminDecision) => ipcRenderer.invoke('shadow:resolve', ruleId, adminDecision),
   git: {
     status: () => ipcRenderer.invoke('git:status'),
     diff: paths => ipcRenderer.invoke('git:diff', paths),
