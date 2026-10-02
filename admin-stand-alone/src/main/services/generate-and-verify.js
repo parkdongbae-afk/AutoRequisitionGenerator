@@ -3,44 +3,50 @@
  * Z.ai GLM(OpenCode 브리지) = 후보 생성·수정 / 로컬 검증기 = 수치 판정 / Jev = 의미 판정.
  * callAi·callJev를 주입받아 단위 테스트 가능하며, 기본값은 실제 브리지·Jev 서비스다.
  */
-import { execFile, spawn } from 'node:child_process'
-import { promisify } from 'node:util'
-import { mkdtempSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
+import { spawn } from 'node:child_process'
 import { verifyRule } from './rule-verifier.js'
 import { scoreCandidate } from './candidate-ranker.js'
 import { decideRuleAction } from './decision-gate.js'
 
-const execFileAsync = promisify(execFile)
 const TIMEOUT_MS = 180000
 export const DEFAULT_OPENCODE_MODEL = 'zai-coding-plan/glm-5.3'
 
-// opencode run 명령 조립 — 실측 규약(OpenCode 1.18.33):
-//   · 프롬프트는 위치 인자(message) 또는 -f(파일 첨부)로 전달 — -p는 password 옵션이다(혼용 금지)
-//   · -f는 배열 플래그라 뒤따르는 인자를 삼키므로 반드시 맨 마지막에 둔다
-//   · 긴 프롬프트는 파일 첨부로 전달하고(§10.3), 작업 디렉터리는 임시 폴더로 제한한다(§10.3)
-export function buildOpenCodeCommand(promptFile, model) {
+// opencode run 명령 — 실측 규약(OpenCode 1.18.33):
+//   · -p는 password 옵션이다(프롬프트 아님 — 혼용 금지)
+//   · 프롬프트는 stdin으로 전달: 파일 첨부(-f)는 cmd.exe 인자 따옴표 변형으로
+//     "File not found"가 발생하는 실측 문제가 있어 배제(160KB 프롬프트도 stdin 무관)
+//   · 명령 문자열에 공백·따옴표가 없어 cmd.exe 인자 변형으로부터 자유롭다
+export function buildOpenCodeCommand(model) {
   const m = String(model || '').trim() || DEFAULT_OPENCODE_MODEL
-  return `opencode run --model ${m} "Read the attached file prompt.txt and follow its instructions exactly. Output only the requested JSON." -f "${promptFile}"`
+  return `opencode run --model ${m}`
 }
 
-export async function runOpenCodePrompt(prompt, { model = '', timeoutMs = TIMEOUT_MS } = {}) {
-  const dir = mkdtempSync(path.join(tmpdir(), 'rule-mgr-'))
-  const promptFile = path.join(dir, 'prompt.txt')
-  writeFileSync(promptFile, prompt)
-  try {
-    const { stdout } = await execFileAsync(
-      'cmd.exe',
-      ['/d', '/s', '/c', buildOpenCodeCommand(promptFile, model)],
-      { timeout: timeoutMs, windowsHide: true, cwd: dir, maxBuffer: 32 * 1024 * 1024 }
-    )
-    return String(stdout || '')
-  } catch (e) {
-    // 실패 원인(인증·모델 오류 등)을 로그에서 바로 볼 수 있게 stderr 꼬리를 붙인다
-    const tail = String((e && e.stderr) || (e && e.stdout) || e.message || '').trim().slice(-300)
-    throw new Error(`opencode 실행 실패 — ${tail || e.message}`)
-  }
+export function runOpenCodePrompt(prompt, { model = '', timeoutMs = TIMEOUT_MS } = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('cmd.exe', ['/d', '/s', '/c', buildOpenCodeCommand(model)], {
+      windowsHide: true,
+      stdio: ['pipe', 'pipe', 'pipe']
+    })
+    let stdout = ''
+    let stderr = ''
+    const timer = setTimeout(() => {
+      try { child.kill() } catch {}
+      reject(new Error(`opencode 응답 시간 초과(${timeoutMs / 1000}초) — 모델·인증 상태를 확인하세요`))
+    }, timeoutMs)
+    child.stdout.on('data', d => { stdout += d })
+    child.stderr.on('data', d => { stderr += d })
+    child.on('error', e => {
+      clearTimeout(timer)
+      reject(new Error(`opencode 실행 실패 — ${String(e.message || e)}`))
+    })
+    child.on('close', code => {
+      clearTimeout(timer)
+      if (code === 0) resolve(String(stdout || ''))
+      else reject(new Error(`opencode 실행 실패(code ${code}) — ${String(stderr || stdout).trim().slice(-300)}`))
+    })
+    child.stdin.write(String(prompt || ''), 'utf-8')
+    child.stdin.end()
+  })
 }
 
 // 응답에서 JSON만 추출(코드펜스·앞뒤 설명 제거) — 관리자 도구 extractRuleJson과 동일 계약
