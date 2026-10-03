@@ -30,6 +30,12 @@ contextBridge.exposeInMainWorld('ruleMgr', {
   shadowResolve: (ruleId, adminDecision) => ipcRenderer.invoke('shadow:resolve', ruleId, adminDecision),
   versions: () => ipcRenderer.invoke('versions:get'),
   versionsRemote: () => ipcRenderer.invoke('versions:remote'),
+  updateCheck: {
+    getStatus: () => ipcRenderer.invoke('update-check:get-status'),
+    setShops: shops => ipcRenderer.invoke('update-check:set-shops', shops),
+    runNow: () => ipcRenderer.invoke('update-check:run-now'),
+    setEmailPass: plain => ipcRenderer.invoke('update-check:set-email-pass', plain)
+  },
   inboxList: () => ipcRenderer.invoke('inbox:list'),
   onInbox: cb => {
     const h = () => cb()

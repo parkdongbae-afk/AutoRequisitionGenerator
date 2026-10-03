@@ -118,6 +118,38 @@ function extractJsonObject(text) {
   throw new Error('응답 JSON이 완전하지 않습니다 — ' + s.slice(start, start + 120))
 }
 
+export async function summarizeUpdate({ apiKey, model, shopName, diffText, fetchImpl = fetch, timeoutMs = TIMEOUT_MS }) {
+  const prompt = [
+    `아래 텍스트는 쇼핑몰 "${shopName}"의 규칙/정책에서 새로 변경된 부분입니다.`,
+    '관리자에게 영향을 줄 수 있는 핵심 변경 사항만 5줄 이내로 요약해 주세요.',
+    '가능한 한 적용 일자, 수수료/배송/환불/패널티 관련 변경 여부를 구분해서 알려주세요.',
+    '응답은 다음 JSON만 출력하세요: {"summary":"변경 사항 요약(짧은 한국어)","impact":"관리자/운영 영향 포인트(없으면 빈 문자열)"}',
+    '',
+    '--- 변경 텍스트 ---',
+    String(diffText || '').slice(0, 4000)
+  ].join('\n')
+  const parts = [{ text: prompt }]
+  let data
+  const used = []
+  try {
+    used.push(model || DEFAULT_GEMINI_MODEL)
+    data = await generateOnce(fetchImpl, apiKey, model || DEFAULT_GEMINI_MODEL, parts, timeoutMs)
+  } catch (e) {
+    const notFound = e && (e.status === 404 || /not found|is not supported|NOT_FOUND/i.test(String(e.message)))
+    if (!notFound || (model || DEFAULT_GEMINI_MODEL) === FALLBACK_GEMINI_MODEL) throw e
+    used.push(FALLBACK_GEMINI_MODEL)
+    data = await generateOnce(fetchImpl, apiKey, FALLBACK_GEMINI_MODEL, parts, timeoutMs)
+  }
+  const cand = (data.candidates || [])[0] || {}
+  const text = (cand.content && cand.content.parts || []).map(p => p.text || '').join('')
+  const parsed = extractJsonObject(text)
+  return {
+    summary: String(parsed.summary || '').trim().slice(0, 500),
+    impact: String(parsed.impact || '').trim().slice(0, 300),
+    model: used[used.length - 1]
+  }
+}
+
 export async function extractItemsWithGemini({ apiKey, model, captures = [], images = [], fetchImpl = fetch, timeoutMs = TIMEOUT_MS }) {
   const parts = [{ text: buildExtractionPrompt(captures, images.length) }]
   for (const img of images) {

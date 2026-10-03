@@ -2,7 +2,8 @@
  * 쇼핑몰 규칙 관리자 — 단독 실행형(ADMIN_SATAD_ALONE.MD)
  * 사용자용 앱과 이름·userData·단일 인스턴스 잠금·수신 포트를 공유하지 않는다(§4.2).
  */
-import { app, BrowserWindow, ipcMain, dialog, protocol, net, safeStorage, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, net, safeStorage, shell, Notification } from 'electron'
+import { createServer } from 'node:http'
 import { join } from 'node:path'
 import fs from 'node:fs'
 import { detectBridge } from './services/zai-tool-bridge.js'
@@ -12,7 +13,7 @@ import { rulesList, saveRule, deleteRuleTx, deleteRulePreview, registerBuiltinRu
 import { appendShadowRecord, readShadowRecords, resolveAdminDecision } from './services/shadow-store.js'
 import {
   loadSettings, saveSettings, storeTypesafeKey, loadTypesafeKey, clearTypesafeKey,
-  shadowStats, autoApproveAllowed
+  shadowStats, autoApproveAllowed, storeEmailPass
 } from './services/settings-service.js'
 import {
   openMappingSample, closeSample, serveSampleRequest,
@@ -26,7 +27,10 @@ import { gitStatus, gitDiff, gitStage, gitCommit as gitCommitFiles, gitPush, git
 import { createLogStore, maskSecrets } from './services/log-service.js'
 import { startReceiver, stopReceiver } from './services/receiver-service.js'
 import { sampleHtmlText } from '../../../app/src/main/lib/admin-text.js'
-import { listGeminiModels, testGeminiConnection, extractItemsWithGemini, DEFAULT_GEMINI_MODEL, lookupRpd } from './services/gemini-service.js'
+import { listGeminiModels, testGeminiConnection, extractItemsWithGemini, DEFAULT_GEMINI_MODEL, lookupRpd, summarizeUpdate } from './services/gemini-service.js'
+import {
+  listShops as ucListShops, setShops as ucSetShops, loadUpdateState, runFullCheck, todayChangedCount, readUpdateLog
+} from './services/update-check-service.js'
 import { storeGoogleKey, loadGoogleKey, clearGoogleKey } from './services/settings-service.js'
 import {
   prepareGenerationRequest, runGeneration, applyGenerationResult
@@ -469,6 +473,119 @@ if (!gotLock) {
       return gitRemoteVersions(repo, { files })
     })
 
+    // 업데이트 자동 확인(작업 지시서 — 하루 1회 규칙/공지 변경 감지 → Gemini 요약 → 알림)
+    const emailConfigOf = () => {
+      const s = loadSettings(userDataDir)
+      const cfg = (s.updateCheck && s.updateCheck.email) || {}
+      const pass = loadEmailPassSafe()
+      return cfg.host && cfg.user && pass
+        ? { host: cfg.host, port: Number(cfg.port) || 465, user: cfg.user, pass, to: cfg.to || cfg.user }
+        : null
+    }
+    const loadEmailPassSafe = () => {
+      try { return loadEmailPass(userDataDir, { decryptFn: b => safeStorage.decryptString(b) }) } catch { return null }
+    }
+    const sendUpdateEmail = async (changedList, changedCount) => {
+      const cfg = emailConfigOf()
+      if (!cfg) return 'skipped-not-configured'
+      const nodemailer = (await import('nodemailer')).default
+      const transporter = nodemailer.createTransport({
+        host: cfg.host,
+        port: cfg.port,
+        secure: cfg.port === 465,
+        auth: { user: cfg.user, pass: cfg.pass }
+      })
+      const body = [
+        `점검 일시: ${new Date().toLocaleString('ko-KR')}`,
+        `오늘 변경된 쇼핑몰: ${changedCount}개`,
+        '',
+        ...changedList.map(c => [
+          `■ ${c.name} — ${c.url}`,
+          c.summary ? `${c.summary.summary || ''}${c.summary.impact ? '\n[영향] ' + c.summary.impact : ''}` : '(Gemini 요약 없음 — Key 미설정 또는 요약 실패)',
+          ''
+        ].join('\n'))
+      ].join('\n')
+      await transporter.sendMail({
+        from: cfg.user,
+        to: cfg.to,
+        subject: `[쇼핑몰 규칙 변경 알림] 오늘 변경된 쇼핑몰: ${changedCount}개`,
+        text: body
+      })
+      return 'sent'
+    }
+    const geminiSummarizeUpdate = async (shopName, diffText) => {
+      const key = googleKeyOf()
+      if (!key) return null
+      try {
+        return await summarizeUpdate({ apiKey: key, model: DEFAULT_GEMINI_MODEL, shopName, diffText })
+      } catch {
+        return null
+      }
+    }
+    const runUpdateCheckNow = async () => {
+      const r = await runFullCheck(userDataDir, {
+        callGemini: geminiSummarizeUpdate,
+        sendEmail: sendUpdateEmail,
+        onProgress: m => {
+          if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m)
+          opLog('info', 'update-check', m)
+        }
+      })
+      opLog('info', 'update-check', `전체 점검 완료 — ${r.total}몰 중 변경 ${r.changedCount}건 · Gemini ${r.geminiCalls}회 · 이메일 ${r.email}`)
+      if (r.changedCount > 0) {
+        try {
+          new Notification({
+            title: `[쇼핑몰 규칙 변경 알림] 오늘 변경된 쇼핑몰: ${r.changedCount}개`,
+            body: `${r.changedList.map(c => c.name).join(', ')} — 업데이트 확인 탭을 확인해 주세요.`
+          }).show()
+        } catch {}
+      }
+      return r
+    }
+    ipcMain.handle('update-check:get-status', () => {
+      const state = loadUpdateState(userDataDir)
+      const shops = ucListShops(userDataDir).map(s => {
+        const rec = state.shops[s.id] || {}
+        return {
+          id: s.id, name: s.name, url: s.url,
+          status: rec.status || null,
+          lastCheckedAt: rec.lastCheckedAt || null,
+          lastChangedAt: rec.lastChangedAt || null,
+          lastSummary: rec.lastSummary || null,
+          lastError: rec.lastError || null
+        }
+      })
+      return {
+        shops,
+        lastFullCheckAt: state.lastFullCheckAt,
+        lastFullCheckDate: state.lastFullCheckDate,
+        todayChanged: todayChangedCount(state),
+        log: readUpdateLog(userDataDir, 10)
+      }
+    })
+    ipcMain.handle('update-check:set-shops', (_e, shops) => ucSetShops(userDataDir, shops))
+    ipcMain.handle('update-check:run-now', () => runUpdateCheckNow())
+    ipcMain.handle('update-check:set-email-pass', (_e, plain) => storeEmailPass(userDataDir, String(plain || '').trim(), { encryptFn: p => safeStorage.encryptString(p) }))
+    // 스케줄 — 지정 시각 이후 오늘 미실행이면 실행(어제 미실행 보완 포함). 10분 간격 체크.
+    const ucTick = async () => {
+      try {
+        const s = loadSettings(userDataDir)
+        const cfg = s.updateCheck || {}
+        if (cfg.enabled === false) return
+        const hour = Number(cfg.hour ?? 3)
+        const now = new Date()
+        const st = loadUpdateState(userDataDir)
+        if (now.getHours() >= hour && st.lastFullCheckDate !== now.toISOString().slice(0, 10)) {
+          if (!ucListShops(userDataDir).length) return
+          await runUpdateCheckNow()
+        }
+      } catch (e) {
+        opLog('warn', 'update-check', '스케줄 점검 실패: ' + String(e.message || e))
+      }
+    }
+    setInterval(ucTick, 10 * 60 * 1000)
+    setTimeout(ucTick, 45 * 1000)
+
     // 샘플 추출 검증(§7.7) + Git 배포(§7.8) — push 실패는 파일 적용 실패가 아니다(§17.5)
     ipcMain.handle('verify:samples', (_e, dir) => verifySamples(project ? project.repoRoot : resolveRepoRoot(), dir, {
       onProgress: m => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('operation:progress', m) }
@@ -788,6 +905,31 @@ async function runE2E(outPath, userDataDir) {
         repoRoot: vres.repoRoot
       }
 
+      // 업데이트 자동 확인(작업 지시서) — 로컬 페이지 첫점검(baseline) → 내용 변경 → 감지+diff 파이프라인
+      let ucTestPage = '<html><body><h1>E2E몰 배송비 정책 안내</h1><p>기본배송비 2,500원. 5만원 이상 무료배송.</p></body></html>'
+      const ucServer = createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8')
+        res.end(ucTestPage)
+      })
+      await new Promise(res => ucServer.listen(0, '127.0.0.1', res))
+      try {
+        const ucPort = ucServer.address().port
+        await win.webContents.executeJavaScript(`window.ruleMgr.updateCheck.setShops([{ id: 'e2e-uc', name: 'E2E점검몰', url: 'http://127.0.0.1:${ucPort}/rules' }])`)
+        const ucRun1 = await win.webContents.executeJavaScript('window.ruleMgr.updateCheck.runNow()')
+        ucTestPage = ucTestPage.replace('기본배송비 2,500원', '기본배송비 3,000원 (2026-10-05 적용)')
+        const ucRun2 = await win.webContents.executeJavaScript('window.ruleMgr.updateCheck.runNow()')
+        const ucStatus = await win.webContents.executeJavaScript('window.ruleMgr.updateCheck.getStatus()')
+        result.updateCheckCheck = !!(ucRun1.changedCount === 0 && ucRun1.geminiCalls === 0
+          && ucRun2.changedCount === 1 && ucRun2.email === 'skipped-not-configured'
+          && ucStatus.todayChanged >= 1)
+        result.updateCheckDetail = {
+          run1Changed: ucRun1.changedCount, run2Changed: ucRun2.changedCount,
+          gemini: ucRun2.geminiCalls, email: ucRun2.email, todayChanged: ucStatus.todayChanged
+        }
+      } finally {
+        ucServer.close()
+      }
+
       // Shadow 픽스처(§19.2) — Key 없으면 전 케이스가 오류로 집계되는 우아한 처리 확인.
       // Key가 있으면 실제 API 72회 호출이 되므로 E2E에서는 생략한다.
       if (jevService.isConfigured()) {
@@ -843,7 +985,7 @@ async function runE2E(outPath, userDataDir) {
       && result.transactionCheck.filesGone
       && result.deleteCheck && result.deleteCheck.deleted && result.deleteCheck.status === 'applied'
       && result.verificationCheck && result.shadowFixtureCheck
-      && result.versionsCheck
+      && result.versionsCheck && result.updateCheckCheck
       && result.gitCheck && result.sampleVerifyCheck && result.logCheck
   } catch (e) {
     result.fatal = String(e && e.message || e)

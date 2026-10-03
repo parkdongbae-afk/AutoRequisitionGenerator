@@ -7,6 +7,7 @@ import VerificationPanel from './VerificationPanel.jsx'
 import GitPanel from './GitPanel.jsx'
 import LogPanel from './LogPanel.jsx'
 import VersionsPanel from './VersionsPanel.jsx'
+import UpdateCheckPanel from './UpdateCheckPanel.jsx'
 import { diffLines, diffSummary } from '../../shared/line-diff.js'
 import { subscribe, getMappingActiveSnapshot, startMapping } from './mapping-state.js'
 
@@ -14,6 +15,7 @@ const TABS = [
   ['home', '🏠 홈'],
   ['generate', '🤖 새 규칙'],
   ['answer', '📑 엑셀 정답 만들기'],
+  ['updates', '🔔 업데이트 확인'],
   ['mapping', '🖱 클릭 매핑'],
   ['verify', '🧪 검증 센터'],
   ['git', '🚀 배포/Git'],
@@ -67,6 +69,20 @@ export default function App() {
   const [q, setQ] = useState('')
   const [kindFilter, setKindFilter] = useState('all')
   const [fontScale, setFontScale] = useState(1.2)
+  const [ucBadge, setUcBadge] = useState(0)
+
+  useEffect(() => {
+    let stop = false
+    const poll = async () => {
+      try {
+        const r = await window.ruleMgr.updateCheck.getStatus()
+        if (!stop) setUcBadge(r.todayChanged || 0)
+      } catch {}
+    }
+    poll()
+    const t = setInterval(poll, 60000)
+    return () => { stop = true; clearInterval(t) }
+  }, [])
 
   useEffect(() => {
     const off = window.ruleMgr.log.onLog(e => setLastLog(e))
@@ -240,7 +256,7 @@ export default function App() {
       <header style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 40, borderBottom: '2px solid #5B4DFB', padding: '10px 16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <h1 style={{ fontSize: 18, margin: 0 }}>쇼핑몰 규칙 관리자</h1>
-          <span style={{ fontSize: 11, color: '#94a3b8' }}>v0.16.2</span>
+          <span style={{ fontSize: 11, color: '#94a3b8' }}>v0.17.0</span>
           {project && <span style={{ fontSize: 11, color: '#64748b' }}>{project.repoRoot.split(/[\\/]/).pop()} · 규칙 {project.rulesCount}종 · v{project.rulesJsonVersion || '?'}</span>}
         </div>
         <nav style={{ display: 'flex', gap: 2, marginTop: 8 }}>
@@ -248,15 +264,15 @@ export default function App() {
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              style={{ padding: '7px 14px', cursor: 'pointer', border: 'none', borderRadius: '8px 8px 0 0', fontSize: 13, fontWeight: activeTab === id ? 700 : 400, background: activeTab === id ? '#5B4DFB' : '#eef2f7', color: activeTab === id ? '#fff' : '#334155' }}
-            >{label}{id === 'mapping' && mappingActive ? ' ●' : ''}</button>
+              style={{ padding: '7px 14px', cursor: 'pointer', border: 'none', borderRadius: '8px 8px 0 0', fontSize: 13, fontWeight: activeTab === id ? 700 : 400, background: activeTab === id ? '#5B4DFB' : '#eef2f7', color: activeTab === id ? '#fff' : '#334155', ...(id === 'updates' && ucBadge > 0 && activeTab !== id ? { color: '#b45309', fontWeight: 700 } : {}) }}
+            >{label}{id === 'updates' && ucBadge > 0 ? ` ⚠️ ${ucBadge}` : ''}{id === 'mapping' && mappingActive ? ' ●' : ''}</button>
           ))}
         </nav>
       </header>
 
       <main style={{ padding: '16px 16px 48px' }}>
       <div style={{ display: activeTab === 'home' ? 'block' : 'none' }}>
-        <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 8px' }}>쇼핑몰 규칙 관리자 v0.16.2 — 전체 버전은 ℹ 버전 탭</p>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 8px' }}>쇼핑몰 규칙 관리자 v0.17.0 — 전체 버전은 ℹ 버전 탭</p>
         <section style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14, marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <h2 style={{ fontSize: 15, margin: 0 }}>📁 대상 저장소</h2>
@@ -376,6 +392,10 @@ export default function App() {
             </table>
           )}
         </section>
+      </div>
+
+      <div style={{ display: activeTab === 'updates' ? 'block' : 'none' }}>
+        <UpdateCheckPanel />
       </div>
 
       <div style={{ display: activeTab === 'versions' ? 'block' : 'none' }}>

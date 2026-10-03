@@ -155,7 +155,36 @@ export function loadGoogleKey(userDataDir, { decryptFn } = {}) {
 export function clearGoogleKey(userDataDir) {
   const s = loadSettings(userDataDir)
   delete s.googleKey
-  fs.mkdirSync(userDataDir, { recursive: true })
+  fs.writeFileSync(settingsPath(userDataDir), JSON.stringify(s, null, 2) + '\n', 'utf-8')
+}
+
+// SMTP 계정 비밀번호 — safeStorage 암호화 저장(업데이트 확인 이메일 발송용)
+export function storeEmailPass(userDataDir, plainKey, { encryptFn } = {}) {
+  const key = String(plainKey || '').trim()
+  if (!key) throw new Error('빈 비밀번호는 저장할 수 없습니다')
+  if (typeof encryptFn !== 'function') {
+    return { ok: false, code: 'EMAIL_PASS_STORE_UNAVAILABLE', message: 'safeStorage를 사용할 수 없어 비밀번호를 저장하지 않았습니다.' }
+  }
+  const encrypted = Buffer.from(encryptFn(key), 'binary').toString('base64')
+  saveSettings(userDataDir, { emailPass: { encrypted, scheme: 'safeStorage.v1' } })
+  return { ok: true }
+}
+
+export function loadEmailPass(userDataDir, { decryptFn } = {}) {
+  let rec = null
+  try { rec = loadSettings(userDataDir).emailPass } catch { rec = null }
+  if (!rec || !rec.encrypted || typeof decryptFn !== 'function') return null
+  try {
+    const s = String(decryptFn(Buffer.from(rec.encrypted, 'base64')) || '')
+    return s || null
+  } catch {
+    return null
+  }
+}
+
+export function clearEmailPass(userDataDir) {
+  const s = loadSettings(userDataDir)
+  delete s.emailPass
   fs.writeFileSync(settingsPath(userDataDir), JSON.stringify(s, null, 2) + '\n', 'utf-8')
 }
 
