@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react'
 
-// "엑셀 정답 만들기" — 캡처(Gemini) → 품목 추출 → 정답 xls 저장
-export default function AnswerMakerPanel() {
-  const [files, setFiles] = useState([])            // { path, label }
+// "엑셀 정답 만들기" — 캡처(Gemini: HTML 또는 화면 캡처 이미지) → 품목 추출 → 정답 xls 저장
+let imageSeq = 0
+
+export default function AnswerMakerPanel({ active = true }) {
+  const [entries, setEntries] = useState([])         // { id, type: 'file'|'image', label, path?, data?, mimeType? }
   const [apiKeyInput, setApiKeyInput] = useState('')
   const [keyMsg, setKeyMsg] = useState('')
   const [keyState, setKeyState] = useState(null)    // { stored, env, configured }
@@ -21,16 +23,45 @@ export default function AnswerMakerPanel() {
   }
   useEffect(() => { refreshKey() }, [])
 
+  // Ctrl+V 화면 캡처 붙여넣기 — 탭이 활성인 동안 이미지를 여러 장 추가할 수 있다
+  useEffect(() => {
+    if (!active) return
+    const onPaste = async (e) => {
+      const clipItems = [...((e.clipboardData || window.clipboardData)?.items || [])]
+      const img = clipItems.find(it => String(it.type).startsWith('image/'))
+      if (!img) return
+      e.preventDefault()
+      const blob = img.getAsFile()
+      if (!blob) return
+      const dataUrl = await new Promise(res => {
+        const r = new FileReader()
+        r.onload = () => res(r.result)
+        r.readAsDataURL(blob)
+      })
+      imageSeq++
+      setEntries(arr => [...arr, {
+        id: `img-${Date.now()}-${imageSeq}`,
+        type: 'image',
+        mimeType: blob.type || 'image/png',
+        data: String(dataUrl).split(',').pop(),
+        label: `화면 캡처 ${arr.filter(x => x.type === 'image').length + 1}`
+      }])
+      setErr('')
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [active])
+
   const addFiles = async () => {
     const picked = await window.ruleMgr.answer.pickFile()
     if (!picked || !picked.length) return
-    setFiles(fs => {
+    setEntries(fs => {
       const seen = new Set(fs.map(f => f.path))
-      const add = picked.filter(p => !seen.has(p)).map(p => ({ path: p, label: p.split(/[\\/]/).pop() }))
+      const add = picked.filter(p => !seen.has(p)).map(p => ({ id: `f-${p}`, type: 'file', path: p, label: p.split(/[\\/]/).pop() }))
       return [...fs, ...add]
     })
   }
-  const removeFile = (path) => setFiles(fs => fs.filter(f => f.path !== path))
+  const removeEntry = (id) => setEntries(fs => fs.filter(f => f.id !== id))
 
   const saveKey = async () => {
     const r = await window.ruleMgr.google.setKey(apiKeyInput)
@@ -68,11 +99,15 @@ export default function AnswerMakerPanel() {
   }
 
   const extract = async () => {
-    if (!files.length) { setErr('캡처 파일을 먼저 추가하세요'); return }
+    if (!entries.length) { setErr('캡처 파일 또는 화면 캡처를 먼저 추가하세요'); return }
     setBusy(true)
     setErr('')
     try {
-      const r = await window.ruleMgr.answer.extract({ model, files: files.map(f => f.path) })
+      const r = await window.ruleMgr.answer.extract({
+        model,
+        files: entries.filter(x => x.type === 'file').map(x => x.path),
+        images: entries.filter(x => x.type === 'image').map(x => ({ mimeType: x.mimeType, data: x.data }))
+      })
       setItems(r.items)
       setOrderTotal(r.orderTotal)
       setShippingFee(r.shippingFee)
@@ -96,15 +131,21 @@ export default function AnswerMakerPanel() {
     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
       <div style={{ width: 340, flexShrink: 0 }}>
         <section style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 12, marginBottom: 12 }}>
-          <h3 style={{ fontSize: 13, margin: '0 0 6px' }}>📎 캡처 파일 (여러 장)</h3>
-          <button onClick={addFiles} style={btnSm}>＋ mhtml/html 추가</button>
+          <h3 style={{ fontSize: 13, margin: '0 0 6px' }}>📎 캡처 입력 (여러 장)</h3>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button onClick={addFiles} style={btnSm}>＋ mhtml/html 파일 추가</button>
+          </div>
+          <div style={{ marginTop: 6, border: '1px dashed #c7d2fe', borderRadius: 6, padding: '6px 8px', fontSize: 11, color: '#64748b' }}>
+            쇼핑몰 화면을 캡처(PrintScreen 등)한 뒤 이 창에서 <b>Ctrl+V</b>로 여러 장 붙여넣을 수 있습니다.
+          </div>
           <ul style={{ margin: '6px 0 0', paddingLeft: 14, fontSize: 11, color: '#475569' }}>
-            {files.map(f => (
-              <li key={f.path} style={{ marginBottom: 2, wordBreak: 'break-all' }}>
-                {f.label} <button onClick={() => removeFile(f.path)} style={delBtn}>✕</button>
+            {entries.map(f => (
+              <li key={f.id} style={{ marginBottom: 2, wordBreak: 'break-all' }}>
+                {f.type === 'image' ? '🖼 ' : '📄 '}{f.label}
+                <button onClick={() => removeEntry(f.id)} style={delBtn}>✕</button>
               </li>
             ))}
-            {files.length === 0 && <li style={{ color: '#94a3b8', listStyle: 'none' }}>파일 없음</li>}
+            {entries.length === 0 && <li style={{ color: '#94a3b8', listStyle: 'none' }}>입력 없음</li>}
           </ul>
         </section>
 
@@ -136,7 +177,7 @@ export default function AnswerMakerPanel() {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-          <button onClick={extract} disabled={busy || !files.length} style={{ padding: '6px 16px', cursor: busy || !files.length ? 'not-allowed' : 'pointer', border: 'none', borderRadius: 6, background: '#5B4DFB', color: '#fff', fontWeight: 700, fontSize: 12, opacity: busy || !files.length ? 0.5 : 1 }}>
+          <button onClick={extract} disabled={busy || !entries.length} style={{ padding: '6px 16px', cursor: busy || !entries.length ? 'not-allowed' : 'pointer', border: 'none', borderRadius: 6, background: '#5B4DFB', color: '#fff', fontWeight: 700, fontSize: 12, opacity: busy || !entries.length ? 0.5 : 1 }}>
             {busy ? 'Gemini 추출 중…' : '▶ 품목 추출'}
           </button>
           <button onClick={save} disabled={!items.length} style={{ ...btnSm, opacity: items.length ? 1 : 0.5 }}>💾 xls 저장</button>

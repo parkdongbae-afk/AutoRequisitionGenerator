@@ -36,6 +36,7 @@ const PHASES = [
 const FONT_STEPS = [1.0, 1.1, 1.2, 1.3, 1.5]
 
 export default function App() {
+  console.info('[mapping-debug] App render entered')
   const [activeTab, setActiveTab] = useState('home')
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -214,11 +215,18 @@ export default function App() {
   }
 
   useEffect(() => { refresh(); loadProject(false); loadTxs() }, [])
-  useEffect(() => subscribe(() => {
-    const active = !!getState().token
-    setMappingActive(active)
-    if (active) setActiveTab('mapping')
-  }), [])
+  useEffect(() => {
+    console.info('[mapping-debug] effect enter')
+    const un = subscribe(() => {
+      const active = !!getState().token
+      setMappingActive(active)
+      if (active) setActiveTab('mapping')
+    })
+    // 구독 즉시 현재 상태로 동기화 — 구독 전 startMapping이 실행돼도 유실 없음
+    setMappingActive(!!getState().token)
+    console.info('[mapping-debug] subscribe complete')
+    return un
+  }, [])
 
   const diffStat = diffSummary(diffLines(editOrig, editText))
 

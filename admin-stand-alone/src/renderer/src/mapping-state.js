@@ -26,11 +26,23 @@ const state = {
 }
 
 const listeners = new Set()
-const emit = () => { for (const l of [...listeners]) l() }
+let emitCount = 0
+let everSubscribed = false
+// 모듈 복제 여부·emit 순서 추적 — 구독 레이스 진단용(§10-A 디버깅)
+export const instanceId = Math.random().toString(36).slice(2, 8)
+const debugLog = []
+function dlog(event, detail = '') {
+  debugLog.push({ t: Date.now(), event, detail: String(detail).slice(0, 60) })
+  if (debugLog.length > 40) debugLog.shift()
+}
+dlog('module-init', instanceId)
+const emit = () => { emitCount++; dlog('emit', `listeners=${listeners.size}`); for (const l of [...listeners]) l() }
 
 export function subscribe(listener) {
   listeners.add(listener)
-  return () => listeners.delete(listener)
+  everSubscribed = true
+  console.info('[mapping-debug] subscribe called — listeners:', listeners.size, 'instanceId:', instanceId)
+  return () => { listeners.delete(listener); console.info('[mapping-debug] unsubscribed — listeners:', listeners.size) }
 }
 
 export function getState() {
@@ -172,7 +184,7 @@ window.__mgr = {
   setStep: s => setStep(s),
   state: () => JSON.parse(JSON.stringify({
     token: state.token, step: state.step, mode: state.mode,
-    picks: state.picks, pickerReady: state.pickerReady, meta: state.meta,
+    picks: state.picks, pickerReady: state.pickerReady, meta: state.meta, emitCount, listeners: listeners.size, everSubscribed, instanceId, debugLog: debugLog.slice(-12),
     lastPostedMode: state.lastPostedMode, hasFrame: !!(frameEl && frameEl.contentWindow)
   })),
   assemble: meta => assemble(meta),

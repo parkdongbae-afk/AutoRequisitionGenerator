@@ -67,9 +67,18 @@ function createWindow({ show = true } = {}) {
       sandbox: false
     }
   })
+  // 렌더러 초기 오류도 놓치지 않게 — loadFile 이전에 리스너를 건다
+  mainWindow.webContents.on('console-message', (_e, _lv, msg, line, sourceId) => {
+    const m = String(msg)
+    if (m.includes('[mapping-debug]')) { (resultMappingDebug = resultMappingDebug || []).push(m.split('[mapping-debug]')[1].trim()); return }
+    if (/error/i.test(m)) (resultRendererErrors = resultRendererErrors || []).push(`${m.slice(0, 200)} @ ${String(sourceId || '').split(/[\\/]/).pop()}:${line}`)
+  })
   mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   return mainWindow
 }
+
+let resultMappingDebug = null
+let resultRendererErrors = null
 
 const gotLock = app.requestSingleInstanceLock('shopping-mall-rule-manager')
 if (!gotLock) {
@@ -350,13 +359,14 @@ if (!gotLock) {
       const key = String(keyArg || '').trim() || googleKeyOf()
       return listGeminiModels(key)
     })
-    ipcMain.handle('answer:extract', async (_e, { model, files }) => {
+    ipcMain.handle('answer:extract', async (_e, { model, files, images }) => {
       const key = googleKeyOf()
-      const captures = files.map((p, i) => {
+      const captures = (files || []).map((p, i) => {
         const { html } = sampleHtmlText(p)
         return { label: `캡처${i + 1}`, html }
       })
-      return extractItemsWithGemini({ apiKey: key, model: model || DEFAULT_GEMINI_MODEL, captures })
+      const imgs = (images || []).map(img => ({ mimeType: img.mimeType || 'image/png', data: img.data }))
+      return extractItemsWithGemini({ apiKey: key, model: model || DEFAULT_GEMINI_MODEL, captures, images: imgs })
     })
     ipcMain.handle('answer:pick-file', async () => {
       const r = await dialog.showOpenDialog(mainWindow, {
@@ -519,9 +529,15 @@ async function runE2E(outPath, userDataDir) {
       win.webContents.once('did-finish-load', res)
     })
     mark('loaded')
-    win.webContents.on('console-message', (_e, _lv, msg, line, sourceId) => {
-      if (/error/i.test(String(msg))) result.rendererErrors.push(`${String(msg).slice(0, 200)} @ ${String(sourceId || '').split(/[\\/]/).pop()}:${line}`)
-    })
+    // React 마운트 완료 대기 — did-finish-load는 HTML 로드만 의미하고 React 렌더는 별도 시점
+    await waitFor(() => win.webContents.executeJavaScript('!!(document.getElementById("root") && document.getElementById("root").childElementCount > 0)'), 15000)
+    await win.webContents.executeJavaScript(`window.__errs = [];
+      window.addEventListener('error', e => window.__errs.push('pageerror: ' + (e.message || e)));
+      window.addEventListener('unhandledrejection', e => window.__errs.push('unhandled: ' + String(e.reason && e.reason.message || e.reason)));`)
+    mark('loaded')
+    result.probe1 = await win.webContents.executeJavaScript(
+      'window.__mgr ? JSON.stringify({ listeners: window.__mgr.state().listeners, emitCount: window.__mgr.state().emitCount }) : "no __mgr"'
+    )
     // 1) 프로젝트 탐지·규칙 목록·bundle 버전(§8·§23.4)
     result.projectCheck = !!(await win.webContents.executeJavaScript('window.ruleMgr.projectDetect()'))
     if (result.projectCheck) {
@@ -563,7 +579,21 @@ async function runE2E(outPath, userDataDir) {
       result.mappingCheck.pickerServed = served.includes('picker-select') && scriptTags === 1
       result.mappingCheck.scriptsStripped = !/<script[^>]+src=/.test(served) && served.includes('Content-Security-Policy')
       await win.webContents.executeJavaScript('window.__mgr && window.__mgr.startMapping(' + JSON.stringify(opened.token) + ', { isCart: true })')
-      await waitFor(() => win.webContents.executeJavaScript('!!(window.__mgr && window.__mgr.state().pickerReady)'), 10000)
+      result.mappingCheck.pickerReady = await waitFor(() => win.webContents.executeJavaScript('!!(window.__mgr && window.__mgr.state().pickerReady)'), 10000)
+      result.mappingCheck.domDump = await win.webContents.executeJavaScript(
+        'JSON.stringify({ iframes: [...document.querySelectorAll("iframe")].map(f => ({ src: f.src.slice(0, 60), rect: f.getBoundingClientRect().toJSON() })), mgr: window.__mgr ? window.__mgr.state() : null, hasMgr: !!window.__mgr })'
+      )
+      // 프레임 트리 진단 — webContents 프레임 구조 확인
+      const dumpFrames = (frame, depth) => {
+        const out = []
+        const walk = (f, d) => {
+          out.push('  '.repeat(d) + (f.url || 'about:blank').slice(0, 80))
+          for (const cf of f.frames) walk(cf, d + 1)
+        }
+        walk(frame, 0)
+        return out
+      }
+      result.frameTree = dumpFrames(win.webContents.mainFrame)
       const setMode = async m => {
         await win.webContents.executeJavaScript(`window.__mgr && window.__mgr.setMode(${JSON.stringify(m)})`)
         await waitMs(120)
@@ -699,6 +729,7 @@ async function runE2E(outPath, userDataDir) {
       'window.ruleMgr.generate.start({ mallName: "x", kinds: ["order"], samplesByKind: {}, answerExcel: null }).then(() => false).catch(e => String(e.message).includes("샘플"))'
     )
 
+    result.rendererErrors = (resultRendererErrors || []).concat(result.rendererErrors || [])
     result.ok = result.projectCheck && result.settingsCheck
       && (!enc || result.safeStorageRoundtrip) && result.jevCheck
       && result.mappingCheck.opened && result.mappingCheck.pickerServed
@@ -721,24 +752,38 @@ async function runE2E(outPath, userDataDir) {
   app.exit(result.ok ? 0 : 1)
 }
 
-async function clickInSampleFrame(win, token, selector) {
-  const findFrame = (frame) => {
-    if (String(frame.url || '').includes(`admin-sample://${token}`)) return frame
-    for (const f of frame.frames || []) {
-      const hit = findFrame(f)
-      if (hit) return hit
-    }
-    return null
+function findFrame(frame, token) {
+  if (String(frame.url || '').includes(`admin-sample://${token}`)) return frame
+  for (const f of frame.frames || []) {
+    const hit = findFrame(f, token)
+    if (hit) return hit
   }
-  const frame = findFrame(win.webContents.mainFrame)
-  if (!frame) throw new Error('샘플 iframe을 찾지 못했습니다')
-  await frame.executeJavaScript(`(() => {
-    const el = document.querySelector(${JSON.stringify(selector)})
-    if (!el) return false
-    el.scrollIntoView()
-    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
-    return true
-  })()`)
+  return null
+}
+
+async function clickInSampleFrame(win, token, selector) {
+  // iframe 마운트·로드·피커 준비에 시간이 걸릴 수 있어 재시도한다(E2E 안정화)
+  const deadline = Date.now() + 15000
+  let lastError = null
+  while (Date.now() < deadline) {
+    const frame = findFrame(win.webContents.mainFrame, token)
+    if (frame) {
+      try {
+        const ok = await frame.executeJavaScript(`(() => {
+          const el = document.querySelector(${JSON.stringify(selector)})
+          if (!el) return false
+          el.scrollIntoView()
+          el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
+          return true
+        })()`)
+        if (ok) return true
+      } catch (e) {
+        lastError = e
+      }
+    }
+    await waitMs(300)
+  }
+  throw new Error(`클릭 실패(${selector}): ${lastError ? lastError.message : '프레임 없음'}`)
 }
 
 function waitMs(ms) {
