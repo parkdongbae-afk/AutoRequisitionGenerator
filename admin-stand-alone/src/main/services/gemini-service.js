@@ -118,12 +118,16 @@ function extractJsonObject(text) {
   throw new Error('응답 JSON이 완전하지 않습니다 — ' + s.slice(start, start + 120))
 }
 
-export async function summarizeUpdate({ apiKey, model, shopName, diffText, fetchImpl = fetch, timeoutMs = TIMEOUT_MS }) {
+export async function summarizeUpdate({ apiKey, model, shopName, diffText, matched = [], fetchImpl = fetch, timeoutMs = TIMEOUT_MS }) {
+  const hint = (matched || []).length
+    ? `\n참고: 변경 텍스트에서 다음 패턴이 감지되었습니다 — ${matched.map(m => `${m.p}(${m.cat})`).join(', ')}. 이 문맥을 우선 고려하세요.`
+    : ''
   const prompt = [
     `아래 텍스트는 쇼핑몰 "${shopName}"의 규칙/정책에서 새로 변경된 부분입니다.`,
     '관리자에게 영향을 줄 수 있는 핵심 변경 사항만 5줄 이내로 요약해 주세요.',
     '가능한 한 적용 일자, 수수료/배송/환불/패널티 관련 변경 여부를 구분해서 알려주세요.',
     '응답은 다음 JSON만 출력하세요: {"summary":"변경 사항 요약(짧은 한국어)","impact":"관리자/운영 영향 포인트(없으면 빈 문자열)"}',
+    hint,
     '',
     '--- 변경 텍스트 ---',
     String(diffText || '').slice(0, 4000)

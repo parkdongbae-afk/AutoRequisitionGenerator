@@ -11,6 +11,7 @@ const STATUS_LABEL = {
   changed: ['⚠️', '규칙 변경 감지', '#b45309'],
   error: ['❓', '확인 실패', '#dc2626']
 }
+const CAT_COLOR = { 'cart-order': '#5B4DFB', policy: '#dc2626', ui: '#0e7490', general: '#64748b' }
 
 export default function UpdateCheckPanel() {
   const [st, setSt] = useState(null)
@@ -21,6 +22,11 @@ export default function UpdateCheckPanel() {
   const [cfg, setCfg] = useState({ enabled: true, hour: 3 })
   const [email, setEmail] = useState({ host: 'smtp.gmail.com', port: 465, user: '', to: '', pass: '' })
   const [emailMsg, setEmailMsg] = useState('')
+  const [patterns, setPatterns] = useState(null)
+  const [categories, setCategories] = useState({})
+  const [newPattern, setNewPattern] = useState('')
+  const [newPatternCat, setNewPatternCat] = useState('general')
+  const [showPatterns, setShowPatterns] = useState(false)
 
   const load = async () => {
     try {
@@ -31,6 +37,9 @@ export default function UpdateCheckPanel() {
       setCfg({ enabled: uc.enabled !== false, hour: Number(uc.hour ?? 3) })
       const em = uc.email || {}
       setEmail(e => ({ ...e, host: em.host || 'smtp.gmail.com', port: Number(em.port) || 465, user: em.user || '', to: em.to || '' }))
+      const p = await window.ruleMgr.updateCheck.getPatterns()
+      setPatterns(p.patterns)
+      setCategories(p.categories)
     } catch (e) { setMsg(String(e.message || e)) }
   }
   useEffect(() => { load() }, [])
@@ -76,6 +85,23 @@ export default function UpdateCheckPanel() {
     }
     setEmailMsg('이메일 설정을 저장했습니다 — 변경 감지시 이 주소로 발송됩니다')
     setEmail(e => ({ ...e, pass: '' }))
+  }
+
+  const addPattern = async () => {
+    const p = newPattern.trim()
+    if (!p) return
+    const r = await window.ruleMgr.updateCheck.setPatterns([...(patterns || []), { p, cat: newPatternCat }])
+    setPatterns(r)
+    setNewPattern('')
+  }
+  const removePattern = async (idx) => {
+    const r = await window.ruleMgr.updateCheck.setPatterns((patterns || []).filter((_, i) => i !== idx))
+    setPatterns(r)
+  }
+  const resetPatterns = async () => {
+    if (!confirm('패턴 목록을 기본값으로 되돌릴까요?')) return
+    const r = await window.ruleMgr.updateCheck.resetPatterns()
+    setPatterns(r)
   }
 
   const label = st ? (st.todayChanged > 0 ? `🔔 업데이트 확인 ⚠️ ${st.todayChanged}` : '🔔 업데이트 확인') : '🔔 업데이트 확인'
@@ -135,6 +161,15 @@ export default function UpdateCheckPanel() {
                     <td style={{ padding: 4, color }}>
                       {icon} {text}
                       {s.lastError && <div style={{ fontSize: 10, color: '#dc2626' }}>{s.lastError}</div>}
+                      {s.status === 'changed' && (s.lastMatchedPatterns || []).length > 0 && (
+                        <div style={{ marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                          {s.lastMatchedPatterns.map((m, i) => (
+                            <span key={i} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#f1f5f9', color: CAT_COLOR[m.cat] || '#64748b', border: `1px solid ${CAT_COLOR[m.cat] || '#e2e8f0'}` }}>
+                              {m.p}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td style={{ padding: 4, color: '#64748b' }}>{s.lastCheckedAt ? String(s.lastCheckedAt).replace('T', ' ').slice(0, 16) : '—'}</td>
                     <td style={{ padding: 4, color: '#64748b' }}>{s.lastChangedAt ? String(s.lastChangedAt).replace('T', ' ').slice(0, 16) : '—'}</td>
@@ -180,6 +215,53 @@ export default function UpdateCheckPanel() {
           </label>
           <span style={{ fontSize: 11, color: '#94a3b8' }}>앱이 실행 중일 때만 점검하며, 미실행 날이 있으면 다음 실행시 보완합니다. 변경 없는 쇼핑몰은 Gemini를 호출하지 않습니다.</span>
         </div>
+      </section>
+
+      <section style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h3 style={{ fontSize: 14, margin: 0 }}>🔍 검색어/패턴 리스트 ({patterns ? patterns.length : '…'}개)</h3>
+          <button onClick={() => setShowPatterns(v => !v)} style={{ marginLeft: 'auto', padding: '3px 10px', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: 11 }}>
+            {showPatterns ? '접기' : '편집'}
+          </button>
+        </div>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
+          변경 내용에서 이 패턴을 찾아 분류합니다(로컬 매칭 — Gemini 호출 없음). 감지된 패턴은 상태 목록의 태그와 Gemini 요약 힌트로 사용됩니다.
+        </p>
+        {st && st.shops.some(s => s.status === 'changed') && (
+          <p style={{ fontSize: 11, margin: '4px 0 0', color: '#64748b' }}>
+            최근 변경에서 감지된 패턴:{' '}
+            {st.shops.filter(s => s.status === 'changed' && (s.lastMatchedPatterns || []).length > 0)
+              .map(s => `${s.name}: ${(s.lastMatchedPatterns || []).map(m => m.p).join(', ')}`).join(' / ') || '(없음)'}
+          </p>
+        )}
+        {showPatterns && patterns && (
+          <>
+            <div style={{ marginTop: 8, maxHeight: 220, overflow: 'auto', border: '1px solid #f1f5f9', borderRadius: 6, padding: 6 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                <tbody>
+                  {patterns.map((p, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '2px 6px', width: 130, color: CAT_COLOR[p.cat] || '#64748b' }}>{categories[p.cat] || p.cat}</td>
+                      <td style={{ padding: '2px 6px' }}>{p.p}</td>
+                      <td style={{ padding: '2px 6px', width: 24 }}>
+                        <button onClick={() => removePattern(i)} style={{ cursor: 'pointer', color: '#dc2626', border: 'none', background: 'none' }}>✕</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+              <select value={newPatternCat} onChange={e => setNewPatternCat(e.target.value)} style={{ border: '1px solid #e2e8f0', borderRadius: 4, fontSize: 12 }}>
+                {Object.entries(categories).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <input value={newPattern} onChange={e => setNewPattern(e.target.value)} placeholder="패턴 추가 (예: 배송비 정책 변경)" style={{ flex: 1, minWidth: 220, border: '1px solid #e2e8f0', borderRadius: 4, padding: '3px 8px', fontSize: 12 }}
+                onKeyDown={e => { if (e.key === 'Enter') addPattern() }} />
+              <button onClick={addPattern} style={{ padding: '3px 12px', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: 12 }}>＋ 추가</button>
+              <button onClick={resetPatterns} style={{ padding: '3px 12px', cursor: 'pointer', border: '1px solid #fecaca', borderRadius: 4, background: '#fff', fontSize: 12, color: '#dc2626' }}>기본값 복원</button>
+            </div>
+          </>
+        )}
       </section>
 
       <section style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>

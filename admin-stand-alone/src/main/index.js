@@ -29,7 +29,8 @@ import { startReceiver, stopReceiver } from './services/receiver-service.js'
 import { sampleHtmlText } from '../../../app/src/main/lib/admin-text.js'
 import { listGeminiModels, testGeminiConnection, extractItemsWithGemini, DEFAULT_GEMINI_MODEL, lookupRpd, summarizeUpdate } from './services/gemini-service.js'
 import {
-  listShops as ucListShops, setShops as ucSetShops, loadUpdateState, runFullCheck, todayChangedCount, readUpdateLog
+  listShops as ucListShops, setShops as ucSetShops, loadUpdateState, runFullCheck, todayChangedCount, readUpdateLog,
+  listPatterns as ucListPatterns, setPatterns as ucSetPatterns, resetPatterns as ucResetPatterns, PATTERN_CATEGORIES
 } from './services/update-check-service.js'
 import { storeGoogleKey, loadGoogleKey, clearGoogleKey } from './services/settings-service.js'
 import {
@@ -513,11 +514,11 @@ if (!gotLock) {
       })
       return 'sent'
     }
-    const geminiSummarizeUpdate = async (shopName, diffText) => {
+    const geminiSummarizeUpdate = async (shopName, diffText, matched) => {
       const key = googleKeyOf()
       if (!key) return null
       try {
-        return await summarizeUpdate({ apiKey: key, model: DEFAULT_GEMINI_MODEL, shopName, diffText })
+        return await summarizeUpdate({ apiKey: key, model: DEFAULT_GEMINI_MODEL, shopName, diffText, matched })
       } catch {
         return null
       }
@@ -552,6 +553,7 @@ if (!gotLock) {
           lastCheckedAt: rec.lastCheckedAt || null,
           lastChangedAt: rec.lastChangedAt || null,
           lastSummary: rec.lastSummary || null,
+          lastMatchedPatterns: rec.lastMatchedPatterns || [],
           lastError: rec.lastError || null
         }
       })
@@ -566,6 +568,9 @@ if (!gotLock) {
     ipcMain.handle('update-check:set-shops', (_e, shops) => ucSetShops(userDataDir, shops))
     ipcMain.handle('update-check:run-now', () => runUpdateCheckNow())
     ipcMain.handle('update-check:set-email-pass', (_e, plain) => storeEmailPass(userDataDir, String(plain || '').trim(), { encryptFn: p => safeStorage.encryptString(p) }))
+    ipcMain.handle('update-check:patterns:get', () => ({ patterns: ucListPatterns(userDataDir), categories: PATTERN_CATEGORIES }))
+    ipcMain.handle('update-check:patterns:set', (_e, patterns) => ucSetPatterns(userDataDir, patterns))
+    ipcMain.handle('update-check:patterns:reset', () => ucResetPatterns(userDataDir))
     // 스케줄 — 지정 시각 이후 오늘 미실행이면 실행(어제 미실행 보완 포함). 10분 간격 체크.
     const ucTick = async () => {
       try {
@@ -919,11 +924,13 @@ async function runE2E(outPath, userDataDir) {
         ucTestPage = ucTestPage.replace('기본배송비 2,500원', '기본배송비 3,000원 (2026-10-05 적용)')
         const ucRun2 = await win.webContents.executeJavaScript('window.ruleMgr.updateCheck.runNow()')
         const ucStatus = await win.webContents.executeJavaScript('window.ruleMgr.updateCheck.getStatus()')
+        const ucMatched = (ucRun2.changedList || [])[0] && (ucRun2.changedList[0].matched || []).some(m => m.cat === 'policy')
         result.updateCheckCheck = !!(ucRun1.changedCount === 0 && ucRun1.geminiCalls === 0
-          && ucRun2.changedCount === 1 && ucRun2.email === 'skipped-not-configured'
+          && ucRun2.changedCount === 1 && ucMatched && ucRun2.email === 'skipped-not-configured'
           && ucStatus.todayChanged >= 1)
         result.updateCheckDetail = {
           run1Changed: ucRun1.changedCount, run2Changed: ucRun2.changedCount,
+          matched: (ucRun2.changedList || [])[0] ? (ucRun2.changedList[0].matched || []).map(m => `${m.p}(${m.cat})`) : [],
           gemini: ucRun2.geminiCalls, email: ucRun2.email, todayChanged: ucStatus.todayChanged
         }
       } finally {

@@ -34,7 +34,10 @@ contextBridge.exposeInMainWorld('ruleMgr', {
     getStatus: () => ipcRenderer.invoke('update-check:get-status'),
     setShops: shops => ipcRenderer.invoke('update-check:set-shops', shops),
     runNow: () => ipcRenderer.invoke('update-check:run-now'),
-    setEmailPass: plain => ipcRenderer.invoke('update-check:set-email-pass', plain)
+    setEmailPass: plain => ipcRenderer.invoke('update-check:set-email-pass', plain),
+    getPatterns: () => ipcRenderer.invoke('update-check:patterns:get'),
+    setPatterns: patterns => ipcRenderer.invoke('update-check:patterns:set', patterns),
+    resetPatterns: () => ipcRenderer.invoke('update-check:patterns:reset')
   },
   inboxList: () => ipcRenderer.invoke('inbox:list'),
   onInbox: cb => {

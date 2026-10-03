@@ -118,13 +118,15 @@ export async function checkOne(shop, userDataDir, { callGemini } = {}) {
   const changed = !isFirstCheck && rec.lastHash !== hash
   let summary = rec.lastSummary || null
   let diffPreview = null
+  let matched = rec.lastMatchedPatterns || []
 
   if (changed) {
     diffPreview = changedBlocks(rec.lastText || '', text)
+    matched = matchPatterns(diffPreview, listPatterns(userDataDir))
     state.summaries = state.summaries || {}
     summary = state.summaries[hash] || null
     if (!summary && callGemini && diffPreview) {
-      try { summary = await callGemini(shop.name, diffPreview) } catch { summary = null }
+      try { summary = await callGemini(shop.name, diffPreview, matched) } catch { summary = null }
       if (summary) {
         state.summaries[hash] = summary
         const keys = Object.keys(state.summaries)
@@ -140,9 +142,10 @@ export async function checkOne(shop, userDataDir, { callGemini } = {}) {
   rec.lastError = null
   rec.status = isFirstCheck ? 'baseline' : changed ? 'changed' : 'unchanged'
   rec.lastSummary = summary
+  rec.lastMatchedPatterns = matched
   state.shops[shop.id] = rec
   saveUpdateState(userDataDir, state)
-  return { status: rec.status, summary, diffPreview }
+  return { status: rec.status, summary, diffPreview, matched }
 }
 
 export async function runFullCheck(userDataDir, { callGemini, sendEmail, onProgress } = {}) {
@@ -155,16 +158,16 @@ export async function runFullCheck(userDataDir, { callGemini, sendEmail, onProgr
   for (const shop of shops) {
     if (onProgress) onProgress(`[${shop.name}] 확인 중…`)
     const r = await checkOne(shop, userDataDir, {
-      callGemini: async (name, diff) => {
+      callGemini: async (name, diff, matched) => {
         if (onProgress) onProgress(`[${name}] 변경 감지 — Gemini 요약 중…`)
-        const s = callGemini ? await callGemini(name, diff) : null
+        const s = callGemini ? await callGemini(name, diff, matched) : null
         if (s) geminiCalls++
         return s
       }
     })
     if (r.status === 'changed') {
       changedCount++
-      changedList.push({ name: shop.name, url: shop.url, summary: r.summary, diffPreview: r.diffPreview })
+      changedList.push({ name: shop.name, url: shop.url, summary: r.summary, diffPreview: r.diffPreview, matched: r.matched })
     }
     if (r.status === 'error') errors++
   }
@@ -184,4 +187,105 @@ export async function runFullCheck(userDataDir, { callGemini, sendEmail, onProgr
 export function todayChangedCount(state) {
   const today = new Date().toISOString().slice(0, 10)
   return Object.values(state.shops || {}).filter(r => r.lastChangedAt && r.lastChangedAt.slice(0, 10) === today).length
+}
+
+/*
+ * 검색어/패턴 리스트 (검색어_패턴 리스트.txt 기반)
+ * 변경 diff를 카테고리별 패턴으로 로컬 매칭해 태깅한다 — Gemini 없이 중요도 분류.
+ * 구문 패턴이 단어 단독보다 정확하므로 cat을 구분해 표시한다.
+ */
+export const PATTERN_CATEGORIES = {
+  'cart-order': '장바구니/주문서 문맥',
+  policy: '정책/규칙 변경',
+  ui: 'UI/화면 구조',
+  general: '변경 전반'
+}
+
+export const DEFAULT_PATTERNS = [
+  { p: '장바구니 기능 개편', cat: 'cart-order' },
+  { p: '주문서 화면 변경', cat: 'cart-order' },
+  { p: '주문서 화면 개편', cat: 'cart-order' },
+  { p: '주문/결제 단계 UI 개편', cat: 'cart-order' },
+  { p: '주문하기 화면', cat: 'cart-order' },
+  { p: '결제하기 화면', cat: 'cart-order' },
+  { p: '장바구니에 담긴 상품', cat: 'cart-order' },
+  { p: '배송비 정책 변경', cat: 'policy' },
+  { p: '배송비 기준 변경', cat: 'policy' },
+  { p: '무료배송 기준 금액 변경', cat: 'policy' },
+  { p: '최소 주문 금액 변경', cat: 'policy' },
+  { p: '최소 구매 금액 변경', cat: 'policy' },
+  { p: '쿠폰 적용 정책 변경', cat: 'policy' },
+  { p: '포인트 사용 조건 변경', cat: 'policy' },
+  { p: '적립금 사용 기준 변경', cat: 'policy' },
+  { p: '이용약관 개정', cat: 'policy' },
+  { p: '이용약관 일부 개정', cat: 'policy' },
+  { p: '환불', cat: 'policy' },
+  { p: '수수료', cat: 'policy' },
+  { p: '패널티', cat: 'policy' },
+  { p: '배송비', cat: 'policy' },
+  { p: 'UI 변경', cat: 'ui' },
+  { p: '화면 개편', cat: 'ui' },
+  { p: '화면 구성 변경', cat: 'ui' },
+  { p: '디자인 변경', cat: 'ui' },
+  { p: '레이아웃 변경', cat: 'ui' },
+  { p: 'UX 개선', cat: 'ui' },
+  { p: 'UX 변경', cat: 'ui' },
+  { p: '버튼 위치 변경', cat: 'ui' },
+  { p: '메뉴 구조 변경', cat: 'ui' },
+  { p: '페이지 구조 변경', cat: 'ui' },
+  { p: '인터페이스 개선', cat: 'ui' },
+  { p: '변경 안내', cat: 'general' },
+  { p: '정책 변경', cat: 'general' },
+  { p: '시스템 변경', cat: 'general' },
+  { p: '시스템 개편', cat: 'general' },
+  { p: '서비스 변경', cat: 'general' },
+  { p: '서비스 개편', cat: 'general' },
+  { p: '조건 변경', cat: 'general' },
+  { p: '기능 변경', cat: 'general' },
+  { p: '기능 추가', cat: 'general' },
+  { p: '기능 개선', cat: 'general' },
+  { p: '변경 예정', cat: 'general' },
+  { p: '변경 공지', cat: 'general' },
+  { p: '변경 안내문', cat: 'general' },
+  { p: '변경 사항', cat: 'general' },
+  { p: '변경 내역', cat: 'general' },
+  { p: '개편', cat: 'general' },
+  { p: '리뉴얼', cat: 'general' },
+  { p: '업데이트', cat: 'general' },
+  { p: '개선', cat: 'general' },
+  { p: '조정', cat: 'general' },
+  { p: '수정', cat: 'general' },
+  { p: '변경', cat: 'general' }
+]
+
+const patternsPathOf = userDataDir => path.join(dirOf(userDataDir), 'patterns.json')
+
+export function listPatterns(userDataDir) {
+  return readJson(patternsPathOf(userDataDir), null) || DEFAULT_PATTERNS.map(p => ({ ...p }))
+}
+export function setPatterns(userDataDir, patterns) {
+  const clean = (Array.isArray(patterns) ? patterns : [])
+    .filter(p => p && String(p.p || '').trim())
+    .map(p => ({ p: String(p.p).trim().slice(0, 60), cat: PATTERN_CATEGORIES[p.cat] ? p.cat : 'general' }))
+  writeJson(patternsPathOf(userDataDir), clean)
+  return clean
+}
+export function resetPatterns(userDataDir) {
+  try { fs.unlinkSync(patternsPathOf(userDataDir)) } catch {}
+  return listPatterns(userDataDir)
+}
+
+export function matchPatterns(text, patterns) {
+  const t = String(text || '')
+  const seen = new Set()
+  const out = []
+  for (const pat of patterns || []) {
+    const key = pat.p
+    if (seen.has(key)) continue
+    if (t.includes(pat.p)) {
+      seen.add(key)
+      out.push({ p: pat.p, cat: pat.cat })
+    }
+  }
+  return out
 }
