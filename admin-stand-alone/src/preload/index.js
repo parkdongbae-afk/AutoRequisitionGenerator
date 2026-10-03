@@ -1,5 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+// 렌더러 초기 크래시 수집 — E2E·디버깅용(모든 페이지 스크립트보다 먼저 등록)
+window.__errs = window.__errs || []
+window.addEventListener('error', e => window.__errs.push('pageerror: ' + (e.message || e) + ' @ ' + String(e.filename || '').split(/[\\/]/).pop() + ':' + e.lineno))
+window.addEventListener('unhandledrejection', e => window.__errs.push('unhandled: ' + String(e.reason && (e.reason.stack || e.reason.message) || e.reason).slice(0, 300)))
+
 contextBridge.exposeInMainWorld('ruleMgr', {
   zaiBridgeStatus: () => ipcRenderer.invoke('zai-bridge-status'),
   projectDetect: startDir => ipcRenderer.invoke('project:detect', startDir),

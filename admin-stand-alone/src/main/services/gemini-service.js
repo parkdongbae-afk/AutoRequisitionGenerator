@@ -53,19 +53,25 @@ export async function testGeminiConnection(apiKey, fetchImpl = fetch) {
   }
 }
 
-export function buildExtractionPrompt(captures) {
+export function buildExtractionPrompt(captures, imageCount = 0) {
   const blocks = captures.map((c, i) => `### 캡처 ${i + 1}: ${c.label}\n\`\`\`html\n${c.html}\n\`\`\``).join('\n\n')
+  const imgNote = imageCount > 0 ? `\n추가로 화면 캡처 이미지 ${imageCount}장이 첨부되어 있습니다 — 이미지 속 품목도 추출하세요.\n` : ''
   return [
     '당신은 쇼핑몰 캡처 화면에서 품목 정보를 추출하는 전문가입니다.',
-    '아래 캡처 DOM(스크립트 제거된 HTML)에서 구매 품목을 전부 추출해 다음 JSON만 출력하세요.',
+    '아래 입력(캡처 DOM 또는 화면 캡처 이미지)에서 구매 품목을 전부 추출해 다음 JSON만 출력하세요.',
     '{"items":[{"name":"품목명","spec":"규격/옵션(없으면 빈 문자열)","qty":수량,"unitPrice":단가}],"shippingFee":배송비,"orderTotal":최종주문금액}',
     '규칙: ① unitPrice는 수량 1개당 가격 — 화면에 합계만 있으면 합계÷수량 ② 여러 캡처는 같은 주문의 다른 화면(장바구니/주문서)일 수 있으므로 같은 품목 반복은 한 번만 ③ 숫자는 콤마 없는 정수 ④ shippingFee·orderTotal은 화면에 보일 때만 숫자로, 없으면 null ⑤ 추출 불가한 항목은 만들지 마세요.'
-  ].join('\n') + '\n\n' + blocks
+  ].join('\n') + imgNote + '\n\n' + blocks
 }
 
-export async function extractItemsWithGemini({ apiKey, model, captures, fetchImpl = fetch, timeoutMs = TIMEOUT_MS }) {
+export async function extractItemsWithGemini({ apiKey, model, captures = [], images = [], fetchImpl = fetch, timeoutMs = TIMEOUT_MS }) {
+  const parts = [{ text: buildExtractionPrompt(captures, images.length) }]
+  for (const img of images) {
+    parts.push({ inline_data: { mime_type: img.mimeType || 'image/png', data: img.data } })
+  }
+  parts.push({ text: '위 입력 전체에서 품목을 추출해 지정된 JSON만 출력하세요.' })
   const body = {
-    contents: [{ role: 'user', parts: [{ text: buildExtractionPrompt(captures) }] }],
+    contents: [{ role: 'user', parts }],
     generationConfig: { temperature: 0.1, responseMimeType: 'application/json' }
   }
   const data = await geminiFetch(fetchImpl, apiKey, `/models/${encodeURIComponent(model)}:generateContent`, {

@@ -49,6 +49,11 @@ export function getState() {
   return state
 }
 
+// useSyncExternalStore용 스냅샷 — 불리언(참조 안정)으로 React 재렌더 루프 방지
+export function getMappingActiveSnapshot() {
+  return !!state.token
+}
+
 export function stepLabel(step) {
   return STEP_LABEL[step] || step
 }
@@ -65,7 +70,7 @@ export function registerFrame(el) {
 }
 
 function sendMode() {
-  if (frameEl && frameEl.contentWindow) {
+  if (frameEl && frameEl.isConnected && frameEl.contentWindow) {
     frameEl.contentWindow.postMessage(
       { type: 'picker-mode', mode: state.mode, rowSelector: state.picks.row && state.picks.row.selector }, '*'
     )

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useSyncExternalStore } from 'react'
 import GeneratePanel from './GeneratePanel.jsx'
 import AnswerMakerPanel from './AnswerMakerPanel.jsx'
 import MappingPanel from './MappingPanel.jsx'
@@ -7,7 +7,7 @@ import VerificationPanel from './VerificationPanel.jsx'
 import GitPanel from './GitPanel.jsx'
 import LogPanel from './LogPanel.jsx'
 import { diffLines, diffSummary } from '../../shared/line-diff.js'
-import { subscribe, getState, startMapping } from './mapping-state.js'
+import { subscribe, getMappingActiveSnapshot, startMapping } from './mapping-state.js'
 
 const TABS = [
   ['home', '🏠 홈'],
@@ -55,7 +55,7 @@ export default function App() {
   const [editOrig, setEditOrig] = useState('')
   const [showDiff, setShowDiff] = useState(false)
   const [msg, setMsg] = useState('')
-  const [mappingActive, setMappingActive] = useState(false)
+  const mappingActive = useSyncExternalStore(subscribe, getMappingActiveSnapshot)
   const [txs, setTxs] = useState([])
   const [deleteAsk, setDeleteAsk] = useState(null)
   const [deleteTyped, setDeleteTyped] = useState('')
@@ -193,7 +193,6 @@ export default function App() {
     const opened = await window.ruleMgr.mapping.openFile()
     if (opened) {
       startMapping(opened, { baseId: '', name: '', match: '', isCart: false })
-      setMappingActive(true)
       setActiveTab('mapping')
     }
   }
@@ -218,15 +217,19 @@ export default function App() {
   useEffect(() => {
     console.info('[mapping-debug] effect enter')
     const un = subscribe(() => {
-      const active = !!getState().token
-      setMappingActive(active)
-      if (active) setActiveTab('mapping')
+      console.info('[mapping-debug] notify — listeners will re-read snapshot')
     })
-    // 구독 즉시 현재 상태로 동기화 — 구독 전 startMapping이 실행돼도 유실 없음
-    setMappingActive(!!getState().token)
     console.info('[mapping-debug] subscribe complete')
     return un
   }, [])
+  useEffect(() => {
+    // useSyncExternalStore가 구독을 커밋 시점에 완료한 뒤 passive effect에서 handshake를 연다
+    window.__mappingSubscriptionReady = true
+    console.info('[mapping-debug] subscription ready')
+  }, [])
+  useEffect(() => {
+    if (mappingActive) setActiveTab('mapping')
+  }, [mappingActive])
 
   const diffStat = diffSummary(diffLines(editOrig, editText))
 
@@ -235,7 +238,7 @@ export default function App() {
       <header style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 40, borderBottom: '2px solid #5B4DFB', padding: '10px 16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <h1 style={{ fontSize: 18, margin: 0 }}>쇼핑몰 규칙 관리자</h1>
-          <span style={{ fontSize: 11, color: '#94a3b8' }}>v0.10.0</span>
+          <span style={{ fontSize: 11, color: '#94a3b8' }}>v0.13.0</span>
           {project && <span style={{ fontSize: 11, color: '#64748b' }}>{project.repoRoot.split(/[\\/]/).pop()} · 규칙 {project.rulesCount}종 · v{project.rulesJsonVersion || '?'}</span>}
         </div>
         <nav style={{ display: 'flex', gap: 2, marginTop: 8 }}>

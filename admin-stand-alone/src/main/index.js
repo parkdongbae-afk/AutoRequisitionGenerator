@@ -578,7 +578,9 @@ async function runE2E(outPath, userDataDir) {
       const scriptTags = (served.match(/<script/gi) || []).length
       result.mappingCheck.pickerServed = served.includes('picker-select') && scriptTags === 1
       result.mappingCheck.scriptsStripped = !/<script[^>]+src=/.test(served) && served.includes('Content-Security-Policy')
+      result.mappingCheck.subscriptionReady = await waitFor(() => win.webContents.executeJavaScript('window.__mappingSubscriptionReady === true'), 10000)
       await win.webContents.executeJavaScript('window.__mgr && window.__mgr.startMapping(' + JSON.stringify(opened.token) + ', { isCart: true })')
+      result.mappingCheck.iframeFound = await waitFor(() => win.webContents.executeJavaScript(`[...document.querySelectorAll("iframe")].some(f => f.isConnected && f.src.includes(${JSON.stringify(opened.token)}))`), 10000)
       result.mappingCheck.pickerReady = await waitFor(() => win.webContents.executeJavaScript('!!(window.__mgr && window.__mgr.state().pickerReady)'), 10000)
       result.mappingCheck.domDump = await win.webContents.executeJavaScript(
         'JSON.stringify({ iframes: [...document.querySelectorAll("iframe")].map(f => ({ src: f.src.slice(0, 60), rect: f.getBoundingClientRect().toJSON() })), mgr: window.__mgr ? window.__mgr.state() : null, hasMgr: !!window.__mgr })'
@@ -732,7 +734,8 @@ async function runE2E(outPath, userDataDir) {
     result.rendererErrors = (resultRendererErrors || []).concat(result.rendererErrors || [])
     result.ok = result.projectCheck && result.settingsCheck
       && (!enc || result.safeStorageRoundtrip) && result.jevCheck
-      && result.mappingCheck.opened && result.mappingCheck.pickerServed
+      && result.mappingCheck.opened && result.mappingCheck.subscriptionReady
+      && result.mappingCheck.iframeFound && result.mappingCheck.pickerServed
       && result.mappingCheck.rowClick && result.mappingCheck.nameClick
       && result.mappingCheck.checkedClick && result.mappingCheck.assemble
       && result.generationCheck.status === 'approved'
@@ -768,17 +771,25 @@ async function clickInSampleFrame(win, token, selector) {
   while (Date.now() < deadline) {
     const frame = findFrame(win.webContents.mainFrame, token)
     if (frame) {
-      try {
-        const ok = await frame.executeJavaScript(`(() => {
-          const el = document.querySelector(${JSON.stringify(selector)})
-          if (!el) return false
-          el.scrollIntoView()
-          el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
-          return true
-        })()`)
-        if (ok) return true
-      } catch (e) {
-        lastError = e
+      const rectOk = await win.webContents.executeJavaScript(`(() => {
+        const f = [...document.querySelectorAll('iframe')].find(f => f.src.includes(${JSON.stringify(token)}))
+        if (!f || !f.isConnected) return false
+        const r = f.getBoundingClientRect()
+        return r.width > 0 && r.height > 0
+      })()`).catch(() => false)
+      if (rectOk) {
+        try {
+          const ok = await frame.executeJavaScript(`(() => {
+            const el = document.querySelector(${JSON.stringify(selector)})
+            if (!el) return false
+            el.scrollIntoView()
+            el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
+            return true
+          })()`)
+          if (ok) return true
+        } catch (e) {
+          lastError = e
+        }
       }
     }
     await waitMs(300)
