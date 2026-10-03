@@ -22,7 +22,7 @@ import { verifyProject } from './services/verification-service.js'
 import { verifySamples } from './services/sample-verify-service.js'
 import { runShadowFixtures } from './services/shadow-fixtures.js'
 import { scanCaptureFolder, summarizeScan } from './services/sample-folder-service.js'
-import { gitStatus, gitDiff, gitStage, gitCommit as gitCommitFiles, gitPush, gitAheadBehind } from './services/git-service.js'
+import { gitStatus, gitDiff, gitStage, gitCommit as gitCommitFiles, gitPush, gitAheadBehind, gitFileLastDate, gitRemoteVersions } from './services/git-service.js'
 import { createLogStore, maskSecrets } from './services/log-service.js'
 import { startReceiver, stopReceiver } from './services/receiver-service.js'
 import { sampleHtmlText } from '../../../app/src/main/lib/admin-text.js'
@@ -40,6 +40,13 @@ const jevService = new JevJudgeService({
 })
 
 app.setName('쇼핑몰 규칙 관리자')
+// E2E 격리 — 별도 userData로 잠금·설정 충돌을 피한다(사용자 실행 앱과 동시 E2E 가능)
+const e2eUserDataArg = process.argv.find(a => a.startsWith('--e2e-user-data='))
+if (e2eUserDataArg) {
+  const dir = e2eUserDataArg.split('=').slice(1).join('=')
+  try { fs.mkdirSync(dir, { recursive: true }) } catch {}
+  app.setPath('userData', dir)
+}
 // admin-sample:// — 메모리의 샘플 문서만 서빙하는 안전 뷰어 프로토콜(§12.2)
 protocol.registerSchemesAsPrivileged([
   { scheme: 'admin-sample', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
@@ -83,6 +90,7 @@ let resultRendererErrors = null
 
 const gotLock = app.requestSingleInstanceLock('shopping-mall-rule-manager')
 if (!gotLock) {
+  try { fs.writeFileSync(join(app.getPath('temp'), 'rule-mgr-lock-fail.txt'), String(Date.now()), 'utf-8') } catch {}
   app.quit()
 } else {
   app.on('second-instance', () => {
@@ -400,25 +408,65 @@ if (!gotLock) {
     ipcMain.handle('rules:read-file', (_e, p) => fs.readFileSync(p, 'utf-8'))
     ipcMain.handle('versions:get', async () => {
       const repo = project ? project.repoRoot : resolveRepoRoot()
-      const readManifest = p => {
-        try { return JSON.parse(fs.readFileSync(p, 'utf-8')).version || null } catch { return null }
+      const altRoot = join(app.getAppPath(), '..')
+      const readManifestMulti = rel => {
+        for (const root of [repo, altRoot]) {
+          try {
+            const src = fs.readFileSync(join(root, ...rel), 'utf-8').replace(/^\uFEFF/, '')
+            return JSON.parse(src).version || null
+          } catch {}
+        }
+        return null
       }
-      const readPkgVersion = p => readManifest(p)
+      const readStatusBarVersion = () => {
+        const re = /const APP_VERSION\s*=\s*['"]([^'"]+)['"]/
+        for (const root of [repo, altRoot]) {
+          try {
+            const m = re.exec(fs.readFileSync(join(root, 'app', 'src', 'main', 'index.js'), 'utf-8'))
+            if (m) return m[1]
+          } catch {}
+        }
+        return null
+      }
+      const dateOf = rel => gitFileLastDate(repo, rel)
+      const [capDate, autoDate, cartOrderDate, rulesDate, userAppDate, adminPkgDate] = await Promise.all([
+        dateOf('app/extension/manifest.json'),
+        dateOf('app/extension-autoselect/manifest.json'),
+        dateOf('admin-stand-alone/extension-장바구니주문서저장/manifest.json'),
+        dateOf('rules.json'),
+        dateOf('app/src/main/index.js'),
+        dateOf('admin-stand-alone/package.json')
+      ])
       const extensions = [
-        { name: '품의캡처', owner: 'user', version: readManifest(join(repo, 'app', 'extension', 'manifest.json')) },
-        { name: '품의 자동 선택', owner: 'user', version: readManifest(join(repo, 'app', 'extension-autoselect', 'manifest.json')) },
-        { name: '장바구니/주문서 저장', owner: 'admin', version: readManifest(join(repo, 'admin-stand-alone', 'extension-장바구니주문서저장', 'manifest.json')) }
+        { name: '품의캡처', owner: 'user', version: readManifestMulti(['app', 'extension', 'manifest.json']), updatedAt: capDate },
+        { name: '품의 자동 선택', owner: 'user', version: readManifestMulti(['app', 'extension-autoselect', 'manifest.json']), updatedAt: autoDate },
+        { name: '장바구니/주문서 저장', owner: 'admin', version: readManifestMulti(['admin-stand-alone', 'extension-장바구니주문서저장', 'manifest.json']), updatedAt: cartOrderDate }
       ]
       return {
         app: app.getVersion(),
+        adminAppUpdatedAt: adminPkgDate,
         electron: process.versions.electron || '',
         chrome: process.versions.chrome || '',
         node: process.versions.node || '',
         rulesVersion: project ? (project.rulesJsonVersion || null) : null,
+        rulesUpdatedAt: rulesDate,
         repoFound: !!project,
-        userApp: { version: readPkgVersion(join(repo, 'app', 'package.json')) },
+        repoRoot: repo,
+        userApp: { version: readStatusBarVersion(), updatedAt: userAppDate },
         extensions
       }
+    })
+    ipcMain.handle('versions:remote', async () => {
+      const repo = project ? project.repoRoot : resolveRepoRoot()
+      const files = [
+        'app/extension/manifest.json',
+        'app/extension-autoselect/manifest.json',
+        'admin-stand-alone/extension-장바구니주문서저장/manifest.json',
+        'app/src/main/index.js',
+        'admin-stand-alone/package.json',
+        'rules.json'
+      ]
+      return gitRemoteVersions(repo, { files })
     })
 
     // 샘플 추출 검증(§7.7) + Git 배포(§7.8) — push 실패는 파일 적용 실패가 아니다(§17.5)
@@ -492,7 +540,12 @@ if (!gotLock) {
     if (process.argv.includes('--e2e')) {
       const outArg = process.argv.find(a => a.startsWith('--e2e-out='))
       const outPath = outArg ? outArg.split('=')[1] : join(app.getPath('temp'), 'rule-manager-e2e.json')
-      await runE2E(outPath, userDataDir)
+      try {
+        await runE2E(outPath, userDataDir)
+      } catch (e) {
+        try { fs.writeFileSync(outPath, JSON.stringify({ fatal: 'runE2E 예외: ' + String(e && e.stack || e) }, null, 1)) } catch {}
+        app.exit(1)
+      }
     }
 
     app.on('activate', () => {
@@ -690,10 +743,15 @@ async function runE2E(outPath, userDataDir) {
     if (gen && gen.results && gen.results[0] && gen.results[0].rule) {
       result.generationCheck.perSampleCount = gen.results[0].deterministic &&
         gen.results[0].deterministic.perSample && gen.results[0].deterministic.perSample.length
-      // Shadow 실사용 수집(§19) — 판정이 자동 기록되고 관리자 승인으로 확정된다
-      result.shadowResolveCheck = !!(await win.webContents.executeJavaScript(
-        'window.ruleMgr.shadowResolve("e2emall", "approve").then(r => r.updated >= 1).then(() => window.ruleMgr.jev.getStatus()).then(s => s.stats.records > 0)'
-      ))
+      // Shadow 실사용 수집(§19) — 판정이 자동 기록되고 관리자 승인으로 확정된다.
+      // jev stats는 e2e 태그 레코드를 제외하므로 raw 레코드를 직접 검증한다.
+      const sr = await win.webContents.executeJavaScript(
+        'window.ruleMgr.shadowResolve("e2emall", "approve")'
+      )
+      const rawShadow = readShadowRecords(userDataDir)
+      result.shadowResolveCheck = !!(sr && sr.updated >= 1
+        && rawShadow.some(r => r.ruleId === 'e2emall' && r.adminDecision === 'approve'))
+      result.shadowResolveDetail = { updated: sr && sr.updated, resolveError: sr && sr.error, rawCount: rawShadow.length }
       const applied = await win.webContents.executeJavaScript(
         `window.ruleMgr.generate.apply(${JSON.stringify(tmpRepo)}, ${JSON.stringify(gen)}, { apply: true, rebuildBundle: false })`
       )
@@ -720,6 +778,15 @@ async function runE2E(outPath, userDataDir) {
       result.verificationCheck = !!(await win.webContents.executeJavaScript(
         'window.ruleMgr.verifyAll().then(r => r.summary && r.summary.ok && r.summary.PASS > 0)'
       ))
+
+      // i버전 탭(§versions) — 품의캡처·사용자 앱 하단 버전 실측
+      const vres = await win.webContents.executeJavaScript('window.ruleMgr.versions()')
+      result.versionsCheck = !!vres.userApp.version && vres.extensions.some(x => x.name === '품의캡처' && x.version)
+      result.versionsDetail = {
+        userApp: vres.userApp.version,
+        ext: vres.extensions.map(x => `${x.name}:${x.version}`),
+        repoRoot: vres.repoRoot
+      }
 
       // Shadow 픽스처(§19.2) — Key 없으면 전 케이스가 오류로 집계되는 우아한 처리 확인.
       // Key가 있으면 실제 API 72회 호출이 되므로 E2E에서는 생략한다.
@@ -776,6 +843,7 @@ async function runE2E(outPath, userDataDir) {
       && result.transactionCheck.filesGone
       && result.deleteCheck && result.deleteCheck.deleted && result.deleteCheck.status === 'applied'
       && result.verificationCheck && result.shadowFixtureCheck
+      && result.versionsCheck
       && result.gitCheck && result.sampleVerifyCheck && result.logCheck
   } catch (e) {
     result.fatal = String(e && e.message || e)

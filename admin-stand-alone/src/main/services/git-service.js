@@ -103,3 +103,39 @@ export async function gitAheadBehind(repoRoot, { remote = 'origin' } = {}) {
     return { behind: null, ahead: null }
   }
 }
+
+export async function gitFileLastDate(repoRoot, relPath) {
+  try {
+    const out = await git(repoRoot, ['log', '-1', '--format=%cs', '--', relPath], 5000)
+    return out.trim() || null
+  } catch {
+    return null
+  }
+}
+
+function extractVersion(content, fileName) {
+  if (/index\.js$/.test(fileName)) {
+    const m = /const APP_VERSION\s*=\s*['"]([^'"]+)['"]/.exec(content)
+    return m ? m[1] : null
+  }
+  const m = /"version"\s*:\s*"([^"]+)"/.exec(content)
+  return m ? m[1] : null
+}
+
+export async function gitRemoteVersions(repoRoot, { remote = 'origin', branch = 'main', files = [] } = {}) {
+  let fetched = false
+  try {
+    await git(repoRoot, ['fetch', remote, branch], 15000)
+    fetched = true
+  } catch {}
+  const versions = {}
+  for (const f of files) {
+    try {
+      const out = await git(repoRoot, ['show', `${remote}/${branch}:${f}`], 5000)
+      versions[f] = extractVersion(out, f)
+    } catch {
+      versions[f] = null
+    }
+  }
+  return { fetched, versions }
+}
