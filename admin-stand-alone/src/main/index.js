@@ -2,7 +2,7 @@
  * 쇼핑몰 규칙 관리자 — 단독 실행형(ADMIN_SATAD_ALONE.MD)
  * 사용자용 앱과 이름·userData·단일 인스턴스 잠금·수신 포트를 공유하지 않는다(§4.2).
  */
-import { app, BrowserWindow, ipcMain, dialog, protocol, net, safeStorage, shell, Notification } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, net, safeStorage, shell, Notification, Menu } from 'electron'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
 import fs from 'node:fs'
@@ -13,7 +13,7 @@ import { rulesList, saveRule, deleteRuleTx, deleteRulePreview, registerBuiltinRu
 import { appendShadowRecord, readShadowRecords, resolveAdminDecision } from './services/shadow-store.js'
 import {
   loadSettings, saveSettings, storeTypesafeKey, loadTypesafeKey, clearTypesafeKey,
-  shadowStats, autoApproveAllowed, storeEmailPass
+  shadowStats, autoApproveAllowed, storeEmailPass, loadEmailPass
 } from './services/settings-service.js'
 import {
   openMappingSample, closeSample, serveSampleRequest,
@@ -59,6 +59,32 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow = null
 let receiver = null
+
+// 메뉴 — Mall(관리 쇼핑몰 링크: rules.json match 도메인)·Help(사용 설명서 PDF·버전 정보)
+function buildAppMenu(repoRoot) {
+  let mallItems = []
+  if (repoRoot) {
+    try {
+      const bundle = JSON.parse(fs.readFileSync(join(repoRoot, 'rules.json'), 'utf-8'))
+      mallItems = (bundle.rules || [])
+        .filter(r => Array.isArray(r.match) && r.match.length)
+        .map(r => ({
+          label: `${r.name || r.id} — ${r.match[0]}`,
+          click: () => { try { shell.openExternal(`https://${r.match[0]}`) } catch {} }
+        }))
+    } catch {}
+  }
+  const manualPath = app.isPackaged
+    ? join(process.resourcesPath, 'resources', '쇼핑몰규칙관리자_사용설명서.pdf')
+    : join(app.getAppPath(), 'resources', '쇼핑몰규칙관리자_사용설명서.pdf')
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: 'Mall', submenu: mallItems.length ? mallItems : [{ label: '규칙 없음 — 홈 탭에서 저장소를 선택하세요', enabled: false }] },
+    { label: 'Help', submenu: [
+      { label: '사용 설명서 열기 (PDF)', click: () => { try { shell.openPath(manualPath) } catch {} } },
+      { label: '버전 정보', click: () => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('navigate-tab', 'versions') } }
+    ] }
+  ]))
+}
 
 // §7.9 — 운영 로그는 링 버퍼로 모아 하단 상태바·로그 패널에 중계한다
 function opLog(level, step, message, detail = '') {
@@ -186,6 +212,7 @@ if (!gotLock) {
         const recents = [project.repoRoot, ...(s.recentProjects || [])].filter((v, i, a) => v && a.indexOf(v) === i).slice(0, 5)
         saveSettings(userDataDir, { recentProjects: recents, lastProject: project.repoRoot })
       }
+      try { buildAppMenu(project ? project.repoRoot : '') } catch {}
       return project
     }
     ipcMain.handle('project:detect', (_e, startDir) => {
@@ -486,7 +513,7 @@ if (!gotLock) {
     const loadEmailPassSafe = () => {
       try { return loadEmailPass(userDataDir, { decryptFn: b => safeStorage.decryptString(b) }) } catch { return null }
     }
-    const sendUpdateEmail = async (changedList, changedCount) => {
+    const sendUpdateEmail = async (changedList, changedCount, isTest = false) => {
       const cfg = emailConfigOf()
       if (!cfg) return 'skipped-not-configured'
       const nodemailer = (await import('nodemailer')).default
@@ -496,20 +523,30 @@ if (!gotLock) {
         secure: cfg.port === 465,
         auth: { user: cfg.user, pass: cfg.pass }
       })
-      const body = [
-        `점검 일시: ${new Date().toLocaleString('ko-KR')}`,
-        `오늘 변경된 쇼핑몰: ${changedCount}개`,
-        '',
-        ...changedList.map(c => [
-          `■ ${c.name} — ${c.url}`,
-          c.summary ? `${c.summary.summary || ''}${c.summary.impact ? '\n[영향] ' + c.summary.impact : ''}` : '(Gemini 요약 없음 — Key 미설정 또는 요약 실패)',
-          ''
-        ].join('\n'))
-      ].join('\n')
+      const body = isTest
+        ? [
+            '이것은 SMTP 설정 테스트 메일입니다.',
+            '',
+            '실제 알림 메일 형식:',
+            '제목: [쇼핑몰 규칙 변경 알림] 오늘 변경된 쇼핑몰: N개',
+            '본문: 점검 일시 · 변경 쇼핑몰 이름/링크 · Gemini 요약 · 영향 포인트'
+          ].join('\n')
+        : [
+            `점검 일시: ${new Date().toLocaleString('ko-KR')}`,
+            `오늘 변경된 쇼핑몰: ${changedCount}개`,
+            '',
+            ...changedList.map(c => [
+              `■ ${c.name} — ${c.url}`,
+              c.summary ? `${c.summary.summary || ''}${c.summary.impact ? '\n[영향] ' + c.summary.impact : ''}` : '(Gemini 요약 없음 — Key 미설정 또는 요약 실패)',
+              ''
+            ].join('\n'))
+          ].join('\n')
       await transporter.sendMail({
         from: cfg.user,
         to: cfg.to,
-        subject: `[쇼핑몰 규칙 변경 알림] 오늘 변경된 쇼핑몰: ${changedCount}개`,
+        subject: isTest
+          ? '[쇼핑몰 규칙 관리자] 테스트 메일 — SMTP 설정 정상'
+          : `[쇼핑몰 규칙 변경 알림] 오늘 변경된 쇼핑몰: ${changedCount}개`,
         text: body
       })
       return 'sent'
@@ -568,6 +605,26 @@ if (!gotLock) {
     ipcMain.handle('update-check:set-shops', (_e, shops) => ucSetShops(userDataDir, shops))
     ipcMain.handle('update-check:run-now', () => runUpdateCheckNow())
     ipcMain.handle('update-check:set-email-pass', (_e, plain) => storeEmailPass(userDataDir, String(plain || '').trim(), { encryptFn: p => safeStorage.encryptString(p) }))
+    ipcMain.handle('update-check:test-email', async () => {
+      if (!emailConfigOf()) return { ok: false, message: 'SMTP 설정이 없습니다 — 이메일 알림 섹션에서 먼저 저장하세요' }
+      try {
+        await sendUpdateEmail([{ name: '테스트', url: '(테스트 발송)', summary: { summary: 'SMTP 설정이 정상 동작합니다.' } }], 1, true)
+        return { ok: true, to: emailConfigOf().to }
+      } catch (e) {
+        return { ok: false, message: String(e.message || e).slice(0, 200) }
+      }
+    })
+    ipcMain.handle('update-check:test-notification', () => {
+      try {
+        new Notification({
+          title: '[쇼핑몰 규칙 변경 알림] 오늘 변경된 쇼핑몰: 1개',
+          body: '(테스트) 데스크톱 알림이 정상 표시됩니다 — 업데이트 확인 탭을 확인해 주세요.'
+        }).show()
+        return { ok: true }
+      } catch (e) {
+        return { ok: false, message: String(e.message || e) }
+      }
+    })
     ipcMain.handle('update-check:patterns:get', () => ({ patterns: ucListPatterns(userDataDir), categories: PATTERN_CATEGORIES }))
     ipcMain.handle('update-check:patterns:set', (_e, patterns) => ucSetPatterns(userDataDir, patterns))
     ipcMain.handle('update-check:patterns:reset', () => ucResetPatterns(userDataDir))
@@ -633,6 +690,49 @@ if (!gotLock) {
     })
 
     createWindow()
+
+    // 이메일·데스크톱 알림 테스트 모드 — 결과를 파일로 출력하고 종료한다
+    if (process.env.TEMP_EMAIL_PASS) {
+      let out = {}
+      try {
+        const r = storeEmailPass(userDataDir, process.env.TEMP_EMAIL_PASS, { encryptFn: p => safeStorage.encryptString(p) })
+        const dec = loadEmailPass(userDataDir, { decryptFn: b => safeStorage.decryptString(b) })
+        out = { ok: r.ok === true, message: r.message || '', sameProcessDecrypt: dec === process.env.TEMP_EMAIL_PASS }
+      } catch (e) {
+        out = { ok: false, message: String(e.message || e) }
+      }
+      fs.writeFileSync(join(app.getPath('temp'), 'rule-mgr-set-pass.json'), JSON.stringify(out, null, 1), 'utf-8')
+      app.exit(0)
+    }
+    if (process.argv.includes('--test-email')) {
+      const outPath = join(app.getPath('temp'), 'rule-mgr-test-email.json')
+      let out = {}
+      try {
+        new Notification({
+          title: '[쇼핑몰 규칙 변경 알림] 오늘 변경된 쇼핑몰: 1개',
+          body: '(테스트) 데스크톱 알림이 정상 표시됩니다 — 업데이트 확인 탭을 확인해 주세요.'
+        }).show()
+        out.notification = 'shown'
+        if (!emailConfigOf()) {
+          out = { ok: false, message: 'SMTP 설정 없음' }
+        } else {
+          await sendUpdateEmail([{ name: '테스트 쇼핑몰', url: '(테스트 발송)', summary: { summary: 'SMTP 설정이 정상 동작합니다.' } }], 1, true)
+          out = { ok: true, to: emailConfigOf().to }
+        }
+      } catch (e) {
+        out = { ok: false, message: String(e.message || e).slice(0, 200) }
+      }
+      const dbg = loadSettings(userDataDir)
+      out.debug = {
+        userDataDir,
+        hasUpdateCheck: !!dbg.updateCheck,
+        hasEmail: !!(dbg.updateCheck && dbg.updateCheck.email),
+        hasPass: !!dbg.emailPass
+      }
+      fs.writeFileSync(outPath, JSON.stringify(out, null, 1), 'utf-8')
+      opLog(out.ok ? 'info' : 'warn', 'update-check', `테스트 이메일: ${JSON.stringify(out)}`)
+      app.exit(0)
+    }
 
     // 스모크 모드: 브리지 감지 결과를 파일로 출력하고 종료한다(자동 검증용 — Windows에서
     // GUI 프로세스의 stdout은 콘솔에 붙지 않는다). 실패해도 반드시 결과 파일을 남긴다.

@@ -13,6 +13,11 @@ const STATUS_LABEL = {
 }
 const CAT_COLOR = { 'cart-order': '#5B4DFB', policy: '#dc2626', ui: '#0e7490', general: '#64748b' }
 
+const fmtKst = iso => {
+  if (!iso) return null
+  try { return new Date(iso).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) } catch { return iso }
+}
+
 export default function UpdateCheckPanel() {
   const [st, setSt] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -118,13 +123,23 @@ export default function UpdateCheckPanel() {
         <p style={{ fontSize: 12, color: '#64748b', margin: '6px 0' }}>
           {st ? (
             <>
-              마지막 점검: <b>{st.lastFullCheckAt ? String(st.lastFullCheckAt).replace('T', ' ').slice(0, 16) : '아직 없음'}</b>
+              마지막 점검: <b>{fmtKst(st.lastFullCheckAt) || '아직 없음'}</b> <span style={{ fontSize: 10, color: '#94a3b8' }}>(한국 시간)</span>
               {' · '}전체 점검 {st.lastFullCheckDate ? '완료' : '미실행'}
               {' · '}<b style={{ color: st.todayChanged > 0 ? '#b45309' : '#1a7f37' }}>오늘 변경 쇼핑몰: {st.todayChanged}개</b>
               {' · '}점검 예약: 매일 {cfg.hour}시{cfg.enabled ? '' : ' (자동 점검 꺼짐)'}
             </>
           ) : '불러오는 중…'}
         </p>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '4px 0' }}>
+          <button onClick={async () => {
+            const r = await window.ruleMgr.updateCheck.testEmail()
+            setMsg(r.ok ? `✓ 테스트 메일 발송 완료 → ${r.to} (제목: [쇼핑몰 규칙 관리자] 테스트 메일 — SMTP 설정 정상)` : `테스트 메일 실패: ${r.message}`)
+          }} style={{ ...btnSm2, fontSize: 11 }}>📧 테스트 메일 발송</button>
+          <button onClick={async () => {
+            const r = await window.ruleMgr.updateCheck.testNotification()
+            setMsg(r.ok ? '✓ 데스크톱 알림을 화면에 표시했습니다 (우측 하단 확인)' : `알림 실패: ${r.message}`)
+          }} style={{ ...btnSm2, fontSize: 11 }}>🔔 데스크톱 알림 테스트</button>
+        </div>
         {msg && <p style={{ fontSize: 12, color: '#4c3de6', margin: '2px 0', whiteSpace: 'pre-wrap' }}>{msg}</p>}
       </section>
 
@@ -171,8 +186,8 @@ export default function UpdateCheckPanel() {
                         </div>
                       )}
                     </td>
-                    <td style={{ padding: 4, color: '#64748b' }}>{s.lastCheckedAt ? String(s.lastCheckedAt).replace('T', ' ').slice(0, 16) : '—'}</td>
-                    <td style={{ padding: 4, color: '#64748b' }}>{s.lastChangedAt ? String(s.lastChangedAt).replace('T', ' ').slice(0, 16) : '—'}</td>
+                    <td style={{ padding: 4, color: '#64748b' }}>{fmtKst(s.lastCheckedAt) || '—'}</td>
+                    <td style={{ padding: 4, color: '#64748b' }}>{fmtKst(s.lastChangedAt) || '—'}</td>
                     <td style={{ padding: 4, fontSize: 11, maxWidth: 320 }}>
                       {s.status === 'changed' && !s.lastSummary && <span style={{ color: '#94a3b8' }}>(요약 없음 — Gemini Key 미설정 또는 실패)</span>}
                       {s.lastSummary && (
@@ -294,7 +309,7 @@ export default function UpdateCheckPanel() {
             <tbody>
               {st.log.map((l, i) => (
                 <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: 3, color: '#64748b', width: 150 }}>{String(l.ts || '').replace('T', ' ').slice(0, 19)}</td>
+                  <td style={{ padding: 3, color: '#64748b', width: 150 }}>{fmtKst(l.ts)}</td>
                   <td style={{ padding: 3 }}>전체 {l.total}몰 · 변경 {l.changed}건 · Gemini {l.geminiCalls}회{l.errors ? ` · 오류 ${l.errors}` : ''}</td>
                 </tr>
               ))}
@@ -307,3 +322,4 @@ export default function UpdateCheckPanel() {
 }
 
 const inp = { border: '1px solid #e2e8f0', borderRadius: 4, padding: '3px 6px', fontSize: 12, width: '100%', boxSizing: 'border-box' }
+const btnSm2 = { padding: '3px 12px', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff' }

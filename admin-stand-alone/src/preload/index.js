@@ -35,9 +35,16 @@ contextBridge.exposeInMainWorld('ruleMgr', {
     setShops: shops => ipcRenderer.invoke('update-check:set-shops', shops),
     runNow: () => ipcRenderer.invoke('update-check:run-now'),
     setEmailPass: plain => ipcRenderer.invoke('update-check:set-email-pass', plain),
+    testEmail: () => ipcRenderer.invoke('update-check:test-email'),
+    testNotification: () => ipcRenderer.invoke('update-check:test-notification'),
     getPatterns: () => ipcRenderer.invoke('update-check:patterns:get'),
     setPatterns: patterns => ipcRenderer.invoke('update-check:patterns:set', patterns),
     resetPatterns: () => ipcRenderer.invoke('update-check:patterns:reset')
+  },
+  onNavigate: cb => {
+    const h = (_e, tab) => cb(tab)
+    ipcRenderer.on('navigate-tab', h)
+    return () => ipcRenderer.removeListener('navigate-tab', h)
   },
   inboxList: () => ipcRenderer.invoke('inbox:list'),
   onInbox: cb => {
