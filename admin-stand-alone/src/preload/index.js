@@ -41,6 +41,10 @@ contextBridge.exposeInMainWorld('ruleMgr', {
     setPatterns: patterns => ipcRenderer.invoke('update-check:patterns:set', patterns),
     resetPatterns: () => ipcRenderer.invoke('update-check:patterns:reset')
   },
+  schedule: {
+    get: () => ipcRenderer.invoke('schedule:get'),
+    set: params => ipcRenderer.invoke('schedule:set', params)
+  },
   onNavigate: cb => {
     const h = (_e, tab) => cb(tab)
     ipcRenderer.on('navigate-tab', h)

@@ -32,6 +32,9 @@ export default function UpdateCheckPanel() {
   const [newPattern, setNewPattern] = useState('')
   const [newPatternCat, setNewPatternCat] = useState('general')
   const [showPatterns, setShowPatterns] = useState(false)
+  const [ps, setPs] = useState({ autoStart: false, startTime: '02:55', autoExit: false, exitTime: '03:30' })
+  const [psMsg, setPsMsg] = useState('')
+  const [psTask, setPsTask] = useState(null)
 
   const load = async () => {
     try {
@@ -45,6 +48,9 @@ export default function UpdateCheckPanel() {
       const p = await window.ruleMgr.updateCheck.getPatterns()
       setPatterns(p.patterns)
       setCategories(p.categories)
+      const sc = await window.ruleMgr.schedule.get()
+      setPs(c => ({ ...c, ...sc.cfg }))
+      setPsTask({ name: sc.taskName, registered: sc.taskRegistered, autoStartedSession: sc.autoStartedSession })
     } catch (e) { setMsg(String(e.message || e)) }
   }
   useEffect(() => { load() }, [])
@@ -80,6 +86,22 @@ export default function UpdateCheckPanel() {
     const next = { ...cfg, ...patch }
     setCfg(next)
     await window.ruleMgr.settings.set({ updateCheck: { enabled: next.enabled, hour: Number(next.hour) || 3 } })
+  }
+
+  const savePs = async (patch) => {
+    const next = { ...ps, ...patch }
+    setPs(next)
+    setPsMsg('저장 중…')
+    const r = await window.ruleMgr.schedule.set(next)
+    if (r.ok) {
+      setPsTask(t => ({ ...(t || { name: 'ShoppingMallRuleManager_AutoStart' }), registered: r.taskRegistered }))
+      setPsMsg(r.ok && next.autoStart
+        ? (r.taskRegistered ? `✓ 저장 완료 — 매일 ${next.startTime}에 프로그램이 자동 실행됩니다` : '⚠ 저장했으나 작업 스케줄러 등록 실패')
+        : '✓ 저장 완료 — 자동 시작이 해제되었습니다')
+      await load()
+    } else {
+      setPsMsg('저장 실패: ' + (r.message || ''))
+    }
   }
 
   const saveEmail = async () => {
@@ -230,6 +252,33 @@ export default function UpdateCheckPanel() {
           </label>
           <span style={{ fontSize: 11, color: '#94a3b8' }}>앱이 실행 중일 때만 점검하며, 미실행 날이 있으면 다음 실행시 보완합니다. 변경 없는 쇼핑몰은 Gemini를 호출하지 않습니다.</span>
         </div>
+
+        <div style={{ borderTop: '1px solid #f1f5f9', margin: '10px 0 8px' }} />
+        <h3 style={{ fontSize: 14, margin: '0 0 6px' }}>⏰ 프로그램 자동 시작/종료</h3>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center', fontSize: 12, flexWrap: 'wrap' }}>
+          <label>
+            <input type="checkbox" checked={ps.autoStart} onChange={e => setPs({ ...ps, autoStart: e.target.checked })} /> 자동 시작
+          </label>
+          <input type="time" value={ps.startTime} onChange={e => setPs({ ...ps, startTime: e.target.value })} style={{ border: '1px solid #e2e8f0', borderRadius: 4, fontSize: 12, padding: '2px 6px' }} />
+          <label>
+            <input type="checkbox" checked={ps.autoExit} onChange={e => setPs({ ...ps, autoExit: e.target.checked })} /> 자동 종료
+          </label>
+          <input type="time" value={ps.exitTime} onChange={e => setPs({ ...ps, exitTime: e.target.value })} style={{ border: '1px solid #e2e8f0', borderRadius: 4, fontSize: 12, padding: '2px 6px' }} />
+          <button onClick={() => savePs({})} style={{ padding: '4px 14px', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: 12 }}>💾 저장</button>
+        </div>
+        <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+          {psTask && (
+            <span>
+              작업 스케줄러: <b style={{ color: psTask.registered ? '#1a7f37' : '#94a3b8' }}>{psTask.registered ? '등록됨' : '미등록'}</b>
+              {' · '}이 세션: {psTask.autoStartedSession ? '자동 시작됨' : '수동 실행'}
+              {psMsg ? ` · ${psMsg}` : ''}
+            </span>
+          )}
+        </div>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
+          자동 시작은 Windows 작업 스케줄러에 등록되어 설정 시각에 프로그램이 켜집니다(프로그램을 이동·이름 변경하면 다시 저장).
+          자동 종료는 자동 시작으로 켜진 세션에서만 동작하며, 수동으로 연 창은 닫지 않습니다. 권장 조합: 자동 시작 02:55 · 점검 03:00 · 자동 종료 03:30
+        </p>
       </section>
 
       <section style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14, marginBottom: 14 }}>

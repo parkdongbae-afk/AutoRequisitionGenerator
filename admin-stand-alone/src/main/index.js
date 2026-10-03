@@ -32,6 +32,9 @@ import {
   listShops as ucListShops, setShops as ucSetShops, loadUpdateState, runFullCheck, todayChangedCount, readUpdateLog,
   listPatterns as ucListPatterns, setPatterns as ucSetPatterns, resetPatterns as ucResetPatterns, PATTERN_CATEGORIES
 } from './services/update-check-service.js'
+import {
+  DEFAULT_TASK_NAME, buildTaskCmdline, isTaskRegistered, registerAutoStartTask, unregisterAutoStartTask, parseHm
+} from './services/schedule-service.js'
 import { storeGoogleKey, loadGoogleKey, clearGoogleKey } from './services/settings-service.js'
 import {
   prepareGenerationRequest, runGeneration, applyGenerationResult
@@ -45,6 +48,8 @@ const jevService = new JevJudgeService({
 })
 
 app.setName('쇼핑몰 규칙 관리자')
+// 작업 스케줄러 자동 시작 세션 표시 — 자동 종료 타이머는 이 세션에서만 동작한다
+const autoStarted = process.argv.includes('--auto-started')
 // E2E 격리 — 별도 userData로 잠금·설정 충돌을 피한다(사용자 실행 앱과 동시 E2E 가능)
 const e2eUserDataArg = process.argv.find(a => a.startsWith('--e2e-user-data='))
 if (e2eUserDataArg) {
@@ -628,7 +633,42 @@ if (!gotLock) {
     ipcMain.handle('update-check:patterns:get', () => ({ patterns: ucListPatterns(userDataDir), categories: PATTERN_CATEGORIES }))
     ipcMain.handle('update-check:patterns:set', (_e, patterns) => ucSetPatterns(userDataDir, patterns))
     ipcMain.handle('update-check:patterns:reset', () => ucResetPatterns(userDataDir))
+
+    // 프로그램 자동 시작/종료 일정 — 시작은 Windows 작업 스케줄러 등록, 종료는 자동 시작 세션의 타이머
+    ipcMain.handle('schedule:get', async () => {
+      const s = loadSettings(userDataDir)
+      const cfg = s.programSchedule || { autoStart: false, startTime: '03:00', autoExit: false, exitTime: '03:30' }
+      return {
+        cfg,
+        taskName: DEFAULT_TASK_NAME,
+        taskRegistered: await isTaskRegistered(DEFAULT_TASK_NAME),
+        cmdline: buildTaskCmdline({ execPath: process.execPath, appPath: app.getAppPath(), isPackaged: app.isPackaged }),
+        autoStartedSession: autoStarted
+      }
+    })
+    ipcMain.handle('schedule:set', async (_e, p) => {
+      const taskName = String((p && p.taskName) || DEFAULT_TASK_NAME)
+      const autoStart = !!(p && p.autoStart)
+      const startTime = String((p && p.startTime) || '03:00')
+      const autoExit = !!(p && p.autoExit)
+      const exitTime = String((p && p.exitTime) || '03:30')
+      if (parseHm(startTime) == null) return { ok: false, message: '시작 시각 형식 오류(HH:mm)' }
+      if (parseHm(exitTime) == null) return { ok: false, message: '종료 시각 형식 오류(HH:mm)' }
+      saveSettings(userDataDir, { programSchedule: { autoStart, startTime, autoExit, exitTime } })
+      let taskRegistered = false
+      if (autoStart) {
+        const cmdline = buildTaskCmdline({ execPath: process.execPath, appPath: app.getAppPath(), isPackaged: app.isPackaged })
+        taskRegistered = await registerAutoStartTask(taskName, startTime, cmdline)
+        if (!taskRegistered) return { ok: false, message: '작업 스케줄러 등록 실패 — 작업 스케줄러 권한을 확인하세요', taskRegistered }
+      } else {
+        await unregisterAutoStartTask(taskName)
+        taskRegistered = false
+      }
+      opLog('info', 'schedule', `자동 시작/종료 저장 — 시작 ${autoStart ? startTime : '끔'} · 종료 ${autoExit ? exitTime : '끔'} · 작업 등록 ${taskRegistered}`)
+      return { ok: true, taskRegistered, autoStart, startTime, autoExit, exitTime }
+    })
     // 스케줄 — 지정 시각 이후 오늘 미실행이면 실행(어제 미실행 보완 포함). 10분 간격 체크.
+    let ucScheduledDone = false
     const ucTick = async () => {
       try {
         const s = loadSettings(userDataDir)
@@ -640,6 +680,7 @@ if (!gotLock) {
         if (now.getHours() >= hour && st.lastFullCheckDate !== now.toISOString().slice(0, 10)) {
           if (!ucListShops(userDataDir).length) return
           await runUpdateCheckNow()
+          ucScheduledDone = true
         }
       } catch (e) {
         opLog('warn', 'update-check', '스케줄 점검 실패: ' + String(e.message || e))
@@ -647,6 +688,26 @@ if (!gotLock) {
     }
     setInterval(ucTick, 10 * 60 * 1000)
     setTimeout(ucTick, 45 * 1000)
+
+    // 자동 종료 — 작업 스케줄러(--auto-started)로 켜진 세션에서 종료 시각 도달시 닫힘
+    const appStartedAt = Date.now()
+    setInterval(() => {
+      try {
+        if (!autoStarted) return
+        const s = loadSettings(userDataDir)
+        const cfg = s.programSchedule || {}
+        if (!cfg.autoExit) return
+        const exitMin = parseHm(cfg.exitTime || '03:30')
+        if (exitMin == null) return
+        const now = new Date()
+        const nowMin = now.getHours() * 60 + now.getMinutes()
+        if (nowMin >= exitMin && nowMin < exitMin + 30) {
+          if (!ucScheduledDone && Date.now() - appStartedAt < 2 * 60 * 60 * 1000) return
+          opLog('info', 'schedule', '자동 종료 시각 도달 — 프로그램을 닫습니다')
+          app.quit()
+        }
+      } catch {}
+    }, 30 * 1000)
 
     // 샘플 추출 검증(§7.7) + Git 배포(§7.8) — push 실패는 파일 적용 실패가 아니다(§17.5)
     ipcMain.handle('verify:samples', (_e, dir) => verifySamples(project ? project.repoRoot : resolveRepoRoot(), dir, {
@@ -1070,6 +1131,14 @@ async function runE2E(outPath, userDataDir) {
         ucServer.close()
       }
 
+      // 프로그램 자동 시작/종료 — 작업 스케줄러 등록/해제 검증(E2E 전용 작업명 사용 후 정리)
+      result.scheduleCheck = !!(await win.webContents.executeJavaScript(
+        `window.ruleMgr.schedule.set({ autoStart: true, startTime: '03:00', autoExit: true, exitTime: '03:30', taskName: 'RuleMgrE2E_Task' })
+          .then(r => r.ok && r.taskRegistered === true)
+          .then(() => window.ruleMgr.schedule.set({ autoStart: false, taskName: 'RuleMgrE2E_Task' }))
+          .then(r => r.ok && r.taskRegistered === false)`
+      ))
+
       // Shadow 픽스처(§19.2) — Key 없으면 전 케이스가 오류로 집계되는 우아한 처리 확인.
       // Key가 있으면 실제 API 72회 호출이 되므로 E2E에서는 생략한다.
       if (jevService.isConfigured()) {
@@ -1127,6 +1196,7 @@ async function runE2E(outPath, userDataDir) {
       && result.verificationCheck && result.shadowFixtureCheck
       && result.versionsCheck && result.updateCheckCheck
       && result.tableMappingCheck && result.tableMappingCheck.generalized
+      && result.scheduleCheck
       && result.gitCheck && result.sampleVerifyCheck && result.logCheck
   } catch (e) {
     result.fatal = String(e && e.message || e)
