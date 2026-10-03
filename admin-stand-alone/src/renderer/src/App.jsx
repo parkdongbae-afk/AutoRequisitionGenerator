@@ -6,6 +6,7 @@ import DiffView from './DiffView.jsx'
 import VerificationPanel from './VerificationPanel.jsx'
 import GitPanel from './GitPanel.jsx'
 import LogPanel from './LogPanel.jsx'
+import VersionsPanel from './VersionsPanel.jsx'
 import { diffLines, diffSummary } from '../../shared/line-diff.js'
 import { subscribe, getMappingActiveSnapshot, startMapping } from './mapping-state.js'
 
@@ -17,6 +18,7 @@ const TABS = [
   ['verify', '🧪 검증 센터'],
   ['git', '🚀 배포/Git'],
   ['backup', '💾 백업/복원'],
+  ['versions', 'ℹ 버전'],
   ['settings', '⚙ 설정']
 ]
 
@@ -238,7 +240,7 @@ export default function App() {
       <header style={{ position: 'sticky', top: 0, background: '#fff', zIndex: 40, borderBottom: '2px solid #5B4DFB', padding: '10px 16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <h1 style={{ fontSize: 18, margin: 0 }}>쇼핑몰 규칙 관리자</h1>
-          <span style={{ fontSize: 11, color: '#94a3b8' }}>v0.13.0</span>
+          <span style={{ fontSize: 11, color: '#94a3b8' }}>v0.14.0</span>
           {project && <span style={{ fontSize: 11, color: '#64748b' }}>{project.repoRoot.split(/[\\/]/).pop()} · 규칙 {project.rulesCount}종 · v{project.rulesJsonVersion || '?'}</span>}
         </div>
         <nav style={{ display: 'flex', gap: 2, marginTop: 8 }}>
@@ -254,6 +256,7 @@ export default function App() {
 
       <main style={{ padding: '16px 16px 48px' }}>
       <div style={{ display: activeTab === 'home' ? 'block' : 'none' }}>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 8px' }}>쇼핑몰 규칙 관리자 v0.14.0 — 전체 버전은 ℹ 버전 탭</p>
         <section style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14, marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <h2 style={{ fontSize: 15, margin: 0 }}>📁 대상 저장소</h2>
@@ -373,6 +376,10 @@ export default function App() {
             </table>
           )}
         </section>
+      </div>
+
+      <div style={{ display: activeTab === 'versions' ? 'block' : 'none' }}>
+        <VersionsPanel />
       </div>
 
       <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>

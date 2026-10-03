@@ -25,7 +25,8 @@ import { scanCaptureFolder, summarizeScan } from './services/sample-folder-servi
 import { gitStatus, gitDiff, gitStage, gitCommit as gitCommitFiles, gitPush, gitAheadBehind } from './services/git-service.js'
 import { createLogStore, maskSecrets } from './services/log-service.js'
 import { startReceiver, stopReceiver } from './services/receiver-service.js'
-import { listGeminiModels, testGeminiConnection, extractItemsWithGemini, DEFAULT_GEMINI_MODEL } from './services/gemini-service.js'
+import { sampleHtmlText } from '../../../app/src/main/lib/admin-text.js'
+import { listGeminiModels, testGeminiConnection, extractItemsWithGemini, DEFAULT_GEMINI_MODEL, lookupRpd } from './services/gemini-service.js'
 import { storeGoogleKey, loadGoogleKey, clearGoogleKey } from './services/settings-service.js'
 import {
   prepareGenerationRequest, runGeneration, applyGenerationResult
@@ -359,14 +360,19 @@ if (!gotLock) {
       const key = String(keyArg || '').trim() || googleKeyOf()
       return listGeminiModels(key)
     })
-    ipcMain.handle('answer:extract', async (_e, { model, files, images }) => {
+    ipcMain.handle('answer:extract', async (_e, { model, file, image }) => {
       const key = googleKeyOf()
-      const captures = (files || []).map((p, i) => {
-        const { html } = sampleHtmlText(p)
-        return { label: `캡처${i + 1}`, html }
-      })
-      const imgs = (images || []).map(img => ({ mimeType: img.mimeType || 'image/png', data: img.data }))
-      return extractItemsWithGemini({ apiKey: key, model: model || DEFAULT_GEMINI_MODEL, captures, images: imgs })
+      const captures = []
+      const imgs = []
+      if (file) captures.push({ label: String(file).split(/[\\/]/).pop(), html: sampleHtmlText(file).html })
+      if (image) imgs.push({ mimeType: image.mimeType || 'image/png', data: image.data })
+      const usedModel = model || DEFAULT_GEMINI_MODEL
+      const result = await extractItemsWithGemini({ apiKey: key, model: usedModel, captures, images: imgs })
+      const today = new Date().toISOString().slice(0, 10)
+      const prev = loadSettings(userDataDir).googleUsage
+      const count = prev && prev.date === today ? (Number(prev.count) || 0) + 1 : 1
+      saveSettings(userDataDir, { googleUsage: { date: today, count } })
+      return { ...result, usage: { date: today, count, rpd: lookupRpd(usedModel) } }
     })
     ipcMain.handle('answer:pick-file', async () => {
       const r = await dialog.showOpenDialog(mainWindow, {
@@ -384,12 +390,32 @@ if (!gotLock) {
         filters: [{ name: 'Excel 97-2003', extensions: ['xls'] }]
       })
       if (r.canceled || !r.filePath) return { ok: false, canceled: true }
-      const aoa = [['품목명', '규격', '수량', '예상단가']]
-      for (const it of items) aoa.push([it.name, it.spec || '', Number(it.qty) || 1, Number(it.unitPrice) || 0])
+      const aoa = [['품목명', '규격', '단위', '수량', '예상단가']]
+      for (const it of items) aoa.push([it.name, it.spec || '', it.unit || '개', Number(it.qty) || 1, Number(it.unitPrice) || 0])
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), '품목내역')
       XLSX.writeFile(wb, r.filePath, { bookType: 'xls' })
       return { ok: true, path: r.filePath, count: items.length }
+    })
+    ipcMain.handle('versions:get', async () => {
+      const repo = project ? project.repoRoot : resolveRepoRoot()
+      const readManifest = p => {
+        try { return JSON.parse(fs.readFileSync(p, 'utf-8')).version || null } catch { return null }
+      }
+      const extensions = [
+        { name: '품의캡처', version: readManifest(join(repo, 'app', 'extension', 'manifest.json')) },
+        { name: '품의 자동 선택', version: readManifest(join(repo, 'app', 'extension-autoselect', 'manifest.json')) },
+        { name: '장바구니/주문서 저장', version: readManifest(join(repo, 'admin-stand-alone', 'extension-장바구니주문서저장', 'manifest.json')) }
+      ]
+      return {
+        app: app.getVersion(),
+        electron: process.versions.electron || '',
+        chrome: process.versions.chrome || '',
+        node: process.versions.node || '',
+        rulesVersion: project ? (project.rulesJsonVersion || null) : null,
+        repoFound: !!project,
+        extensions
+      }
     })
 
     // 샘플 추출 검증(§7.7) + Git 배포(§7.8) — push 실패는 파일 적용 실패가 아니다(§17.5)

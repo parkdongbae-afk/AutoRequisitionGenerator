@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react'
+import { inferUnit, mergeShippingRows } from '../../shared/answer-logic.js'
 
 // "엑셀 정답 만들기" — 캡처(Gemini: HTML 또는 화면 캡처 이미지) → 품목 추출 → 정답 xls 저장
+// 캡처별 개별 추출로 sourceId 연결: 캡처 삭제시 해당 추출 결과도 삭제된다
 let imageSeq = 0
+
+const COLS = ['쇼핑몰 이름', '품목명', '규격', '단위', '수량', '단가', '총합', '']
 
 export default function AnswerMakerPanel({ active = true }) {
   const [entries, setEntries] = useState([])         // { id, type: 'file'|'image', label, path?, data?, mimeType? }
@@ -11,12 +15,13 @@ export default function AnswerMakerPanel({ active = true }) {
   const [models, setModels] = useState([])          // [{id, displayName}]
   const [model, setModel] = useState('gemini-3.5-flash-lite')
   const [conn, setConn] = useState(null)
-  const [items, setItems] = useState([])            // {name, spec, qty, unitPrice}
-  const [orderTotal, setOrderTotal] = useState(null)
-  const [shippingFee, setShippingFee] = useState(null)
+  const [items, setItems] = useState([])            // {name, spec, unit, qty, unitPrice, sourceId, sourceLabel, isShipping}
+  const [mallNames, setMallNames] = useState({})    // sourceId → 쇼핑몰 이름
+  const [usage, setUsage] = useState(null)          // { date, count, rpd }
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
+  const [colWidths, setColWidths] = useState({})
 
   const refreshKey = async () => {
     try { setKeyState(await window.ruleMgr.google.hasKey()) } catch {}
@@ -61,7 +66,21 @@ export default function AnswerMakerPanel({ active = true }) {
       return [...fs, ...add]
     })
   }
-  const removeEntry = (id) => setEntries(fs => fs.filter(f => f.id !== id))
+
+  const removeEntry = (id) => {
+    setEntries(fs => fs.filter(f => f.id !== id))
+    setItems(arr => arr.filter(it => it.sourceId !== id))
+    setMallNames(m => { const n = { ...m }; delete n[id]; return n })
+  }
+
+  const clearAll = () => {
+    if (!entries.length && !items.length) return
+    if (!confirm('추출 결과와 캡처 입력을 모두 삭제할까요?')) return
+    setEntries([])
+    setItems([])
+    setMallNames({})
+    setMsg('전체 삭제 완료 — 캡처 내용도 함께 삭제되었습니다')
+  }
 
   const saveKey = async () => {
     const r = await window.ruleMgr.google.setKey(apiKeyInput)
@@ -102,30 +121,82 @@ export default function AnswerMakerPanel({ active = true }) {
     if (!entries.length) { setErr('캡처 파일 또는 화면 캡처를 먼저 추가하세요'); return }
     setBusy(true)
     setErr('')
-    try {
-      const r = await window.ruleMgr.answer.extract({
-        model,
-        files: entries.filter(x => x.type === 'file').map(x => x.path),
-        images: entries.filter(x => x.type === 'image').map(x => ({ mimeType: x.mimeType, data: x.data }))
-      })
-      setItems(r.items)
-      setOrderTotal(r.orderTotal)
-      setShippingFee(r.shippingFee)
-      setMsg(`추출 완료: ${r.items.length}건 — 내용을 확인하고 저장하세요`)
-    } catch (e) {
-      setErr('추출 실패: ' + String(e.message || e).slice(0, 200))
+    setMsg('')
+    const perEntry = {}
+    const errs = []
+    let fellBack = null
+    for (const f of entries) {
+      try {
+        const req = f.type === 'file'
+          ? { model, file: f.path }
+          : { model, image: { mimeType: f.mimeType, data: f.data } }
+        const r = await window.ruleMgr.answer.extract(req)
+        if (r.usage) setUsage(r.usage)
+        if (r.usedModel && r.usedModel !== model) fellBack = r.usedModel
+        if (r.mallName) setMallNames(m => ({ ...m, [f.id]: r.mallName }))
+        const rows = (r.items || []).map(it => ({
+          ...it,
+          unit: it.unit || inferUnit(it.name, it.spec),
+          sourceId: f.id,
+          sourceLabel: f.label,
+          isShipping: false
+        }))
+        if (r.shippingFee != null && Number(r.shippingFee) > 0) {
+          rows.push({
+            name: '배송비', spec: '', unit: '식', qty: 1, unitPrice: Number(r.shippingFee),
+            sourceId: f.id, sourceLabel: f.label, isShipping: true
+          })
+        }
+        perEntry[f.id] = rows
+      } catch (e) {
+        errs.push(`${f.label}: ${String(e.message || e).slice(0, 120)}`)
+      }
     }
+    setItems(prev => {
+      const bySrc = {}
+      for (const it of prev) { (bySrc[it.sourceId] = bySrc[it.sourceId] || []).push(it) }
+      Object.assign(bySrc, perEntry)
+      return entries.flatMap(f => bySrc[f.id] || [])
+    })
+    if (errs.length) setErr(errs.join('\n'))
+    setMsg(`추출 완료: ${Object.keys(perEntry).length}/${entries.length} 캡처 — 내용을 확인하고 저장하세요` + (fellBack ? ` (모델 폴백: ${fellBack})` : ''))
     setBusy(false)
   }
 
   const save = async () => {
     if (!items.length) { setErr('저장할 품목이 없습니다'); return }
-    const r = await window.ruleMgr.answer.save({ items })
-    if (r.ok) { setMsg(`저장 완료: ${r.path} (${r.count}건)`) } else if (!r.canceled) { setMsg('저장 실패') }
+    const normal = items.filter(it => !it.isShipping).map(it => ({
+      name: it.name, spec: it.spec || '', unit: it.unit || '개',
+      qty: Number(it.qty) || 1, unitPrice: Number(it.unitPrice) || 0
+    }))
+    const shipMerged = mergeShippingRows(items.filter(it => it.isShipping).map(it => ({ qty: Number(it.qty) || 1, unitPrice: Number(it.unitPrice) || 0 })))
+    const all = [...normal, ...shipMerged.map(s => ({ name: '배송비', spec: '', unit: '식', qty: s.qty, unitPrice: s.unitPrice }))]
+    const r = await window.ruleMgr.answer.save({ items: all })
+    if (r.ok) {
+      setMsg(`저장 완료: ${r.path} — 품목 ${normal.length}건 + 배송비 ${shipMerged.length}행(단가별 합산)`)
+    } else if (!r.canceled) {
+      setMsg('저장 실패')
+    }
   }
 
-  const total = items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.unitPrice) || 0), 0)
+  const goodsTotal = items.filter(it => !it.isShipping).reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.unitPrice) || 0), 0)
+  const shipTotal = items.filter(it => it.isShipping).reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.unitPrice) || 0), 0)
   const setItem = (i, field, value) => setItems(arr => arr.map((it, k) => k === i ? { ...it, [field]: value } : it))
+
+  const startResize = idx => e => {
+    e.preventDefault()
+    e.stopPropagation()
+    const th = e.currentTarget.parentElement
+    const startX = e.clientX
+    const startW = th.offsetWidth
+    const move = ev => setColWidths(w => ({ ...w, [idx]: Math.max(40, startW + ev.clientX - startX) }))
+    const up = () => {
+      window.removeEventListener('mousemove', move)
+      window.removeEventListener('mouseup', up)
+    }
+    window.addEventListener('mousemove', move)
+    window.addEventListener('mouseup', up)
+  }
 
   return (
     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -134,14 +205,17 @@ export default function AnswerMakerPanel({ active = true }) {
           <h3 style={{ fontSize: 13, margin: '0 0 6px' }}>📎 캡처 입력 (여러 장)</h3>
           <div style={{ display: 'flex', gap: 4 }}>
             <button onClick={addFiles} style={btnSm}>＋ mhtml/html 파일 추가</button>
+            <button onClick={clearAll} style={{ ...btnSm, color: '#dc2626' }}>🗑 전체 삭제</button>
           </div>
           <div style={{ marginTop: 6, border: '1px dashed #c7d2fe', borderRadius: 6, padding: '6px 8px', fontSize: 11, color: '#64748b' }}>
             쇼핑몰 화면을 캡처(PrintScreen 등)한 뒤 이 창에서 <b>Ctrl+V</b>로 여러 장 붙여넣을 수 있습니다.
+            캡처를 삭제하면 그 캡처의 추출 결과도 함께 삭제됩니다.
           </div>
           <ul style={{ margin: '6px 0 0', paddingLeft: 14, fontSize: 11, color: '#475569' }}>
             {entries.map(f => (
               <li key={f.id} style={{ marginBottom: 2, wordBreak: 'break-all' }}>
                 {f.type === 'image' ? '🖼 ' : '📄 '}{f.label}
+                {mallNames[f.id] && <span style={{ color: '#5B4DFB', marginLeft: 4 }}>({mallNames[f.id]})</span>}
                 <button onClick={() => removeEntry(f.id)} style={delBtn}>✕</button>
               </li>
             ))}
@@ -162,8 +236,13 @@ export default function AnswerMakerPanel({ active = true }) {
           <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
             <select value={model} onChange={e => setModel(e.target.value)} style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 4, fontSize: 11, minWidth: 0 }}>
               <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (기본)</option>
+              <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (폴백)</option>
               {models.map(m => <option key={m.id} value={m.id}>{m.displayName || m.id}</option>)}
             </select>
+          </div>
+          <div style={{ fontSize: 10, color: '#64748b', marginBottom: 4 }}>
+            사용량: 오늘 {usage ? usage.count : 0}회 호출 · RPD {usage && usage.rpd != null ? `${usage.rpd} (무료 등급 참고값)` : '미확인'}
+            {model === 'gemini-3.5-flash-lite' && ' — 3.5 실패 시 3.1 Flash Lite로 자동 전환'}
           </div>
           <button onClick={loadModels} style={{ width: '100%', padding: '4px 0', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', fontSize: 11, marginBottom: 4 }}>
             📋 모델 목록 불러오기
@@ -172,6 +251,7 @@ export default function AnswerMakerPanel({ active = true }) {
             🔗 연결 확인
           </button>
           {conn && <div style={{ fontSize: 10, marginTop: 4, color: conn.ok ? '#1a7f37' : '#dc2626' }}>{conn.text}</div>}
+          {keyMsg && <div style={{ fontSize: 10, marginTop: 4, color: '#4c3de6' }}>{keyMsg}</div>}
         </section>
       </div>
 
@@ -186,27 +266,41 @@ export default function AnswerMakerPanel({ active = true }) {
         {err && <p style={{ fontSize: 12, color: '#dc2626', margin: '0 0 6px', whiteSpace: 'pre-wrap' }}>{err}</p>}
         {items.length > 0 && (
           <>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, tableLayout: 'fixed' }}>
               <thead>
                 <tr style={{ background: '#f1f5f9', color: '#475569' }}>
-                  <th style={{ padding: 4, textAlign: 'left' }}>품목명</th>
-                  <th style={{ padding: 4, textAlign: 'left', width: 120 }}>규격</th>
-                  <th style={{ padding: 4, width: 60 }}>수량</th>
-                  <th style={{ padding: 4, width: 90 }}>단가</th>
-                  <th style={{ padding: 4, width: 90 }}>총합</th>
-                  <th style={{ padding: 4, width: 30 }}></th>
+                  {COLS.map((label, i) => (
+                    <th key={i} style={{ position: 'relative', padding: 4, textAlign: i >= 2 && i <= 6 ? 'center' : 'left', width: colWidths[i], userSelect: 'none' }}>
+                      {label === '쇼핑몰 이름' && (
+                        <button onClick={clearAll} style={{ ...btnSm, fontSize: 10, padding: '1px 6px', color: '#dc2626', borderColor: '#fecaca', marginRight: 4 }}>🗑 전체 삭제</button>
+                      )}
+                      {label}
+                      {i < COLS.length - 1 && (
+                        <span onMouseDown={startResize(i)} title="드래그로 열 너비 조절" style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', background: 'transparent' }} />
+                      )}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {items.map((it, i) => {
+                  const prev = items[i - 1]
+                  const groupStart = !prev || prev.sourceId !== it.sourceId
                   const sum = (Number(it.qty) || 0) * (Number(it.unitPrice) || 0)
+                  const rowBg = it.isShipping ? '#fff7ed' : undefined
                   return (
-                    <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
+                    <tr key={i} style={{ borderTop: '1px solid #f1f5f9', background: rowBg }}>
+                      <td style={{ padding: 3, fontSize: 11, color: '#5B4DFB', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={mallNames[it.sourceId] || ''}>
+                        {groupStart ? (mallNames[it.sourceId] || '—') : ''}
+                      </td>
                       <td style={{ padding: 3 }}>
-                        <input value={it.name} onChange={e => setItem(i, 'name', e.target.value)} style={{ width: '95%', border: '1px solid #f1f5f9', fontSize: 12 }} />
+                        <input value={it.name} onChange={e => setItem(i, 'name', e.target.value)} style={{ width: '95%', border: '1px solid #f1f5f9', fontSize: 12, fontWeight: it.isShipping ? 700 : 400 }} />
                       </td>
                       <td style={{ padding: 3 }}>
                         <input value={it.spec} onChange={e => setItem(i, 'spec', e.target.value)} style={{ width: '95%', border: '1px solid #f1f5f9', fontSize: 11 }} />
+                      </td>
+                      <td style={{ padding: 3, textAlign: 'center' }}>
+                        <input value={it.unit || ''} onChange={e => setItem(i, 'unit', e.target.value)} style={{ width: 44, border: '1px solid #f1f5f9', fontSize: 11, textAlign: 'center' }} />
                       </td>
                       <td style={{ padding: 3, textAlign: 'center' }}>
                         <input type="number" value={it.qty} onChange={e => setItem(i, 'qty', Number(e.target.value) || 0)} style={{ width: 48, border: '1px solid #f1f5f9', textAlign: 'right' }} />
@@ -224,9 +318,9 @@ export default function AnswerMakerPanel({ active = true }) {
               </tbody>
             </table>
             <div style={{ marginTop: 10, fontSize: 13, display: 'flex', gap: 20 }}>
-              <span>품목 총합: <b>{total.toLocaleString('ko-KR')}원</b></span>
-              {shippingFee != null && shippingFee > 0 && <span style={{ color: '#b45309' }}>배송비: {Number(shippingFee).toLocaleString('ko-KR')}원</span>}
-              <span>최종 주문 금액: <b style={{ color: '#5B4DFB' }}>{(total + (Number(shippingFee) || 0)).toLocaleString('ko-KR')}원</b></span>
+              <span>품목 총합: <b>{goodsTotal.toLocaleString('ko-KR')}원</b></span>
+              {shipTotal > 0 && <span style={{ color: '#b45309' }}>배송비: {shipTotal.toLocaleString('ko-KR')}원 (단위: 식)</span>}
+              <span>최종 주문 금액: <b style={{ color: '#5B4DFB' }}>{(goodsTotal + shipTotal).toLocaleString('ko-KR')}원</b></span>
             </div>
           </>
         )}

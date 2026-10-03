@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('ruleMgr', {
   pickDir: () => ipcRenderer.invoke('pick:dir'),
   shadowCollectFixtures: () => ipcRenderer.invoke('shadow:collect-fixtures'),
   shadowResolve: (ruleId, adminDecision) => ipcRenderer.invoke('shadow:resolve', ruleId, adminDecision),
+  versions: () => ipcRenderer.invoke('versions:get'),
   inboxList: () => ipcRenderer.invoke('inbox:list'),
   onInbox: cb => {
     const h = () => cb()
