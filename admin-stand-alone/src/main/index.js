@@ -397,15 +397,17 @@ if (!gotLock) {
       XLSX.writeFile(wb, r.filePath, { bookType: 'xls' })
       return { ok: true, path: r.filePath, count: items.length }
     })
+    ipcMain.handle('rules:read-file', (_e, p) => fs.readFileSync(p, 'utf-8'))
     ipcMain.handle('versions:get', async () => {
       const repo = project ? project.repoRoot : resolveRepoRoot()
       const readManifest = p => {
         try { return JSON.parse(fs.readFileSync(p, 'utf-8')).version || null } catch { return null }
       }
+      const readPkgVersion = p => readManifest(p)
       const extensions = [
-        { name: '품의캡처', version: readManifest(join(repo, 'app', 'extension', 'manifest.json')) },
-        { name: '품의 자동 선택', version: readManifest(join(repo, 'app', 'extension-autoselect', 'manifest.json')) },
-        { name: '장바구니/주문서 저장', version: readManifest(join(repo, 'admin-stand-alone', 'extension-장바구니주문서저장', 'manifest.json')) }
+        { name: '품의캡처', owner: 'user', version: readManifest(join(repo, 'app', 'extension', 'manifest.json')) },
+        { name: '품의 자동 선택', owner: 'user', version: readManifest(join(repo, 'app', 'extension-autoselect', 'manifest.json')) },
+        { name: '장바구니/주문서 저장', owner: 'admin', version: readManifest(join(repo, 'admin-stand-alone', 'extension-장바구니주문서저장', 'manifest.json')) }
       ]
       return {
         app: app.getVersion(),
@@ -414,6 +416,7 @@ if (!gotLock) {
         node: process.versions.node || '',
         rulesVersion: project ? (project.rulesJsonVersion || null) : null,
         repoFound: !!project,
+        userApp: { version: readPkgVersion(join(repo, 'app', 'package.json')) },
         extensions
       }
     })

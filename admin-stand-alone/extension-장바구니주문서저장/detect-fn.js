@@ -31,14 +31,7 @@ function detectPageState() {
   let itemCount = document.querySelectorAll(rowSel).length
   if (!itemCount) itemCount = document.querySelectorAll('input[type=checkbox]').length
 
-  let pageTotal = null
-  const totalRe = /(?:총\s*(?:결제|주문|상품)?\s*금액|결제\s*예정\s*금액|총\s*주문)\s*[:]?\s*([\d,]+)\s*원/g
-  while ((m = totalRe.exec(text))) {
-    const n = Number(m[1].replace(/,/g, ''))
-    if (n > 0 && (pageTotal == null || n > pageTotal)) pageTotal = n
-  }
-
-  return { kind, ship, shippingFee, itemCount, pageTotal, url, mallName: mallName() }
+  return { kind, ship, shippingFee, itemCount, url, mallName: mallName() }
 }
 
 function mallName() {

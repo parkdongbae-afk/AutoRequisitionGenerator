@@ -1,25 +1,29 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { inferUnit, mergeShippingRows } from '../../src/shared/answer-logic.js'
+import { deriveSpec, answerUnit, mergeShippingRows } from '../../src/shared/answer-logic.js'
 
-test('inferUnit — 교과서·책 계열은 권', () => {
-  assert.equal(inferUnit('중학 국어 교과서', ''), '권')
-  assert.equal(inferUnit('수학 문제집', '1학년용'), '권')
+test('deriveSpec — 옵션 원문에서 규격 토큰 추출(app/spec.js 방식)', () => {
+  const s = deriveSpec('새우깡', '90g, 20개입 1상자')
+  assert.ok(/20개입/.test(s), '개입 토큰 포함: ' + s)
+  assert.ok(/1상자/.test(s), '상자 토큰 포함: ' + s)
 })
 
-test('inferUnit — 급식·점심은 식', () => {
-  assert.equal(inferUnit('급식 신청', '5월'), '식')
-  assert.equal(inferUnit('점심 도시락', ''), '식')
+test('deriveSpec — 용량 토큰', () => {
+  const s = deriveSpec('생수', '500ml x 20개입')
+  assert.ok(/500ml/.test(s), 'ml 토큰 포함: ' + s)
 })
 
-test('inferUnit — 상자·세트 등 규격 키워드', () => {
-  assert.equal(inferUnit('새우깡', '30g, 20개입 1상자'), '상자')
-  assert.equal(inferUnit('볼펜', '12자루 세트'), '세트')
+test('deriveSpec — 용지 규격 토큰도 추출', () => {
+  assert.equal(deriveSpec('A4용지', ''), 'A4')
 })
 
-test('inferUnit — 판단 불가는 개', () => {
-  assert.equal(inferUnit('A4용지', ''), '개')
-  assert.equal(inferUnit('', ''), '개')
+test('deriveSpec — 토큰 없는 품목은 빈 문자열', () => {
+  assert.equal(deriveSpec('포스트잇', ''), '')
+})
+
+test('answerUnit — 배송비 식, 품목 개(docstore 방식)', () => {
+  assert.equal(answerUnit(true), '식')
+  assert.equal(answerUnit(false), '개')
 })
 
 test('mergeShippingRows — 같은 단가만 합산', () => {

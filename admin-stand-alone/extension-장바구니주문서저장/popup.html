@@ -3,27 +3,54 @@
 <head>
 <meta charset="utf-8">
 <style>
-  body { width: 300px; font-family: 'Malgun Gothic', sans-serif; font-size: 13px; margin: 0; padding: 10px; color: #0f172a; }
+  body { width: 320px; font-family: 'Malgun Gothic', sans-serif; font-size: 13px; margin: 0; padding: 10px; color: #0f172a; }
   h1 { font-size: 14px; margin: 0 0 8px; }
-  .row { margin: 4px 0; }
-  .lbl { color: #64748b; }
-  .val { font-weight: 700; }
-  .ok { color: #1a7f37; } .warn { color: #b45309; } .err { color: #dc2626; }
-  button { width: 100%; padding: 8px 0; margin-top: 8px; cursor: pointer; border: none; border-radius: 6px;
+  .note { font-size: 11px; color: #94a3b8; margin: 0 0 8px; }
+  .row { margin: 6px 0; }
+  .lbl { display: block; color: #64748b; font-size: 12px; margin-bottom: 2px; }
+  input, select { width: 100%; box-sizing: border-box; padding: 5px 6px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 13px; }
+  .inline { display: flex; gap: 4px; }
+  .inline input { flex: 1; }
+  .inline button { width: 28px; flex-shrink: 0; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; border-radius: 4px; }
+  button#send { width: 100%; padding: 8px 0; margin-top: 10px; cursor: pointer; border: none; border-radius: 6px;
            background: #5B4DFB; color: #fff; font-size: 13px; font-weight: 700; }
-  button:disabled { background: #c7c7c7; cursor: not-allowed; }
+  button#send:disabled { background: #c7c7c7; cursor: not-allowed; }
   #msg { margin-top: 6px; font-size: 12px; min-height: 16px; }
   #srv { font-size: 11px; color: #94a3b8; margin-top: 6px; }
 </style>
 </head>
 <body>
 <h1>장바구니/주문서 저장</h1>
-<div class="row"><span class="lbl">쇼핑몰: </span><span class="val" id="mall">-</span></div>
-<div class="row"><span class="lbl">화면 종류: </span><span class="val" id="kind">확인 중…</span></div>
-<div class="row"><span class="lbl">배송비: </span><span class="val" id="ship">확인 중…</span></div>
-<div class="row"><span class="lbl">상품 행: </span><span class="val" id="cnt">-</span>개</div>
-<div class="row"><span class="lbl">화면 총액: </span><span class="val" id="tot">-</span></div>
-<button id="send" disabled>⬆ 쇼핑몰 규칙 관리자로 전송</button>
+<p class="note">MHTML 기초자료 수집 — 화면 분석은 하지 않습니다. 값을 직접 확인·수정하세요.</p>
+<div class="row">
+  <label class="lbl">쇼핑몰 이름 (자동 감지, 수정·삭제 가능)</label>
+  <div class="inline">
+    <input id="mall" type="text" placeholder="쇼핑몰 이름">
+    <button id="mallClear" title="지우기">✕</button>
+  </div>
+</div>
+<div class="row">
+  <label class="lbl">화면 종류</label>
+  <select id="kind">
+    <option value="">선택…</option>
+    <option value="cart">장바구니</option>
+    <option value="order">주문서</option>
+    <option value="order-unsupported">주문서 사용 못함</option>
+  </select>
+</div>
+<div class="row">
+  <label class="lbl">배송비</label>
+  <select id="ship">
+    <option value="">선택(미확인)</option>
+    <option value="free">배송비 무료</option>
+    <option value="paid">배송비 발생</option>
+  </select>
+</div>
+<div class="row">
+  <label class="lbl">상품 행 (개) — 직접 입력</label>
+  <input id="cnt" type="number" min="0" placeholder="0">
+</div>
+<button id="send" disabled>⬆ MHTML 쇼핑몰 규칙 관리자로 전송</button>
 <div id="msg"></div>
 <div id="srv"></div>
 <script src="detect-fn.js"></script>

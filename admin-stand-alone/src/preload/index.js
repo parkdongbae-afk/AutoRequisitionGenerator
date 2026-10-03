@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('ruleMgr', {
   rulesDeletePreview: (repoRoot, id) => ipcRenderer.invoke('rules:delete-preview', repoRoot, id),
   rulesBuiltin: () => ipcRenderer.invoke('rules:builtin'),
   rulesRebuildJson: bump => ipcRenderer.invoke('rules:rebuild-json', bump),
+  rulesReadFile: p => ipcRenderer.invoke('rules:read-file', p),
   gitCommit: (repoRoot, files, message, push) => ipcRenderer.invoke('git:commit-rules', { repoRoot, files, message, push }),
   tx: {
     list: () => ipcRenderer.invoke('tx:list'),

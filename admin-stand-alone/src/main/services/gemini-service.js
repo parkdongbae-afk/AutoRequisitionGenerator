@@ -90,6 +90,34 @@ function generateOnce(fetchImpl, apiKey, model, parts, timeoutMs) {
   })
 }
 
+function extractJsonObject(text) {
+  const s = String(text || '')
+  const start = s.indexOf('{')
+  if (start === -1) throw new Error('응답에서 JSON을 찾지 못했습니다 — ' + s.slice(0, 80))
+  let depth = 0
+  let inStr = false
+  let esc = false
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i]
+    if (inStr) {
+      if (esc) esc = false
+      else if (ch === '\\') esc = true
+      else if (ch === '"') inStr = false
+    } else if (ch === '"') inStr = true
+    else if (ch === '{') depth++
+    else if (ch === '}') {
+      depth--
+      if (depth === 0) {
+        const raw = s.slice(start, i + 1)
+        try { return JSON.parse(raw) } catch (e) {
+          throw new Error('응답 JSON 파싱 실패 — ' + raw.slice(0, 120))
+        }
+      }
+    }
+  }
+  throw new Error('응답 JSON이 완전하지 않습니다 — ' + s.slice(start, start + 120))
+}
+
 export async function extractItemsWithGemini({ apiKey, model, captures = [], images = [], fetchImpl = fetch, timeoutMs = TIMEOUT_MS }) {
   const parts = [{ text: buildExtractionPrompt(captures, images.length) }]
   for (const img of images) {
@@ -109,11 +137,7 @@ export async function extractItemsWithGemini({ apiKey, model, captures = [], ima
   }
   const cand = (data.candidates || [])[0] || {}
   const text = (cand.content && cand.content.parts || []).map(p => p.text || '').join('')
-  const jsonText = String(text || '').replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim()
-  const a = jsonText.indexOf('{')
-  const b = jsonText.lastIndexOf('}')
-  if (a === -1 || b === -1) throw new Error('응답에서 JSON을 찾지 못했습니다')
-  const parsed = JSON.parse(jsonText.slice(a, b + 1))
+  const parsed = extractJsonObject(text)
   const items = (Array.isArray(parsed.items) ? parsed.items : [])
     .map(it => ({
       name: String(it.name || '').trim(),

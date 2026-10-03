@@ -3,7 +3,7 @@
  * "장바구니/주문서 저장" MV3 확장이 캡처 MHTML을 POST하면 inbox 폴더에 저장한다.
  * - 포트: 57340~57345 중 사용 가능한 것(사용자용 앱의 57330~35와 분리 — §4.2)
  * - 127.0.0.1 바인딩만 허용(외부 노출 없음), CORS는 확장 fetch용으로 최소 허용
- * - 저장 파일: <kind>_<ship>_<시각>.mhtml + <동일stem>.meta.json(화면 총액·건수 — 정답 사전 대조용)
+ * - 저장 파일: <kind>_<ship>_<시각>.mhtml + <동일stem>.meta.json(쇼핑몰 이름·건수 — 기초자료)
  */
 import http from 'node:http'
 import fs from 'node:fs'
@@ -66,7 +66,8 @@ export function startReceiver(inboxDir, { ports = PORT_CANDIDATES, log = () => {
 
 export function saveCapture(inboxDir, bodyJson) {
   const body = JSON.parse(bodyJson)
-  const kind = body.kind === 'order' ? '주문서' : '장바구니'
+  const KIND_FILE = { cart: '장바구니', order: '주문서', 'order-unsupported': '주문서사용못함' }
+  const kind = KIND_FILE[body.kind] || '장바구니'
   const ship = body.ship === 'free' ? '배송비무료' : body.ship === 'paid' ? '배송비발생' : '배송비미확인'
   const ts = new Date().toISOString().replace(/[-:T]/g, '').replace(/\..+$/, '')
   const stem = `${kind}_${ship}_${ts}`

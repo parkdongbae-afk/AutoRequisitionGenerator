@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { inferUnit, mergeShippingRows } from '../../shared/answer-logic.js'
+import { deriveSpec, answerUnit, mergeShippingRows } from '../../shared/answer-logic.js'
 
 // "엑셀 정답 만들기" — 캡처(Gemini: HTML 또는 화면 캡처 이미지) → 품목 추출 → 정답 xls 저장
 // 캡처별 개별 추출로 sourceId 연결: 캡처 삭제시 해당 추출 결과도 삭제된다
@@ -134,16 +134,20 @@ export default function AnswerMakerPanel({ active = true }) {
         if (r.usage) setUsage(r.usage)
         if (r.usedModel && r.usedModel !== model) fellBack = r.usedModel
         if (r.mallName) setMallNames(m => ({ ...m, [f.id]: r.mallName }))
-        const rows = (r.items || []).map(it => ({
-          ...it,
-          unit: it.unit || inferUnit(it.name, it.spec),
-          sourceId: f.id,
-          sourceLabel: f.label,
-          isShipping: false
-        }))
+        const rows = (r.items || []).map(it => {
+          const specRaw = String(it.spec || '').trim()
+          return {
+            ...it,
+            spec: deriveSpec(it.name, specRaw) || specRaw,
+            unit: answerUnit(false),
+            sourceId: f.id,
+            sourceLabel: f.label,
+            isShipping: false
+          }
+        })
         if (r.shippingFee != null && Number(r.shippingFee) > 0) {
           rows.push({
-            name: '배송비', spec: '', unit: '식', qty: 1, unitPrice: Number(r.shippingFee),
+            name: '배송비', spec: '', unit: answerUnit(true), qty: 1, unitPrice: Number(r.shippingFee),
             sourceId: f.id, sourceLabel: f.label, isShipping: true
           })
         }
