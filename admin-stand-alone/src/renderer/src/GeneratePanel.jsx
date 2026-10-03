@@ -419,34 +419,9 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
             </div>
           ))}
         </div>
-
-        <div style={{ marginTop: 8 }}>
-          <label>정답 기준 화면 </label>
-          <select value={answerBasis} onChange={e => setAnswerBasis(e.target.value)} style={inpSm}>
-            <option value="order">주문서</option>
-            <option value="cart">장바구니</option>
-            <option value="common">공통/알 수 없음 (0건만 판정)</option>
-          </select>
-          <span style={{ fontSize: 10, color: '#94a3b8' }}> — 무료/유료 정답 2개를 각각 넣으면 자동으로 캡처별 대조됩니다</span>
-        </div>
-
-        <div style={{ marginTop: 8 }}>
-          <label>모델 </label>
-          <select value={model} onChange={e => setModel(e.target.value)} style={inpSm}>
-            <option value="">기본 (GLM-5.3)</option>
-            {bridge && bridge.codingPlanModels && bridge.codingPlanModels.map(m => (
-              <option key={m.id} value={m.id}>{m.model}</option>
-            ))}
-          </select>
-          {' · '}자가 수정 최대 <input type="number" min="0" max="3" value={maxRepair} onChange={e => setMaxRepair(Math.max(0, Math.min(3, Number(e.target.value) || 0)))} style={{ width: 40 }} />회
-          <span style={{ fontSize: 10, color: '#94a3b8' }}> — 빠른 생성은 flash 모델 권장 (후보 3개 동시 생성)</span>
-        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-        <button onClick={run} disabled={running || !mallName} style={{ ...btnPrimary, opacity: running || !mallName ? 0.5 : 1 }}>
-          {running ? '생성 중… (GLM 후보 3개 → 검증 → Jev 판정)' : '▶ 생성 실행'}
-        </button>
         {generation && <button onClick={apply} style={btnPrimary}>📥 프로젝트에 적용</button>}
       </div>
 
@@ -503,9 +478,6 @@ export default function GeneratePanel({ repoRoot, bridge, settings, onSaved }) {
           )}
         </div>
       ))}
-      <p style={{ fontSize: 11, color: '#94a3b8', margin: '8px 0 0' }}>
-        안전 기본값: 생성 결과는 로컬 검증 + Jev 판정 통과분만 승인됩니다. 무료/유료 정답 2개를 넣으면 캡처별로 자동 대조되며, 화면 총액과 정답이 다르면 AI 실행 전에 차단됩니다.
-      </p>
       </section>
     </>
   )

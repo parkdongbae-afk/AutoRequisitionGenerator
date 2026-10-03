@@ -72,13 +72,39 @@ document.getElementById('mallClear').addEventListener('click', () => {
   document.getElementById('mall').value = ''
 })
 
+// pageCapture.captureMHTML은 callback 전용 API(promise 미지원) — await 직접 호출시 에러
+function captureMhtml(tabId) {
+  return new Promise((resolve, reject) => {
+    chrome.pageCapture.captureMHTML({ tabId }, dataUrl => {
+      if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message))
+      else if (!dataUrl) reject(new Error('MHTML 생성 실패'))
+      else resolve(dataUrl)
+    })
+  })
+}
+
+function fileStem() {
+  const kind = document.getElementById('kind').value
+  const kindLabel = kind === 'cart' ? '장바구니' : kind === 'order' ? '주문서' : '주문서사용못함'
+  const shipLabel = { free: '배송비무료', paid: '배송비발생' }[document.getElementById('ship').value || 'unknown'] || '배송비미확인'
+  const mall = (document.getElementById('mall').value.trim() || '캡처').replace(/[\\/:*?"<>|]/g, '_').slice(0, 30)
+  const ts = new Date().toISOString().replace(/[-:T]/g, '').replace(/\..+$/, '')
+  return `${kindLabel}_${shipLabel}_${mall}_${ts}`
+}
+
+async function downloadFallback(dataUrl) {
+  const stem = fileStem()
+  await chrome.downloads.download({ url: dataUrl, filename: `${stem}.mhtml`, saveAs: true })
+  msg('전송 실패 — 대신 다운로드로 저장했습니다. 다운로드한 .mhtml 파일을 관리자 앱 [📥 새 규칙] 탭에서 불러오세요')
+}
+
 document.getElementById('send').addEventListener('click', async () => {
   if (!currentTabId || !serverPort) return
   const send = document.getElementById('send')
   send.disabled = true
   msg('MHTML 생성 중…')
   try {
-    const dataUrl = await chrome.pageCapture.captureMHTML({ tabId: currentTabId })
+    const dataUrl = await captureMhtml(currentTabId)
     const b64 = String(dataUrl).split(',').pop()
     const body = {
       kind: document.getElementById('kind').value,
@@ -99,8 +125,13 @@ document.getElementById('send').addEventListener('click', async () => {
     const j = await r.json()
     msg('✓ 전송 완료 — 관리자 앱에 반영됨: ' + j.filename)
   } catch (e) {
-    msg('전송 실패: ' + String(e.message || e).slice(0, 120))
-    send.disabled = false
+    try {
+      const dataUrl = await captureMhtml(currentTabId)
+      await downloadFallback(dataUrl)
+    } catch (e2) {
+      msg('전송·다운로드 모두 실패: ' + String(e2.message || e2).slice(0, 120))
+      send.disabled = false
+    }
   }
 })
 

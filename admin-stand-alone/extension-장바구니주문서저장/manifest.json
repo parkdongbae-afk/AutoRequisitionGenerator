@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "장바구니/주문서 저장",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "쇼핑몰 장바구니·주문서 화면을 판별해(종류/배송비 무료·유료) 쇼핑몰 규칙 관리자로 MHTML 캡처를 직송합니다.",
-  "permissions": ["pageCapture", "scripting", "activeTab", "tabs"],
+  "permissions": ["pageCapture", "scripting", "activeTab", "tabs", "downloads"],
   "host_permissions": ["<all_urls>", "http://127.0.0.1/*"],
   "action": { "default_popup": "popup.html", "default_title": "장바구니/주문서 저장" }
 }
