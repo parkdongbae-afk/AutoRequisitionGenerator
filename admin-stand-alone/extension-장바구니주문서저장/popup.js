@@ -72,13 +72,14 @@ document.getElementById('mallClear').addEventListener('click', () => {
   document.getElementById('mall').value = ''
 })
 
-// pageCapture.captureMHTML은 callback 전용 API(promise 미지원) — await 직접 호출시 에러
-function captureMhtml(tabId) {
+// MHTML 캡처는 background service worker에 위임한다 — popup 문맥에 pageCapture가
+// 노출되지 않는 Chromium 버전이 있어 saveAsMHTML을 background에서 수행한다.
+function captureMhtmlB64(tabId) {
   return new Promise((resolve, reject) => {
-    chrome.pageCapture.captureMHTML({ tabId }, dataUrl => {
+    chrome.runtime.sendMessage({ type: 'capture-mhtml', tabId }, res => {
       if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message))
-      else if (!dataUrl) reject(new Error('MHTML 생성 실패'))
-      else resolve(dataUrl)
+      else if (!res || !res.ok) reject(new Error((res && res.error) || '캡처 응답 없음'))
+      else resolve(res.b64)
     })
   })
 }
@@ -92,8 +93,9 @@ function fileStem() {
   return `${kindLabel}_${shipLabel}_${mall}_${ts}`
 }
 
-async function downloadFallback(dataUrl) {
+async function downloadFallback(b64) {
   const stem = fileStem()
+  const dataUrl = `data:application/x-mimearchive;base64,${b64}`
   await chrome.downloads.download({ url: dataUrl, filename: `${stem}.mhtml`, saveAs: true })
   msg('전송 실패 — 대신 다운로드로 저장했습니다. 다운로드한 .mhtml 파일을 관리자 앱 [📥 새 규칙] 탭에서 불러오세요')
 }
@@ -104,8 +106,7 @@ document.getElementById('send').addEventListener('click', async () => {
   send.disabled = true
   msg('MHTML 생성 중…')
   try {
-    const dataUrl = await captureMhtml(currentTabId)
-    const b64 = String(dataUrl).split(',').pop()
+    const b64 = await captureMhtmlB64(currentTabId)
     const body = {
       kind: document.getElementById('kind').value,
       ship: document.getElementById('ship').value || 'unknown',
@@ -126,8 +127,8 @@ document.getElementById('send').addEventListener('click', async () => {
     msg('✓ 전송 완료 — 관리자 앱에 반영됨: ' + j.filename)
   } catch (e) {
     try {
-      const dataUrl = await captureMhtml(currentTabId)
-      await downloadFallback(dataUrl)
+      const b64 = await captureMhtmlB64(currentTabId)
+      await downloadFallback(b64)
     } catch (e2) {
       msg('전송·다운로드 모두 실패: ' + String(e2.message || e2).slice(0, 120))
       send.disabled = false
