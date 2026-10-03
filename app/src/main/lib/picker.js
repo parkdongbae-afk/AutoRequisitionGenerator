@@ -5,7 +5,7 @@ const { ipcRenderer } = require('electron')
   var rowSel = null
   var haveRow = false
 
-  function cssPath(el, root) {
+  function cssPath(el, root, stripRowOrdinal) {
     if (!el || el === root || el === document.body || el === document.documentElement) return ''
     var parts = []
     var node = el
@@ -19,7 +19,10 @@ const { ipcRenderer } = require('electron')
       var parent = node.parentNode
       if (parent) {
         var same = Array.prototype.filter.call(parent.children, function (c) { return c.tagName === node.tagName })
-        if (same.length > 1) sel += ':nth-of-type(' + (same.indexOf(node) + 1) + ')'
+        if (same.length > 1) {
+          if (stripRowOrdinal && sel === 'tr') { sel = 'tr' }
+          else sel += ':nth-of-type(' + (same.indexOf(node) + 1) + ')'
+        }
       }
       parts.unshift(sel)
       node = node.parentNode
@@ -46,7 +49,9 @@ const { ipcRenderer } = require('electron')
       if (el && el.closest && el.closest('a')) e.preventDefault()
       var payload
       if (mode === 'row' || mode === 'optionrow') {
-        rowSel = cssPath(el, document.body) || el.tagName.toLowerCase()
+        var rowEl = (el.closest && el.closest('tr')) ? el.closest('tr') : el
+        rowSel = cssPath(rowEl, document.body, true)
+        if (!rowSel) rowSel = rowEl.tagName.toLowerCase()
         haveRow = true
         payload = { kind: mode, selector: rowSel }
       } else {
@@ -81,7 +86,8 @@ export const PICKER_SCRIPT = `
 (function () {
   var lastHover = null
   var lastSel = null
-  function cssPath(el, root) {
+  function cssPath(el, root, stripRowOrdinal) {
+    if (!el || !el.tagName) return ''
     if (!el || el === root || el === document.body) return ''
     var parts = []
     var node = el
@@ -95,7 +101,10 @@ export const PICKER_SCRIPT = `
       var parent = node.parentNode
       if (parent) {
         var same = Array.prototype.filter.call(parent.children, function (c) { return c.tagName === node.tagName })
-        if (same.length > 1) sel += ':nth-of-type(' + (same.indexOf(node) + 1) + ')'
+        if (same.length > 1) {
+          if (stripRowOrdinal && sel === 'tr') { sel = 'tr' }
+          else sel += ':nth-of-type(' + (same.indexOf(node) + 1) + ')'
+        }
       }
       parts.unshift(sel)
       node = node.parentNode
@@ -124,8 +133,11 @@ export const PICKER_SCRIPT = `
     e.stopPropagation()
     var el = e.target
     if (mode === 'row' || mode === 'optionrow') {
-      rowSel = cssPath(el, document.body)
-      if (!rowSel) rowSel = el.tagName.toLowerCase()
+      // 테이블 몰 지원 — 셀(td) 클릭시 행(tr)으로 승격, cssPath에 tr 서수 생략 옵션을 넘겨
+      // 모든 상품 행이 매치되는 rowSelector를 만든다(아인몰 실측 2026-10-03)
+      var rowEl = (el.closest && el.closest('tr')) ? el.closest('tr') : el
+      rowSel = cssPath(rowEl, document.body, true)
+      if (!rowSel) rowSel = rowEl.tagName.toLowerCase()
       haveRow = true
       lastSel = { kind: mode, selector: rowSel }
       // 표 셀 좌표 — 열(column) 구분 쇼핑몰 규칙 생성용

@@ -789,6 +789,14 @@ const FIXTURE_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>�
 <li class="item"><div class="nm"><span class="t">테스트상품B</span></div><input class="cnt" value="1"><span class="pr">3,000원</span><input type="checkbox" class="ck"></li>
 </ul></body></html>`
 
+// 아인몰(godomall)식 테이블 구조 — 셀 클릭시 행(tr) 승격 검증용(2026-10-03 실측)
+const FIXTURE_HTML_TABLE = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>E2E테이블몰</title></head>
+<body><form id="frmCart"><div class="cart_cont_list"><div class="order_table_type"><table><tbody>
+<tr><td class="td_chk"><input type="checkbox" name="cartSno[]" checked></td><td class="td_left"><em><a>A상품 테이블</a></em></td><td class="td_order_amount"><strong>1개</strong></td><td><strong class="order_sum_txt price">8,000원</strong></td><td><strong class="order_sum_txt">8,000원</strong></td></tr>
+<tr><td class="td_chk"><input type="checkbox" name="cartSno[]" checked></td><td class="td_left"><em><a>B상품 테이블</a></em></td><td class="td_order_amount"><strong>2개</strong></td><td><strong class="order_sum_txt price">16,000원</strong></td><td><strong class="order_sum_txt">16,000원</strong></td></tr>
+<tr><td colspan="5"><a href="#">네이버페이 구매하기</a></td></tr>
+</tbody></table></div></div></form></body></html>`
+
 function mockAiFor(req) {
   return async ({ kind }) => {
     const ctx = req.contexts.find(c => c.kind === kind) || req.contexts[0]
@@ -929,6 +937,31 @@ async function runE2E(outPath, userDataDir) {
         `window.__mgr.preview(${JSON.stringify(assembled.rule)})`
       )
       result.mappingCheck.previewCount = preview && preview.count
+    }
+
+    // 4-2) 테이블 몰 매핑(아인몰 godomall식) — 셀 클릭시 행(tr) 승격·nth-of-type 제거·전체 행 매치 검증
+    const tmpHtmlT = join(app.getPath('temp'), `rule-mgr-e2e-table-${Date.now()}.html`)
+    fs.writeFileSync(tmpHtmlT, FIXTURE_HTML_TABLE)
+    const openedT = await win.webContents.executeJavaScript(`window.ruleMgr.mapping.openPath(${JSON.stringify(tmpHtmlT)})`)
+    result.tableMappingCheck = { opened: !!openedT }
+    if (openedT) {
+      await win.webContents.executeJavaScript('window.__mgr && window.__mgr.startMapping(' + JSON.stringify(openedT.token) + ', { isCart: true })')
+      result.tableMappingCheck.pickerReady = await waitFor(() => win.webContents.executeJavaScript('!!(window.__mgr && window.__mgr.state().pickerReady)'), 10000)
+      await clickInSampleFrame(win, openedT.token, 'td.td_left em a')
+      await waitMs(150)
+      const stT = await win.webContents.executeJavaScript('window.__mgr && window.__mgr.state()')
+      const rowSelT = stT && stT.picks && stT.picks.row && stT.picks.row.selector
+      result.tableMappingCheck.rowSelector = rowSelT
+      const frameT = findFrame(win.webContents.mainFrame, openedT.token)
+      if (frameT) {
+        const headHtml = await frameT.executeJavaScript('document.head.innerHTML')
+        const ri = headHtml.indexOf('rowSel.replace')
+        result.tableMappingCheck.injectedReplace = ri >= 0 ? headHtml.slice(Math.max(0, ri - 30), ri + 60) : 'not-found'
+      }
+      result.tableMappingCheck.rowMatchCount = rowSelT && frameT
+        ? await frameT.executeJavaScript(`document.querySelectorAll(${JSON.stringify(rowSelT)}).length`)
+        : 0
+      result.tableMappingCheck.generalized = !!(rowSelT && !/tr:nth-of-type/.test(rowSelT) && result.tableMappingCheck.rowMatchCount >= 2)
     }
 
     mark('mapping')
@@ -1093,6 +1126,7 @@ async function runE2E(outPath, userDataDir) {
       && result.deleteCheck && result.deleteCheck.deleted && result.deleteCheck.status === 'applied'
       && result.verificationCheck && result.shadowFixtureCheck
       && result.versionsCheck && result.updateCheckCheck
+      && result.tableMappingCheck && result.tableMappingCheck.generalized
       && result.gitCheck && result.sampleVerifyCheck && result.logCheck
   } catch (e) {
     result.fatal = String(e && e.message || e)
